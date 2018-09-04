@@ -1,7 +1,7 @@
 import math as m
 import xarray as xr
 import bottleneck as bn
-# from dask.distributed import Client
+from dask.distributed import Client
 import numpy as np
 import matplotlib.pyplot as plt
 import timeit
@@ -9,16 +9,16 @@ import timeit
 start = timeit.default_timer()
 import base_stats
 
-files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
-ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files,chunks={'time':500})
-files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_season0910.nc"
-ds_rr = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time':500})
+files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc"
+ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files,chunks={'time':40})
+files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_oneday.nc"
+ds_rr = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time':40})
 
 rain  = ds_rr.radar_estimated_rain_rate
 stein = ds_st.steiner_echo_classification
 
 # run with 4 parallel threads on my local laptop
-# c = Client()
+c = Client()
 
 # create an array which has the time-dim as 'height'. For ParaView.
 #   array = xr.DataArray(np.array(stein),coords=[('height',list(range(1,len(stein.time)+1))),('lat',stein.lat),('lon',stein.lon)])
@@ -60,6 +60,8 @@ def mask_sum(selector, background, per_timestep=False):
     """Summarise an array after applying a mask to it."""
     valid = background.where(selector.notnull())
     if per_timestep:
+        # calling nan_sum on the groupby('time') object
+        # takes 150 seconds at 4 processes for 3 days of data (time=432,lat=117,lon=117). Too long.
         valid_sum = valid.groupby('time').reduce(nan_sum)
     else:
         valid_sum = bn.nansum(valid)
@@ -73,9 +75,11 @@ conv_rain = rain_conv.groupby('time').reduce(nan_sum)
 stra_rain = rain_stra.groupby('time').reduce(nan_sum)
 
 # xarray automatically throws NaN if division by zero
-# TODO: Handle the case that there's conv precip, but no stratiform.
 conv_stra_area = conv_area / stra_area
 conv_stra_rain = conv_rain / stra_rain
+
+conv_stra_area[xr.ufuncs.logical_and(conv_area > 0., stra_area == 0.)] = -1
+conv_stra_rain[xr.ufuncs.logical_and(conv_rain > 0., stra_rain == 0.)] = -1
 
 stop = timeit.default_timer()
 print('Run Time: ', stop - start)
