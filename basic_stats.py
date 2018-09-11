@@ -80,10 +80,10 @@ def precip_stats(rain, stein, period='', group=''):
         stra_rain.load()
 
     # xarray automatically throws NaN if division by zero
-    ratio_area = conv_area / (stra_area + conv_area)
-    ratio_rain = conv_rain / (stra_rain + conv_rain)
+    # ratio_area = conv_area / (stra_area + conv_area)
+    # ratio_rain = conv_rain / (stra_rain + conv_rain)
 
-    return conv_area, ratio_area, conv_rain, ratio_rain
+    return conv_rain, conv_area, stra_rain, stra_area, area_scan
 
 
 if __name__ == '__main__':
@@ -104,11 +104,23 @@ if __name__ == '__main__':
     #   stein_ds = xr.Dataset({'SteinerClass':array})
     #   stein_ds.to_netcdf('height_steiner_data.nc')
 
-    # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s
-    conv_area, ratio_area, conv_rain, ratio_rain = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 86400.,
-                                                                stein=ds_st.steiner_echo_classification,
-                                                                # period='1H',
-                                                                group='hour')
+    # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s. No, the factor is 3600, not 86400.
+    conv_rain, conv_area, stra_rain, stra_area, area_scan = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 3600.,
+                                                                         stein=ds_st.steiner_echo_classification,
+                                                                         period='1H',
+                                                                         group='hour')
+
+    # sanity check
+    # total_rain = conv_rain.sum() + ((1 - ratio_rain) * conv_rain).sum().load()
+    # appro_rain = (ds_rr.radar_estimated_rain_rate * 2500 ** 2 / 86400.).sum().load()
+    # print('Simple 2.5x2.5 km square assumption approximated real total rain sum by {} %.'
+    #       .format(round(abs(1 - (appro_rain/total_rain - 1))*100)))
+
+    r = ds_rr.radar_estimated_rain_rate / 3600.
+    cr = r.where(ds_st.steiner_echo_classification == 2)
+    cr_1h = cr[9768:9773, :, :].load() # the most precip hour in the 09/10-season
+    npixels = cr_1h.notnull().sum()
+
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
