@@ -13,7 +13,7 @@ def total_area(array):
     stacked = array.stack(z=('lat', 'lon'))
     valid = stacked.where(stacked.notnull(), drop=True)
 
-    earth_r = 6378000 # in metre
+    earth_r = 6378000  # in metre
     large_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) + lat_dist)) * (lon_dist / 180.0)
     small_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) - lat_dist)) * (lon_dist / 180.0)
     area = large_wedge - small_wedge
@@ -68,9 +68,8 @@ def precip_stats(rain, stein, period='', group=''):
         stra_rain = (rain_stra * area_cell).resample(time=period).sum(skipna=True)
 
     # The ratio toward the total scan area is not of interest, only absolute values and their ratio (calculated later).
-    # area_period = area_scan if (grouped) else area_scan * (len(rain.time) / len(conv_rain.time))
-    conv_area = mask_sum(rain_conv, area_cell, period, group) # / area_period
-    stra_area = mask_sum(rain_stra, area_cell, period, group) # / area_period
+    conv_area = mask_sum(rain_conv, area_cell, period, group)  # / area_period
+    stra_area = mask_sum(rain_stra, area_cell, period, group)  # / area_period
 
     if not conv_area._in_memory:
         conv_area.load()
@@ -80,10 +79,16 @@ def precip_stats(rain, stein, period='', group=''):
         stra_rain.load()
 
     # xarray automatically throws NaN if division by zero
-    # ratio_area = conv_area / (stra_area + conv_area)
-    # ratio_rain = conv_rain / (stra_rain + conv_rain)
+    conv_intensity = conv_rain / conv_area
+    stra_intensity = stra_rain / stra_area
 
-    return conv_rain, conv_area, stra_rain, stra_area, area_scan
+    area_period = area_scan * (len(rain.time) / len(conv_rain))
+    conv_mean = conv_rain / area_period
+    stra_mean = stra_rain / area_period
+    conv_area_ratio = conv_area / area_period
+    stra_area_ratio = stra_area / area_period
+
+    return conv_intensity, conv_mean, conv_area_ratio, stra_intensity, stra_mean, stra_area_ratio, area_period
 
 
 if __name__ == '__main__':
@@ -98,29 +103,29 @@ if __name__ == '__main__':
     # run with 4 parallel threads on my local laptop
     # c = Client()
 
-    # create an array which has the time-dim as 'height'. For ParaView.
-    #   array = xr.DataArray(np.array(stein),
-    #                        coords=[('height',list(range(1,len(stein.time)+1))),('lat',stein.lat),('lon',stein.lon)])
-    #   stein_ds = xr.Dataset({'SteinerClass':array})
-    #   stein_ds.to_netcdf('height_steiner_data.nc')
-
     # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s. No, the factor is 3600, not 86400.
-    conv_rain, conv_area, stra_rain, stra_area, area_scan = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 3600.,
-                                                                         stein=ds_st.steiner_echo_classification,
-                                                                         period='1H',
-                                                                         group='hour')
+    # And 6 (=600/3600) for 10 minutes, the measurement interval.
+    conv_intensity, conv_mean, conv_area_ratio,\
+    stra_intensity, stra_mean, stra_area_ratio,\
+    area_period = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 6.,
+                               stein=ds_st.steiner_echo_classification,
+                               period='1H',
+                               group='hour')
 
-    # sanity check
+    # sanity check 1
     # total_rain = conv_rain.sum() + ((1 - ratio_rain) * conv_rain).sum().load()
     # appro_rain = (ds_rr.radar_estimated_rain_rate * 2500 ** 2 / 86400.).sum().load()
     # print('Simple 2.5x2.5 km square assumption approximated real total rain sum by {} %.'
     #       .format(round(abs(1 - (appro_rain/total_rain - 1))*100)))
-
-    r = ds_rr.radar_estimated_rain_rate / 3600.
+    # sanity check 2
+    r = ds_rr.radar_estimated_rain_rate / 6.
     cr = r.where(ds_st.steiner_echo_classification == 2)
-    cr_1h = cr[9768:9773, :, :].load() # the most precip hour in the 09/10-season
+    cr_1h = cr[9768:9773, :, :].load()  # the most precip hour in the 09/10-season
     npixels = cr_1h.notnull().sum()
-
+    cr_intens_appro = cr_1h.sum() / npixels
+    cr_intens_orig = conv_intensity.sel(time='2010-02-25T21:00:00')
+    print('Simple 2.5 x 2.5 km square assumption approximated the most precipitating hour by {} %.'
+          .format(round(abs(1 - (cr_intens_appro/cr_intens_orig - 1))*100)))
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
