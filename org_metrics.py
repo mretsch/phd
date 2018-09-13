@@ -13,11 +13,11 @@ ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
 stein = ds_st.steiner_echo_classification
 conv = stein.where(stein == 2)
 
+props = []
 labeled = xr.zeros_like(conv).load().astype(int)
-for i, scene in enumerate(conv):
+for i, scene in enumerate(conv):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
     labeled[i, :, :] = skm.label(scene)
-
-props = skm.regionprops(labeled)
+    props.append(skm.regionprops(labeled))
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
