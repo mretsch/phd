@@ -29,22 +29,34 @@ class Partners:
         self.partnerlist = partnerlist
 
     def distance(self):
-        """The distance in units of pixels between two centroids of objects found by .regionprops."""
+        """The distance in units of pixels between two centroids of cloud-objects found by .regionprops."""
         # partnerlist is a list of tuples
         partner1 = list(list(zip(*self.partnerlist))[0])
         partner2 = list(list(zip(*self.partnerlist))[1])
 
-        dist_x = np.array(list(map(lambda o: o.centroid[1], partner1))) - \
-                 np.array(list(map(lambda o: o.centroid[1], partner2)))
-        dist_y = np.array(list(map(lambda o: o.centroid[0], partner1))) - \
-                 np.array(list(map(lambda o: o.centroid[0], partner2)))
+        dist_x = np.array(list(map(lambda c: c.centroid[1], partner1))) - \
+                 np.array(list(map(lambda c: c.centroid[1], partner2)))
+        dist_y = np.array(list(map(lambda c: c.centroid[0], partner1))) - \
+                 np.array(list(map(lambda c: c.centroid[0], partner2)))
         return np.sqrt(dist_x**2 + dist_y**2)
 
 
-#def get_partners(list):
-#    pass
-p = Partners(partnerlist=[(props[28][1],props[28][8]),(props[28][2],props[28][3]),(props[28][4],props[28][5])])
+def gen_shortlist(start, inlist):
+    for j in range(start, len(inlist)):
+        yield inlist[j]
+
+
+def gen_tuplelist(inlist):
+    for i, item1 in enumerate(inlist):
+        for item2 in gen_shortlist(start=i + 1, inlist=inlist):
+            yield (item1, item2)
+
+
+# p = Partners(partnerlist=[(props[28][1],props[28][8]),(props[28][2],props[28][3]),(props[28][4],props[28][5])])
+p = Partners(partnerlist=list(gen_tuplelist(props[28])))
 d = p.distance()
+
+########################################################################################################
 
 # For COP [White et al. 2018] just use (props.equivalent_diameter / 2.) to get the radius needed for COP.
 #def cop():
