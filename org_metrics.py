@@ -54,11 +54,9 @@ def gen_tuplelist(inlist):
 
 all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
-test = all_pairs[28].distance()
 
-########################################################################################################
-
-def v_potential(pairs):
+def conv_org_pot(pairs):
+    """The Convective Organisation Potential according to [White et al. 2018]"""
     if pairs.pairlist == []: return np.nan
     partner1 = list(list(zip(*pairs.pairlist))[0])
     partner2 = list(list(zip(*pairs.pairlist))[1])
@@ -69,16 +67,7 @@ def v_potential(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
-def cop(allpairs):
-    """The Convective Organisation Potential according to [White et al. 2018]"""
-
-    # get the 'interaction potential', v, for every pair of objects/clouds
-    v = list(map(v_potential, allpairs))
-
-    return v
-
-
-v_pot = cop(all_pairs)
+cop = list(map(conv_org_pot(), all_pairs))
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
