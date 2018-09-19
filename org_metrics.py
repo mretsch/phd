@@ -19,9 +19,6 @@ for i, scene in enumerate(conv):  # conv has dimension (time, lat, lon). A scene
     labeled[i, :, :] = skm.label(scene, background=0)
     props.append(skm.regionprops(labeled[i, :, :]))
 
-# props[28][1].centroid
-# TODO: DONE above command give error, maybe cause of conflicting metadata inherited from 'labeled' initialisation
-
 
 class Partners:
 
@@ -54,16 +51,7 @@ def gen_tuplelist(inlist):
             yield (item1, item2)
 
 
-# p = Partners(partnerlist=[(props[28][1],props[28][8]),(props[28][2],props[28][3]),(props[28][4],props[28][5])])
-p = Partners(partnerlist=list(gen_tuplelist(props[28])))
-d = p.distance()
-
-# TODO: DONE What about object #0, which is the surrounding in each scene, right? How to get rid of it? Through
-# TODO: .fillna(0.) in line 14 and ,background=0) in line 19.
-
-test = [Partners(partnerlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
-
-print(all(test[28].distance() == d))
+partner = [Partners(partnerlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
 ########################################################################################################
 
