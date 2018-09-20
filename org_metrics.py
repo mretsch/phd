@@ -18,14 +18,11 @@ class Pairs:
 
     def distance(self):
         """The distance in units of pixels between two centroids of cloud-objects found by .regionprops."""
-        # pairlist is a list of tuples
-        #partner1 = list(list(zip(*self.pairlist))[0])
-        #partner2 = list(list(zip(*self.pairlist))[1])
 
-        dist_x = np.array(list(map(lambda c: c.centroid[1], self.partner1))) - \
-                 np.array(list(map(lambda c: c.centroid[1], self.partner2)))
-        dist_y = np.array(list(map(lambda c: c.centroid[0], self.partner1))) - \
-                 np.array(list(map(lambda c: c.centroid[0], self.partner2)))
+        dist_x = np.array([c.centroid[1] for c in self.partner1]) - \
+                 np.array([c.centroid[1] for c in self.partner2])
+        dist_y = np.array([c.centroid[0] for c in self.partner1]) - \
+                 np.array([c.centroid[0] for c in self.partner2])
         return np.sqrt(dist_x**2 + dist_y**2)
 
 
@@ -46,11 +43,8 @@ def conv_org_pot(pairs):
     """The Convective Organisation Potential according to [White et al. 2018]"""
     if not pairs.pairlist:
         return np.nan
-    #partner1 = list(list(zip(*pairs.pairlist))[0])
-    #partner2 = list(list(zip(*pairs.pairlist))[1])
-    diameter_1 = np.array(list(map(lambda c: c.equivalent_diameter, pairs.partner1)))
-    diameter_2 = np.array(list(map(lambda c: c.equivalent_diameter, pairs.partner2)))
-
+    diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
+    diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
     return np.sum(v) / len(pairs.pairlist)
 
