@@ -4,21 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-
-start = timeit.default_timer()
-
-files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc"
-ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
-
-stein  = ds_st.steiner_echo_classification
-conv   = stein.where(stein == 2)
-conv_0 = conv.fillna(0.)
-
-props = []
-labeled = np.zeros_like(conv_0).astype(int)
-for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-    labeled[i, :, :] = skm.label(scene, background=0)
-    props.append(skm.regionprops(labeled[i, :, :]))
+from dask.distributed import Client
 
 
 class Pairs:
@@ -52,9 +38,6 @@ def gen_tuplelist(inlist):
             yield (item1, item2)
 
 
-all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
-
-
 def conv_org_pot(pairs):
     """The Convective Organisation Potential according to [White et al. 2018]"""
     if pairs.pairlist == []: return np.nan
@@ -63,11 +46,41 @@ def conv_org_pot(pairs):
     diameter_1 = np.array(list(map(lambda c: c.equivalent_diameter, partner1)))
     diameter_2 = np.array(list(map(lambda c: c.equivalent_diameter, partner2)))
 
-    v = np.array(0.5 * diameter_1 + diameter_2 / pairs.distance())
+    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
     return np.sum(v) / len(pairs.pairlist)
 
 
-cop = list(map(conv_org_pot(), all_pairs))
+if __name__ == '__main__':
 
-stop = timeit.default_timer()
-print('This script needed {} seconds.'.format(stop-start))
+    start = timeit.default_timer()
+
+    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
+    ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
+
+    c = Client()
+    stein  = ds_st.steiner_echo_classification
+    conv   = stein.where(stein == 2)
+    conv_0 = conv.fillna(0.)
+
+    props = []
+    labeled = np.zeros_like(conv_0).astype(int)
+    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled[i, :, :] = skm.label(scene, background=0)
+        props.append(skm.regionprops(labeled[i, :, :]))
+
+    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+
+    cop = xr.DataArray(list(map(conv_org_pot, all_pairs)))
+    # TODO: get cop a time dimension. And do a hist plot of cop. And a 2D-hist plot for basic_stats.
+    cop.coords['time'] = ('dim_0', conv.time)
+    cop = cop.rename({'dim_0': 'time'})
+
+    cop.plot.hist()
+    plt.show()
+    t = cop.time.where(cop > 0.4, drop=True)
+    highcop = conv.sel(time=t)
+    highcop[0, :, :].plot()
+    plt.show()
+
+    stop = timeit.default_timer()
+    print('This script needed {} seconds.'.format(stop-start))
