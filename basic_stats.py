@@ -28,8 +28,7 @@ def nan_sum(array, axis):
 
 def mask_sum(selector, background, period='', group=''):
     """Sum an array after applying a mask to it."""
-    grouped = period == ''
-
+    grouped = (period == '')
     valid = background.where(selector.notnull()).fillna(0.)
     if grouped:
         # calling nan_sum on the groupby('time') object here
@@ -42,10 +41,11 @@ def mask_sum(selector, background, period='', group=''):
 
 def precip_stats(rain, stein, period='', group=''):
     """Calculates area and rate of stratiform and convective precipitation and ratios between them."""
-
-    grouped = period == ''
+    grouped = (period == '')
     rain_conv = rain.where(stein == 2)
     rain_stra = rain.where(stein == 1)
+    rain_conv = rain_conv.where(rain_conv != 0.)
+    rain_stra = rain_stra.where(rain_stra != 0.)
 
     i = 0
     while rain[i, :, :].isnull().all():
@@ -67,9 +67,9 @@ def precip_stats(rain, stein, period='', group=''):
         conv_rain = (rain_conv * area_cell).resample(time=period).sum(skipna=True)
         stra_rain = (rain_stra * area_cell).resample(time=period).sum(skipna=True)
 
-    # The ratio toward the total scan area is not of interest, only absolute values and their ratio (calculated later).
-    conv_area = mask_sum(rain_conv, area_cell, period, group)  # / area_period
-    stra_area = mask_sum(rain_stra, area_cell, period, group)  # / area_period
+    # The ratio toward the total scan area is not of interest, only absolute area values.
+    conv_area = mask_sum(rain_conv, area_cell, period, group)
+    stra_area = mask_sum(rain_stra, area_cell, period, group)
 
     if not conv_area._in_memory:
         conv_area.load()
@@ -78,6 +78,8 @@ def precip_stats(rain, stein, period='', group=''):
         conv_rain.load()
         stra_rain.load()
 
+    # conv_intensity gives mean precip over its area in a time interval.
+    # Summation of it hence would be a sum of means. Beware, mean(a) + mean(b) != mean(a + b).
     # xarray automatically throws NaN if division by zero
     conv_intensity = conv_rain / conv_area
     stra_intensity = stra_rain / stra_area
@@ -85,8 +87,8 @@ def precip_stats(rain, stein, period='', group=''):
     area_period = area_scan * (len(rain.time) / len(conv_rain))
     conv_mean = conv_rain / area_period
     stra_mean = stra_rain / area_period
-    conv_area_ratio = conv_area / area_period
-    stra_area_ratio = stra_area / area_period
+    conv_area_ratio = conv_area / area_period * 100
+    stra_area_ratio = stra_area / area_period * 100
 
     return conv_intensity, conv_mean, conv_area_ratio, stra_intensity, stra_mean, stra_area_ratio, area_period
 
@@ -112,20 +114,43 @@ if __name__ == '__main__':
                                period='1H',
                                group='hour')
 
-    # sanity check 1
-    # total_rain = conv_rain.sum() + ((1 - ratio_rain) * conv_rain).sum().load()
-    # appro_rain = (ds_rr.radar_estimated_rain_rate * 2500 ** 2 / 86400.).sum().load()
-    # print('Simple 2.5x2.5 km square assumption approximated real total rain sum by {} %.'
-    #       .format(round(abs(1 - (appro_rain/total_rain - 1))*100)))
-    # sanity check 2
-    r = ds_rr.radar_estimated_rain_rate / 6.
-    cr = r.where(ds_st.steiner_echo_classification == 2)
-    cr_1h = cr[9768:9773, :, :].load()  # the most precip hour in the 09/10-season
-    npixels = cr_1h.notnull().sum()
-    cr_intens_appro = cr_1h.sum() / npixels
-    cr_intens_orig = conv_intensity.sel(time='2010-02-25T21:00:00')
-    print('Simple 2.5 x 2.5 km square assumption approximated the most precipitating hour by {} %.'
-          .format(round(abs(1 - (cr_intens_appro/cr_intens_orig - 1))*100)))
+    # sanity check
+    check = True
+    if check:
+        r = ds_rr.radar_estimated_rain_rate / 6.
+        cr = r.where(ds_st.steiner_echo_classification == 2)
+        cr = cr.where(cr != 0.)
+        cr_1h = cr[9768:9773, :, :].load()  # the most precip hour in the 09/10-season
+        npixels = cr_1h.notnull().sum()
+        cr_intens_appro = cr_1h.sum() / npixels
+        cr_intens_orig = conv_intensity.sel(time='2010-02-25T21:00:00')
+        print('Simple 2.5 x 2.5 km square assumption approximated the most precipitating hour by {} %.'
+              .format(str((cr_intens_appro/cr_intens_orig).values * 100)))
+
+    # Even in conv_area_ratio are NaNs, because there are days without raw data.
+    # con_area_ratio has them filled with NaNs.
+    x = conv_area_ratio.fillna(0.)
+    y = conv_intensity.fillna(0.)
+    # Plot data
+    fig1 = plt.figure()
+    plt.plot(x, y, '.r')
+    plt.xlabel('Conv area ratio')
+    plt.ylabel('Conv intensity')
+    # Estimate the 2D histogram
+    nbins = 10
+    H, xedges, yedges = np.histogram2d(x, y, bins=nbins)
+    # H needs to be rotated and flipped
+    H = np.rot90(H)
+    H = np.flipud(H)
+    # Mask zeros
+    Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
+    # Plot 2D histogram using pcolor
+    fig2 = plt.figure()
+    plt.pcolormesh(xedges, yedges, Hmasked)
+    plt.xlabel('Conv area ratio')
+    plt.ylabel('Conv intensity')
+    cbar = plt.colorbar()
+    cbar.ax.set_ylabel('Counts')
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
