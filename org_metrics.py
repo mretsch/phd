@@ -69,11 +69,13 @@ if __name__ == '__main__':
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
-    cop = xr.DataArray(list(map(conv_org_pot, all_pairs)))
-    # TODO: get cop a time dimension. And do a hist plot of cop. And a 2D-hist plot for basic_stats.
+    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
+
+    # get cop a time dimension.
     cop.coords['time'] = ('dim_0', conv.time)
     cop = cop.rename({'dim_0': 'time'})
 
+    # a hist plot of cop.
     cop.plot.hist()
     plt.show()
     #t = cop.time.where(cop > 0.4, drop=True)
