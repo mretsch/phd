@@ -9,16 +9,20 @@ import timeit
 
 def total_area(array):
     """Calculate total and single cell area of an array based on regular lat and lon grid."""
-    lat_dist, lon_dist = 0.5 * (array.lat[1] - array.lat[0]), array.lon[1] - array.lon[0]
-    stacked = array.stack(z=('lat', 'lon'))
-    valid = stacked.where(stacked.notnull(), drop=True)
+    cells_equal = True  # False if assuming varying cell areas.
+    if cells_equal:
+        areas = array.where(array.isnull(), other=6260485.05402)
+    else:
+        lat_dist, lon_dist = 0.5 * (array.lat[1] - array.lat[0]), array.lon[1] - array.lon[0]
+        stacked = array.stack(z=('lat', 'lon'))
+        valid = stacked.where(stacked.notnull(), drop=True)
 
-    earth_r = 6378000  # in metre
-    large_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) + lat_dist)) * (lon_dist / 180.0)
-    small_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) - lat_dist)) * (lon_dist / 180.0)
-    area = large_wedge - small_wedge
-    areas = area.unstack('z')
-    return area.sum(), areas
+        earth_r = 6378000  # in metre
+        large_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) + lat_dist)) * (lon_dist / 180.0)
+        small_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) - lat_dist)) * (lon_dist / 180.0)
+        area = large_wedge - small_wedge
+        areas = area.unstack('z')
+    return areas.sum(), areas
 
 
 def nan_sum(array, axis):
