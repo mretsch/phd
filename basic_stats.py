@@ -124,7 +124,8 @@ if __name__ == '__main__':
         r = ds_rr.radar_estimated_rain_rate / 6.
         cr = r.where(ds_st.steiner_echo_classification == 2)
         cr = cr.where(cr != 0.)
-        cr_1h = cr[9768:9773, :, :].load()  # the most precip hour in the 09/10-season
+        cr_1h = cr[9774:9780, :, :].load()  # the most precip hour in the 09/10-season
+        # cr_1h = cr[9774, :, :].load()  # '2010-02-25T21:00:00'
         npixels = cr_1h.notnull().sum()
         cr_intens_appro = cr_1h.sum() / npixels
         cr_intens_orig = conv_intensity.sel(time='2010-02-25T21:00:00')
