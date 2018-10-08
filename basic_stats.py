@@ -1,46 +1,9 @@
 import math as m
 import xarray as xr
-import bottleneck as bn
 from dask.distributed import Client
 import numpy as np
 import matplotlib.pyplot as plt
 import timeit
-
-
-def total_area(array):
-    """Calculate total and single cell area of an array based on regular lat and lon grid."""
-    cells_equal = True  # False if assuming varying cell areas.
-    if cells_equal:
-        areas = array.where(array.isnull(), other=6260485.05402)
-    else:
-        lat_dist, lon_dist = 0.5 * (array.lat[1] - array.lat[0]), array.lon[1] - array.lon[0]
-        stacked = array.stack(z=('lat', 'lon'))
-        valid = stacked.where(stacked.notnull(), drop=True)
-
-        earth_r = 6378000  # in metre
-        large_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) + lat_dist)) * (lon_dist / 180.0)
-        small_wedge = m.pi * earth_r**2 * np.sin(np.deg2rad(abs(valid.z.lat) - lat_dist)) * (lon_dist / 180.0)
-        area = large_wedge - small_wedge
-        areas = area.unstack('z')
-    return areas.sum(), areas
-
-
-def nan_sum(array, axis):
-    """Sum an xarray containing NaNs and which doesn't work with .sum(skipna=True)."""
-    return bn.nansum(array, axis=axis)
-
-
-def mask_sum(selector, background, period='', group=''):
-    """Sum an array after applying a mask to it."""
-    grouped = (period == '')
-    valid = background.where(selector.notnull()).fillna(0.)
-    if grouped:
-        # calling nan_sum on the groupby('time') object here
-        # takes 150 seconds at 4 processes for 3 days of data (time=432,lat=117,lon=117). Too long -> .fillna(0.)
-        valid_sum = valid.groupby('time' + group).sum()
-    else:
-        valid_sum = valid.resample(time=period).sum()
-    return valid_sum
 
 
 def precip_stats(rain, stein, period='', group=''):
@@ -55,25 +18,23 @@ def precip_stats(rain, stein, period='', group=''):
     while rain[i, :, :].isnull().all():
         i += 1
     else:
-        area_scan, area_cell_single = total_area(rain[i, :, :])
+        first_scene = rain[i, :, :]
 
-    expanded = area_cell_single.expand_dims('time')
-    expanded.time[0] = rain.time[0]
-    bcasted, _ = xr.broadcast(expanded, rain)
-    area_cell = bcasted.ffill('time')
+    # The total area (number of pixels) of one radar scan. All cells have same area.
+    area_scan = first_scene.notnull().sum()
 
-    # Multiply rain-rate (unit is kg/sm^2), with the respective grid cell area before summation.
+    # Total rain in one time slice. And the corresponding number of cells.
     if grouped:
         group = group if (group == '') else '.' + group
-        conv_rain = (rain_conv * area_cell).groupby('time' + group).sum(skipna=True)
-        stra_rain = (rain_stra * area_cell).groupby('time' + group).sum(skipna=True)
+        conv_rain = rain_conv.groupby('time' + group).sum(skipna=True)
+        stra_rain = rain_stra.groupby('time' + group).sum(skipna=True)
+        conv_area = rain_conv.notnull().groupby('time' + group).sum()
+        stra_area = rain_stra.notnull().groupby('time' + group).sum()
     else:
-        conv_rain = (rain_conv * area_cell).resample(time=period).sum(skipna=True)
-        stra_rain = (rain_stra * area_cell).resample(time=period).sum(skipna=True)
-
-    # The ratio toward the total scan area is not of interest, only absolute area values.
-    conv_area = mask_sum(rain_conv, area_cell, period, group)
-    stra_area = mask_sum(rain_stra, area_cell, period, group)
+        conv_rain = rain_conv.resample(time=period).sum(skipna=True)
+        stra_rain = rain_stra.resample(time=period).sum(skipna=True)
+        conv_area = rain_conv.notnull().resample(time=period).sum()
+        stra_area = rain_stra.notnull().resample(time=period).sum()
 
     if not conv_area._in_memory:
         conv_area.load()
@@ -94,7 +55,7 @@ def precip_stats(rain, stein, period='', group=''):
     conv_area_ratio = conv_area / area_period * 100
     stra_area_ratio = stra_area / area_period * 100
 
-    return conv_intensity, conv_mean, conv_area_ratio, stra_intensity, stra_mean, stra_area_ratio, area_period
+    return conv_intensity, conv_mean, conv_area_ratio, stra_intensity, stra_mean, stra_area_ratio
 
 
 if __name__ == '__main__':
@@ -112,11 +73,10 @@ if __name__ == '__main__':
     # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s. No, the factor is 3600, not 86400.
     # And 6 (=600/3600) for 10 minutes, the measurement interval.
     conv_intensity, conv_mean, conv_area_ratio,\
-    stra_intensity, stra_mean, stra_area_ratio,\
-    area_period = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 6.,
-                               stein=ds_st.steiner_echo_classification,
-                               period='1H',
-                               group='hour')
+    stra_intensity, stra_mean, stra_area_ratio = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 6.,
+                                                              stein=ds_st.steiner_echo_classification,
+                                                              period='1H',
+                                                              group='hour')
 
     # sanity check
     check = True
@@ -132,30 +92,30 @@ if __name__ == '__main__':
         print('Simple 2.5 x 2.5 km square assumption approximated the most precipitating hour by {} %.'
               .format(str((cr_intens_appro/cr_intens_orig).values * 100)))
 
-    # Even in conv_area_ratio are NaNs, because there are days without raw data.
-    # con_area_ratio has them filled with NaNs.
-    x = conv_area_ratio.fillna(0.)
-    y = conv_intensity.fillna(0.)
-    # Plot data
-    fig1 = plt.figure()
-    plt.plot(x, y, '.r')
-    plt.xlabel('Conv area ratio')
-    plt.ylabel('Conv intensity')
-    # Estimate the 2D histogram
-    nbins = 10
-    H, xedges, yedges = np.histogram2d(x, y, bins=nbins)
-    # H needs to be rotated and flipped
-    H = np.rot90(H)
-    H = np.flipud(H)
-    # Mask zeros
-    Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
-    # Plot 2D histogram using pcolor
-    fig2 = plt.figure()
-    plt.pcolormesh(xedges, yedges, Hmasked)
-    plt.xlabel('Conv area ratio')
-    plt.ylabel('Conv intensity')
-    cbar = plt.colorbar()
-    cbar.ax.set_ylabel('Counts')
+    # # Even in conv_area_ratio are NaNs, because there are days without raw data.
+    # # con_area_ratio has them filled with NaNs.
+    # x = conv_area_ratio.fillna(0.)
+    # y = conv_intensity.fillna(0.)
+    # # Plot data
+    # fig1 = plt.figure()
+    # plt.plot(x, y, '.r')
+    # plt.xlabel('Conv area ratio')
+    # plt.ylabel('Conv intensity')
+    # # Estimate the 2D histogram
+    # nbins = 10
+    # H, xedges, yedges = np.histogram2d(x, y, bins=nbins)
+    # # H needs to be rotated and flipped
+    # H = np.rot90(H)
+    # H = np.flipud(H)
+    # # Mask zeros
+    # Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
+    # # Plot 2D histogram using pcolor
+    # fig2 = plt.figure()
+    # plt.pcolormesh(xedges, yedges, Hmasked)
+    # plt.xlabel('Conv area ratio')
+    # plt.ylabel('Conv intensity')
+    # cbar = plt.colorbar()
+    # cbar.ax.set_ylabel('Counts')
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
