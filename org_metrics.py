@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
 
-    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc"
+    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
     ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
 
     # c = Client()
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)
+        labeled[i, :, :] = skm.label(scene, background=0, connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
