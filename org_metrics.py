@@ -49,6 +49,15 @@ def conv_org_pot(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
+def metric_1(clouds):
+    if not clouds:
+        return np.nan
+    c_area = xr.DataArray([c.area for c in clouds])
+    a_max = c_area.max()
+    a_all = c_area.sum()
+    return a_max / a_all * a_max
+
+
 if __name__ == '__main__':
 
     start = timeit.default_timer()
@@ -64,20 +73,24 @@ if __name__ == '__main__':
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)
+        labeled[i, :, :] = skm.label(scene, background=0, connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
+    m1  = xr.DataArray([    metric_1(clouds=cloudlist) for cloudlist in props])
+
     # get cop a time dimension.
     cop.coords['time'] = ('dim_0', conv.time)
     cop = cop.rename({'dim_0': 'time'})
+    m1.coords['time'] = ('dim_0', conv.time)
+    m1 = m1.rename({'dim_0': 'time'})
 
     # a hist plot of cop.
-    cop.plot.hist()
-    plt.show()
+    #cop.plot.hist()
+    #plt.show()
     #t = cop.time.where(cop > 0.4, drop=True)
     #highcop = conv.sel(time=t)
     #highcop[0, :, :].plot()
