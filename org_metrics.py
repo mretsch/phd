@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-from dask.distributed import Client
+# from dask.distributed import Client
+import artificial_fields as af
 
 
 class Pairs:
@@ -62,13 +63,18 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
 
-    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
-    ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
-
     # c = Client()
-    stein  = ds_st.steiner_echo_classification
-    conv   = stein.where(stein == 2)
-    conv_0 = conv.fillna(0.)
+
+    artificial = True
+    if artificial:
+        conv_0 = af.art
+    else:
+        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
+
+        stein  = ds_st.steiner_echo_classification
+        conv   = stein.where(stein == 2)
+        conv_0 = conv.fillna(0.)
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
@@ -83,9 +89,9 @@ if __name__ == '__main__':
     m1  = xr.DataArray([    metric_1(clouds=cloudlist) for cloudlist in props])
 
     # get cop a time dimension.
-    cop.coords['time'] = ('dim_0', conv.time)
+    cop.coords['time'] = ('dim_0', conv_0.time)
     cop = cop.rename({'dim_0': 'time'})
-    m1.coords['time'] = ('dim_0', conv.time)
+    m1.coords['time'] = ('dim_0', conv_0.time)
     m1 = m1.rename({'dim_0': 'time'})
 
     # a hist plot of cop.
