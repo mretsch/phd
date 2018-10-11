@@ -1,7 +1,6 @@
 import netCDF4 as nc
 import xarray as xr
 import numpy as np
-import matplotlib.pyplot as plt
 
 ds = xr.open_dataset('~/Desktop/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
 
