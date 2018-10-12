@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-from dask.distributed import Client
+# from dask.distributed import Client
+import artificial_fields as af
 
 
 class Pairs:
@@ -49,37 +50,60 @@ def conv_org_pot(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
+def metric_1(clouds):
+    if not clouds:
+        return np.nan
+    c_area = xr.DataArray([c.area for c in clouds])
+    a_max = c_area.max()
+    a_all = c_area.sum()
+    return a_max / a_all * a_max
+
+
 if __name__ == '__main__':
 
     start = timeit.default_timer()
 
-    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
-    ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
-
     # c = Client()
-    stein  = ds_st.steiner_echo_classification
-    conv   = stein.where(stein == 2)
-    conv_0 = conv.fillna(0.)
+
+    artificial = False
+    if artificial:
+        conv_0 = af.art
+    else:
+        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
+
+        stein  = ds_st.steiner_echo_classification
+        conv   = stein.where(stein == 2)
+        conv_0 = conv.fillna(0.)
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
-    cop = xr.DataArray(list(map(conv_org_pot, all_pairs)))
-    # TODO: get cop a time dimension. And do a hist plot of cop. And a 2D-hist plot for basic_stats.
-    cop.coords['time'] = ('dim_0', conv.time)
-    cop = cop.rename({'dim_0': 'time'})
+    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    cop.plot.hist()
-    plt.show()
-    #t = cop.time.where(cop > 0.4, drop=True)
-    #highcop = conv.sel(time=t)
-    #highcop[0, :, :].plot()
-    #plt.show()
+    m1  = xr.DataArray([    metric_1(clouds=cloudlist) for cloudlist in props])
+
+    # get cop a time dimension.
+    cop.coords['time'] = ('dim_0', conv_0.time)
+    cop = cop.rename({'dim_0': 'time'})
+    m1.coords['time'] = ('dim_0', conv_0.time)
+    m1 = m1.rename({'dim_0': 'time'})
+
+    # a hist plot of cop.
+    plotcop = True
+    if plotcop:
+        cop.plot.hist(bins=55)
+        plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
+        plt.show()
+        #t = cop.time.where(cop > 0.4, drop=True)
+        #highcop = conv.sel(time=t)
+        #highcop[0, :, :].plot()
+        #plt.show()
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
