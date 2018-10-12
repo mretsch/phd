@@ -2,7 +2,10 @@ import netCDF4 as nc
 import xarray as xr
 import numpy as np
 
-ds = xr.open_dataset('~/Desktop/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
+try:
+    ds = xr.open_dataset('~/Desktop/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
+except FileNotFoundError:
+    ds = xr.open_dataset('~/Data/RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
 
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.

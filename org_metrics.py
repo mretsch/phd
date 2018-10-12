@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     # c = Client()
 
-    artificial = True
+    artificial = False
     if artificial:
         conv_0 = af.art
     else:
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0, connectivity=1)
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
@@ -95,12 +95,15 @@ if __name__ == '__main__':
     m1 = m1.rename({'dim_0': 'time'})
 
     # a hist plot of cop.
-    #cop.plot.hist()
-    #plt.show()
-    #t = cop.time.where(cop > 0.4, drop=True)
-    #highcop = conv.sel(time=t)
-    #highcop[0, :, :].plot()
-    #plt.show()
+    plotcop = True
+    if plotcop:
+        cop.plot.hist(bins=55)
+        plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
+        plt.show()
+        #t = cop.time.where(cop > 0.4, drop=True)
+        #highcop = conv.sel(time=t)
+        #highcop[0, :, :].plot()
+        #plt.show()
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
