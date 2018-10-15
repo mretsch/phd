@@ -59,13 +59,12 @@ def metric_1(clouds):
     return a_max / a_all * a_max
 
 
-if __name__ == '__main__':
+def run_metrics(artificial=False):
 
     start = timeit.default_timer()
 
     # c = Client()
 
-    artificial = False
     if artificial:
         conv_0 = af.art
     else:
@@ -94,9 +93,7 @@ if __name__ == '__main__':
     m1.coords['time'] = ('dim_0', conv_0.time)
     m1 = m1.rename({'dim_0': 'time'})
 
-    # a hist plot of cop.
-    plotcop = True
-    if plotcop:
+    if __name__ == '__main__':
         cop.plot.hist(bins=55)
         plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
         plt.show()
@@ -107,3 +104,5 @@ if __name__ == '__main__':
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
+
+    return cop, m1
