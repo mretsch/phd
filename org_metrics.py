@@ -60,9 +60,6 @@ def metric_1(clouds):
 
 
 def run_metrics(artificial=False):
-
-    start = timeit.default_timer()
-
     # c = Client()
 
     if artificial:
@@ -93,16 +90,21 @@ def run_metrics(artificial=False):
     m1.coords['time'] = ('dim_0', conv_0.time)
     m1 = m1.rename({'dim_0': 'time'})
 
-    if __name__ == '__main__':
-        cop.plot.hist(bins=55)
-        plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
-        plt.show()
-        #t = cop.time.where(cop > 0.4, drop=True)
-        #highcop = conv.sel(time=t)
-        #highcop[0, :, :].plot()
-        #plt.show()
+    return cop, m1
+
+
+if __name__ == '__main__':
+    start = timeit.default_timer()
+
+    cop, m1 = run_metrics(artificial=False)
+
+    cop.plot.hist(bins=55)
+    plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
+    plt.show()
+    #t = cop.time.where(cop > 0.4, drop=True)
+    #highcop = conv.sel(time=t)
+    #highcop[0, :, :].plot()
+    #plt.show()
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
-
-    return cop, m1
