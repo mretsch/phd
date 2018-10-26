@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-# from dask.distributed import Client
+from dask.distributed import Client
 import artificial_fields as af
 
 
@@ -60,13 +60,13 @@ def metric_1(clouds):
 
 
 def run_metrics(artificial=False):
-    # c = Client()
+    c = Client()
 
     if artificial:
         conv_0 = af.art
     else:
-        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
-        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 40})
+        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc"
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 400})
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
@@ -82,7 +82,7 @@ def run_metrics(artificial=False):
 
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    m1  = xr.DataArray([    metric_1(clouds=cloudlist) for cloudlist in props])
+    m1  = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
 
     # get cop a time dimension.
     cop.coords['time'] = ('dim_0', conv_0.time)
@@ -96,8 +96,10 @@ def run_metrics(artificial=False):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
+    # compute the metrics
     cop, m1 = run_metrics(artificial=False)
 
+    # a quick histrogram
     cop.plot.hist(bins=55)
     plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
     plt.show()
@@ -105,6 +107,10 @@ if __name__ == '__main__':
     #highcop = conv.sel(time=t)
     #highcop[0, :, :].plot()
     #plt.show()
+
+    # save as netcdf-files
+    xr.save_mfdataset([xr.Dataset({'cop': cop}), xr.Dataset({'m1': m1})],
+                      ['../../Data/Analysis/cop.nc', '../../Data/Analysis/m1.nc'])
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
