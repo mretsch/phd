@@ -7,7 +7,7 @@ import timeit
 
 
 def precip_stats(rain, stein, period='', group=''):
-    """Calculates area and rate of stratiform and convective precipitation and ratios between them."""
+    """Calculates area and rate of stratiform and convective precipitation and area ratio to scan area."""
     grouped = (period == '')
     rain_conv = rain.where(stein == 2)
     rain_stra = rain.where(stein == 1)
@@ -62,9 +62,9 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
 
-    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
+    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc"
     ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
-    files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_season0910.nc"
+    files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_season*.nc"
     ds_rr = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
 
     # run with 4 parallel threads on my local laptop
@@ -73,13 +73,32 @@ if __name__ == '__main__':
     # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s. No, the factor is 3600, not 86400.
     # And 6 (=600/3600) for 10 minutes, the measurement interval.
     conv_intensity, conv_mean, conv_area_ratio,\
-    stra_intensity, stra_mean, stra_area_ratio = precip_stats(rain=ds_rr.radar_estimated_rain_rate / 6.,
+    stra_intensity, stra_mean, stra_area_ratio = precip_stats(rain=ds_rr.radar_estimated_rain_rate,  # / 6.,
                                                               stein=ds_st.steiner_echo_classification,
-                                                              period='1H',
-                                                              group='hour')
+                                                              period='',
+                                                              group='')
+
+    # add some attributes for convenience to the stats
+    conv_intensity.attrs['units'] = 'mm/hour'
+    conv_mean.attrs['units'] = 'mm/hour'
+    conv_area_ratio.attrs['units'] = ['%']
+    stra_intensity.attrs['units'] = 'mm/hour'
+    stra_mean.attrs['units'] = 'mm/hour'
+    stra_area_ratio.attrs['units'] = ['%']
+
+    # save as netcdf-files
+    path = '/Users/mret0001/Data/Analysis/'
+    xr.save_mfdataset([xr.Dataset({'conv_intensity': conv_intensity}), xr.Dataset({'conv_rr_mean': conv_mean}),
+                       xr.Dataset({'conv_area_ratio': conv_area_ratio}),
+                       xr.Dataset({'stra_intensity': stra_intensity}), xr.Dataset({'stra_rr_mean': stra_mean}),
+                       xr.Dataset({'stra_area_ratio': stra_area_ratio})],
+                      [path+'conv_intensity.nc', path+'conv_rr_mean.nc',
+                       path+'conv_area_ratio.nc',
+                       path+'stra_intensity.nc', path+'stra_rr_mean.nc',
+                       path+'stra_area_ratio.nc'])
 
     # sanity check
-    check = True
+    check = False
     if check:
         r = ds_rr.radar_estimated_rain_rate / 6.
         cr = r.where(ds_st.steiner_echo_classification == 2)

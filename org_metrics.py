@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-from dask.distributed import Client
+# from dask.distributed import Client
 import artificial_fields as af
 
 
@@ -60,13 +60,13 @@ def metric_1(clouds):
 
 
 def run_metrics(artificial=False):
-    c = Client()
+    # c = Client()
 
     if artificial:
         conv_0 = af.art
     else:
-        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc"
-        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 400})
+        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 100})
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     # save as netcdf-files
     xr.save_mfdataset([xr.Dataset({'cop': cop}), xr.Dataset({'m1': m1})],
-                      ['../../Data/Analysis/cop.nc', '../../Data/Analysis/m1.nc'])
+                      ['../../Data/Analysis/cop_new.nc', '../../Data/Analysis/m1_new.nc'])
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
