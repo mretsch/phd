@@ -5,7 +5,8 @@ import timeit
 
 start = timeit.default_timer()
 
-ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/m1_threedays.nc", "/Users/mret0001/Data/Analysis/cop_threedays.nc"])
+ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/m1_season0910.nc",
+                        "/Users/mret0001/Data/Analysis/cop_season0910.nc"])
 
 # get rid of NaNs.
 x = ds.m1.fillna(-1.)
