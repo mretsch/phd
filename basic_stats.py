@@ -111,30 +111,5 @@ if __name__ == '__main__':
         print('Simple 2.5 x 2.5 km square assumption approximated the most precipitating hour by {} %.'
               .format(str((cr_intens_appro/cr_intens_orig).values * 100)))
 
-    # # Even in conv_area_ratio are NaNs, because there are days without raw data.
-    # # con_area_ratio has them filled with NaNs.
-    # x = conv_area_ratio.fillna(0.)
-    # y = conv_intensity.fillna(0.)
-    # # Plot data
-    # fig1 = plt.figure()
-    # plt.plot(x, y, '.r')
-    # plt.xlabel('Conv area ratio')
-    # plt.ylabel('Conv intensity')
-    # # Estimate the 2D histogram
-    # nbins = 10
-    # H, xedges, yedges = np.histogram2d(x, y, bins=nbins)
-    # # H needs to be rotated and flipped
-    # H = np.rot90(H)
-    # H = np.flipud(H)
-    # # Mask zeros
-    # Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
-    # # Plot 2D histogram using pcolor
-    # fig2 = plt.figure()
-    # plt.pcolormesh(xedges, yedges, Hmasked)
-    # plt.xlabel('Conv area ratio')
-    # plt.ylabel('Conv intensity')
-    # cbar = plt.colorbar()
-    # cbar.ax.set_ylabel('Counts')
-
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
