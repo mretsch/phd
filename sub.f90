@@ -1,8 +1,7 @@
-SUBROUTINE first_test(image, n, threshold, output)
-    INTEGER      :: n
-    REAL(KIND=8) :: threshold
-    REAL(KIND=8) :: image (n, n)
-    REAL(KIND=8) :: output(n, n)
+SUBROUTINE first_test(x, y, n_bins, hist_2d)
+    INTEGER      :: n_bins
+    REAL(KIND=8) :: x(n), y(n)
+    REAL(KIND=8) :: hist_2d(n_bins, n_bins)
     !f2py intent(in   )                :: image, threshold
     !f2py intent(hide ), depend(image) :: n = shape(image, 0)
     !f2py intent(  out)                :: output
