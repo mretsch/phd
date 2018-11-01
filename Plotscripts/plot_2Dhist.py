@@ -48,6 +48,7 @@ def histogram_2d(x, y, bins=10):
 
 if __name__ == '__main__':
     ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/m1.nc",
-                            "/Users/mret0001/Data/Analysis/cop.nc"])
+                            "/Users/mret0001/Data/Analysis/cop.nc,",
+                            ])
 
     histogram_2d(ds.m1, ds.cop, bins=160)

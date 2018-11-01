@@ -59,6 +59,18 @@ def metric_1(clouds):
     return a_max / a_all * a_max
 
 
+def n_objects(clouds):
+    if not clouds:
+        return np.nan
+    return len(clouds)
+
+
+def avg_area(clouds):
+    if not clouds:
+        return np.nan
+    return xr.DataArray([c.area for c in clouds]).mean()
+
+
 def run_metrics(artificial=False):
     # c = Client()
 
@@ -84,20 +96,24 @@ def run_metrics(artificial=False):
 
     m1  = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
 
+    o_number = xr.DataArray([n_objects(clouds=cloudlist) for cloudlist in props])
+
+    o_area = xr.DataArray([avg_area(clouds=cloudlist) for cloudlist in props])
+
     # get cop a time dimension.
     cop.coords['time'] = ('dim_0', conv_0.time)
     cop = cop.rename({'dim_0': 'time'})
     m1.coords['time'] = ('dim_0', conv_0.time)
     m1 = m1.rename({'dim_0': 'time'})
 
-    return cop, m1
+    return cop, m1, o_number, o_area
 
 
 if __name__ == '__main__':
     start = timeit.default_timer()
 
     # compute the metrics
-    cop, m1 = run_metrics(artificial=False)
+    cop, m1, o_number, o_area = run_metrics(artificial=False)
 
     # a quick histrogram
     cop.plot.hist(bins=55)
@@ -109,8 +125,16 @@ if __name__ == '__main__':
     #plt.show()
 
     # save as netcdf-files
-    xr.save_mfdataset([xr.Dataset({'cop': cop}), xr.Dataset({'m1': m1})],
-                      ['../../Data/Analysis/cop_new.nc', '../../Data/Analysis/m1_new.nc'])
+    xr.save_mfdataset([xr.Dataset({'cop': cop}),
+                       xr.Dataset({'m1': m1}),
+                       xr.Dataset({'o_number': o_number}),
+                       xr.Dataset({'o_area': o_area})
+                       ],
+                      ['../../Data/Analysis/cop_new.nc',
+                       '../../Data/Analysis/m1_new.nc',
+                       '../../Data/Analysis/o_number_new.nc',
+                       '../../Data/Analysis/o_area_new.nc'
+                       ])
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
