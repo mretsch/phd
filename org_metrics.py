@@ -59,6 +59,18 @@ def metric_1(clouds):
     return a_max / a_all * a_max
 
 
+def n_objects(clouds):
+    if not clouds:
+        return np.nan
+    return len(clouds)
+
+
+def avg_area(clouds):
+    if not clouds:
+        return np.nan
+    return xr.DataArray([c.area for c in clouds]).mean()
+
+
 def run_metrics(artificial=False):
     # c = Client()
 
@@ -82,7 +94,11 @@ def run_metrics(artificial=False):
 
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    m1  = xr.DataArray([    metric_1(clouds=cloudlist) for cloudlist in props])
+    m1  = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
+
+    o_number = xr.DataArray([n_objects(clouds=cloudlist) for cloudlist in props])
+
+    o_area = xr.DataArray([avg_area(clouds=cloudlist) for cloudlist in props])
 
     # get cop a time dimension.
     cop.coords['time'] = ('dim_0', conv_0.time)
@@ -90,13 +106,13 @@ def run_metrics(artificial=False):
     m1.coords['time'] = ('dim_0', conv_0.time)
     m1 = m1.rename({'dim_0': 'time'})
 
-    return cop, m1
+    return cop, m1, o_number, o_area
 
 
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    cop, m1 = run_metrics(artificial=False)
+    cop, m1, o_number, o_area = run_metrics(artificial=False)
 
     cop.plot.hist(bins=55)
     plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
