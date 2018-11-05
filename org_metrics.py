@@ -70,6 +70,12 @@ def avg_area(clouds):
     return xr.DataArray([c.area for c in clouds]).mean()
 
 
+def max_area(clouds):
+    if not clouds:
+        return np.nan
+    return xr.DataArray([c.area for c in clouds]).max()
+
+
 def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc"):
     # c = Client()
 
@@ -91,13 +97,17 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # compute the metrics
-    cop      = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
+    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    m1       = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
+    m1, o_number, o_area = [], [], []
+    for cloudlist in props:
+        m1.append(metric_1(clouds=cloudlist))
+        o_number.append(n_objects(clouds=cloudlist))
+        o_area.append(avg_area(clouds=cloudlist))
 
-    o_number = xr.DataArray([n_objects(clouds=cloudlist) for cloudlist in props])
-
-    o_area   = xr.DataArray([avg_area(clouds=cloudlist) for cloudlist in props])
+    m1 = xr.DataArray(m1)
+    o_number = xr.DataArray(o_number)
+    o_area = xr.DataArray(o_area)
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
@@ -127,7 +137,7 @@ if __name__ == '__main__':
 
     # save metrics as netcdf-files
     for var in ds_metric.variables:
-        xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Data/Analysis/'+var+'_new.nc')
+        xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
 
 #    # set bins to group metric-dataset into its seasons
 #    #TODO does binning work with these time stamps? No!
