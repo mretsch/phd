@@ -1,4 +1,3 @@
-import math as m
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,14 +70,13 @@ def avg_area(clouds):
     return xr.DataArray([c.area for c in clouds]).mean()
 
 
-def run_metrics(artificial=False):
+def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc"):
     # c = Client()
 
     if artificial:
         conv_0 = af.art
     else:
-        files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc"
-        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 100})
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+file, chunks={'time': 100})
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
@@ -92,49 +90,56 @@ def run_metrics(artificial=False):
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
-    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
+    # compute the metrics
+    cop      = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    m1  = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
+    m1       = xr.DataArray([metric_1(clouds=cloudlist) for cloudlist in props])
 
     o_number = xr.DataArray([n_objects(clouds=cloudlist) for cloudlist in props])
 
-    o_area = xr.DataArray([avg_area(clouds=cloudlist) for cloudlist in props])
+    o_area   = xr.DataArray([avg_area(clouds=cloudlist) for cloudlist in props])
 
-    # get cop a time dimension.
-    cop.coords['time'] = ('dim_0', conv_0.time)
-    cop = cop.rename({'dim_0': 'time'})
-    m1.coords['time'] = ('dim_0', conv_0.time)
-    m1 = m1.rename({'dim_0': 'time'})
+    # put together a dataset from the different metrices
+    ds_m = xr.Dataset({'cop': cop,
+                       'm1': m1,
+                       'o_number': o_number,
+                       'o_area': o_area
+                       })
 
-    return cop, m1, o_number, o_area
+    # get metrics a time dimension.
+    ds_m.coords['time'] = ('dim_0', conv_0.time)
+    ds_m = ds_m.rename({'dim_0': 'time'})
+
+    return ds_m
 
 
 if __name__ == '__main__':
     start = timeit.default_timer()
 
     # compute the metrics
-    cop, m1, o_number, o_area = run_metrics(artificial=False)
+    ds_metric = run_metrics(artificial=False,
+                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
-    cop.plot.hist(bins=55)
-    plt.title('COP distribution, sample size: '+str(cop.notnull().sum().values))
+    ds_metric.cop.plot.hist(bins=55)
+    plt.title('COP distribution, sample size: ' + str(ds_metric.cop.notnull().sum().values))
     plt.show()
-    #t = cop.time.where(cop > 0.4, drop=True)
-    #highcop = conv.sel(time=t)
-    #highcop[0, :, :].plot()
-    #plt.show()
 
-    # save as netcdf-files
-    xr.save_mfdataset([xr.Dataset({'cop': cop}),
-                       xr.Dataset({'m1': m1}),
-                       xr.Dataset({'o_number': o_number}),
-                       xr.Dataset({'o_area': o_area})
-                       ],
-                      ['../../Data/Analysis/cop_new.nc',
-                       '../../Data/Analysis/m1_new.nc',
-                       '../../Data/Analysis/o_number_new.nc',
-                       '../../Data/Analysis/o_area_new.nc'
-                       ])
+    # save metrics as netcdf-files
+    for var in ds_metric.variables:
+        xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Data/Analysis/'+var+'_new.nc')
+
+#    # set bins to group metric-dataset into its seasons
+#    #TODO does binning work with these time stamps? No!
+#    season_bins = ['07-2009', '07-2010', '07-2011', '07-2012', '07-2013', '07-2014', '07-2015', '07-2016', '07-2017']
+#    _, ds_seasons = zip(*ds_metric.groupby_bins('time', season_bins))
+#
+#    # save as netcdf-files
+#    years = ['0910', '1011', '1112', '1213', '1314', '1415', '1516', '1617']
+#    paths = []  # ['/Users/mret0001/Data/Analysis/metrics_season'+season+'_new.nc' for season in years]
+#    for i in range(len(ds_seasons)):
+#        paths.append('/Users/mret0001/Data/Analysis/metrics_season'+years[i]+'_new.nc')
+#    xr.save_mfdataset(ds_seasons, paths)
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
