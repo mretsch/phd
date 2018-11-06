@@ -99,21 +99,24 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     # compute the metrics
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs])
 
-    m1, o_number, o_area = [], [], []
+    m1, o_number, o_area, o_area_max = [], [], [], []
     for cloudlist in props:
-        m1.append(metric_1(clouds=cloudlist))
-        o_number.append(n_objects(clouds=cloudlist))
-        o_area.append(avg_area(clouds=cloudlist))
+        # m1.append(metric_1(clouds=cloudlist))
+        # o_number.append(n_objects(clouds=cloudlist))
+        # o_area.append(avg_area(clouds=cloudlist))
+        o_area_max.append(max_area(clouds=cloudlist))
 
     m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
     o_area = xr.DataArray(o_area)
+    o_area_max = xr.DataArray(o_area_max)
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
                        'm1': m1,
                        'o_number': o_number,
-                       'o_area': o_area
+                       'o_area': o_area,
+                       'o_area_max': o_area_max,
                        })
 
     # get metrics a time dimension.
@@ -131,25 +134,13 @@ if __name__ == '__main__':
                             file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
-    ds_metric.cop.plot.hist(bins=55)
-    plt.title('COP distribution, sample size: ' + str(ds_metric.cop.notnull().sum().values))
-    plt.show()
+    # ds_metric.cop.plot.hist(bins=55)
+    # plt.title('COP distribution, sample size: ' + str(ds_metric.cop.notnull().sum().values))
+    # plt.show()
 
     # save metrics as netcdf-files
     for var in ds_metric.variables:
         xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
-
-#    # set bins to group metric-dataset into its seasons
-#    #TODO does binning work with these time stamps? No!
-#    season_bins = ['07-2009', '07-2010', '07-2011', '07-2012', '07-2013', '07-2014', '07-2015', '07-2016', '07-2017']
-#    _, ds_seasons = zip(*ds_metric.groupby_bins('time', season_bins))
-#
-#    # save as netcdf-files
-#    years = ['0910', '1011', '1112', '1213', '1314', '1415', '1516', '1617']
-#    paths = []  # ['/Users/mret0001/Data/Analysis/metrics_season'+season+'_new.nc' for season in years]
-#    for i in range(len(ds_seasons)):
-#        paths.append('/Users/mret0001/Data/Analysis/metrics_season'+years[i]+'_new.nc')
-#    xr.save_mfdataset(ds_seasons, paths)
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
