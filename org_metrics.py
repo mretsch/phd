@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-# from dask.distributed import Client
+from dask.distributed import Client
 import artificial_fields as af
 
 
@@ -77,12 +77,11 @@ def max_area(clouds):
 
 
 def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc"):
-    # c = Client()
 
     if artificial:
         conv_0 = af.art
     else:
-        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+file, chunks={'time': 100})
+        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+file, chunks={'time': 1000})
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
@@ -101,9 +100,9 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     for cloudlist in props:
-        # m1.append(metric_1(clouds=cloudlist))
-        # o_number.append(n_objects(clouds=cloudlist))
-        # o_area.append(avg_area(clouds=cloudlist))
+        m1.append(metric_1(clouds=cloudlist))
+        o_number.append(n_objects(clouds=cloudlist))
+        o_area.append(avg_area(clouds=cloudlist))
         o_area_max.append(max_area(clouds=cloudlist))
 
     m1 = xr.DataArray(m1)
@@ -127,6 +126,7 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
 
 
 if __name__ == '__main__':
+    c = Client()
     start = timeit.default_timer()
 
     # compute the metrics
