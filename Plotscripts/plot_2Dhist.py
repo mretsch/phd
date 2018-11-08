@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import xarray as xr
 import timeit
 import sub as FORTRAN
@@ -30,16 +31,13 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     else:
         # range option gets rid of the original NaNs
         H, xedges, yedges = np.histogram2d(x_series, y_series, bins=bins, range=[[0, x_series.max()], [0, y_series.max()]])
+        x_bin_series = pd.cut(np.array(x_series), xedges, labels=np.linspace(1, bins, bins), right=False).get_values()
+        y_bin_series = pd.cut(np.array(y_series), yedges, labels=np.linspace(1, bins, bins), right=False).get_values()
         # percentages
         Hsum = H.sum()
         H = H / Hsum * 100.
         # H needs to transposed for correct plot
         H = H.T
-        # add dummy data for information only provided by own Fortran subroutine
-        # this might add it:
-        # http://pandas.pydata.org/pandas-docs/version/0.17.1/generated/pandas.cut.html
-        x_bin_series = np.nan
-        y_bin_series = np.nan
 
     # Mask zeros, hence they do not show in plot
     Hmasked = np.ma.masked_where(H == 0, H)
