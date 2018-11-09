@@ -20,8 +20,6 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
         H, xedges, yedges, x_bin_series, y_bin_series = \
             FORTRAN.histogram_2d(x_series, y_series, bins, [0, x_series.max()], [0, y_series.max()])
         # set '-1'-values to NaN instead
-        x_bin_series = np.asfarray(x_bin_series)
-        y_bin_series = np.asfarray(y_bin_series)
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan
         # percentages
