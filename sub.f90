@@ -2,19 +2,19 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
     INTEGER      :: length           ! length of xseries & yseries
     INTEGER      :: nbins            ! number of bins
     INTEGER      :: hist_2d(nbins, nbins)
-    INTEGER      :: xwhichbins(length)
-    INTEGER      :: ywhichbins(length)
     REAL(KIND=8) :: xseries(length)
     REAL(KIND=8) :: yseries(length)
     REAL(KIND=8) :: xbound(2)    ! min and max boundaries for bin selection
     REAL(KIND=8) :: ybound(2)    ! min and max boundaries for bin selection
     REAL(KIND=8) :: xedges(nbins+1)
     REAL(KIND=8) :: yedges(nbins+1)
+    REAL(KIND=8) :: xwhichbins(length)
+    REAL(KIND=8) :: ywhichbins(length)
     !f2py intent(in   )                  :: nbins, xseries, yseries, xbound, ybound
     !f2py intent(hide ), depend(xseries) :: length = shape(xseries, 1)
     !f2py intent(  out)                  :: hist_2d, xedges, yedges, xwhichbins, ywhichbins
 
-    REAL(KIND=8) :: xstep, ystep, ymasked(length)
+    REAL(KIND=8) :: xstep, ystep, ymasked(length), xbins(nbins), ybins(nbins)
     LOGICAL      :: l_mask(length), l_temp
 
     xedges(      1) = xbound(1)
@@ -27,6 +27,11 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
     DO i=2,nbins
         xedges(i) = xedges(i-1) + xstep
         yedges(i) = yedges(i-1) + ystep
+    END DO
+
+    DO n=1,nbins
+        xbins(n) = xedges(n) + (xedges(n+1) - xedges(n)) / 2.
+        ybins(n) = yedges(n) + (yedges(n+1) - yedges(n)) / 2.
     END DO
 
     hist_2d = 0
@@ -43,7 +48,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
             ymasked(k) = MERGE(yseries(k), ybound(1)-1, (xedges(i) .LE. xseries(k)) .AND. (xseries(k) .LT. xedges(i+1)))
         END DO
         ! save which (time) step fell into which bin
-        xwhichbins = MERGE(i, xwhichbins, ymasked .NE. ybound(1)-1)
+        xwhichbins = MERGE(xbins(i), xwhichbins, ymasked .NE. ybound(1)-1)
 
         ! Count ymasked
         DO j=1,nbins-1
@@ -53,7 +58,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
                                      hist_2d(j,i)    ,&
                                      l_temp           )
                 ! save which (time) step fell into which bin
-                ywhichbins(m) = MERGE(j, ywhichbins(m), l_temp)
+                ywhichbins(m) = MERGE(ybins(j), ywhichbins(m), l_temp)
             END DO
         END DO
 
@@ -64,7 +69,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
                                      hist_2d(nbins,i)    ,&
                                      l_temp               )
             ! save which (time) step fell into which bin
-            ywhichbins(m) = MERGE(nbins, ywhichbins(m), l_temp)
+            ywhichbins(m) = MERGE(ybins(nbins), ywhichbins(m), l_temp)
         END DO
     END DO
 
@@ -73,7 +78,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
         ymasked(k) = MERGE(yseries(k), ybound(1)-1, (xedges(nbins) .LE. xseries(k)) .AND. (xseries(k) .LE. xedges(nbins+1)))
     END DO
     ! save which (time) step fell into which bin
-    xwhichbins = MERGE(nbins, xwhichbins, ymasked .NE. ybound(1)-1)
+    xwhichbins = MERGE(xbins(nbins), xwhichbins, ymasked .NE. ybound(1)-1)
     ! Count ymasked
     DO j=1,nbins-1
         DO m=1,length
@@ -82,7 +87,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
                                      hist_2d(j,nbins)    ,&
                                      l_temp               )
             ! save which (time) step fell into which bin
-            ywhichbins(m) = MERGE(j, ywhichbins(m), l_temp)
+            ywhichbins(m) = MERGE(ybins(j), ywhichbins(m), l_temp)
         END DO
     END DO
     ! for the last yseries-bin take all data (LT --> LE)
@@ -92,7 +97,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, hist_2d
                                      hist_2d(nbins,nbins)    ,&
                                      l_temp                   )
         ! save which (time) step fell into which bin
-        ywhichbins(m) = MERGE(nbins, ywhichbins(m), l_temp)
+        ywhichbins(m) = MERGE(ybins(nbins), ywhichbins(m), l_temp)
     END DO
 
     WRITE(*,*) "Hello from lovely FORTRAN."
