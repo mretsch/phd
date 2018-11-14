@@ -65,6 +65,8 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 
 
 if __name__ == '__main__':
+    start = timeit.default_timer()
+
     ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/o_area.nc",
                             "/Users/mret0001/Data/Analysis/o_number.nc",
                             ])
@@ -76,4 +78,7 @@ if __name__ == '__main__':
     fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number, bins=40, x_label='Avg object area', y_label='Number of objects')
     fig_h_2d.show()
 
-    h_2d.to_netcdf('/Users/mret0001/Data/Analysis/o_number_area_hist.nc', mode='w')
+    h_2d.to_netcdf('/Users/mret0001/Desktop/o_number_area_hist.nc', mode='w')
+
+    stop = timeit.default_timer()
+    print('Run Time: ', stop - start)
