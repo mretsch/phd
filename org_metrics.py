@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-from dask.distributed import Client
+# from dask.distributed import Client
 import artificial_fields as af
 
 
@@ -76,7 +76,8 @@ def max_area(clouds):
     return xr.DataArray([c.area for c in clouds]).max()
 
 
-def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc"):
+def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc",
+                splitter=False):
 
     if artificial:
         conv_0 = af.art
@@ -86,6 +87,11 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
         conv_0 = conv.fillna(0.)
+
+    if splitter:
+        length = len(ds_st.lat)
+        x_y_square = np.arange(length**2).reshape(length, length)
+        conv_0 = conv_0 * x_y_square
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
@@ -126,12 +132,13 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
 
 
 if __name__ == '__main__':
-    c = Client()
+    # c = Client()
     start = timeit.default_timer()
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc",
+                            splitter=True)
 
     # a quick histrogram
     # ds_metric.cop.plot.hist(bins=55)
