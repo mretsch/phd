@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 import timeit
-from plot_2Dhist import histogram_2d
 
 start = timeit.default_timer()
 
@@ -23,9 +22,30 @@ overlay.coords['y_bins'] = ('time', y_bins.values)
 
 phase_space_stack = phase_space.stack(z=('x', 'y'))
 
-for i, indices in enumerate(phase_space_stack.z):
-    ind = indices.item()
-    phase_space_stack[i] = overlay.where((overlay['x_bins'] == ind[0]) & (overlay['y_bins'] == ind[1]), drop=True).mean()
+slightly_slower = False
+if slightly_slower:
+    dict_ind = {}
+    for i, binpair in enumerate(phase_space_stack.z):
+        dict_ind[binpair.item()] = i
+
+    # give overlay dimension consisting of the respective x and y bins
+    bin_pairs = list(zip(overlay.x_bins.values, overlay.y_bins.values))
+    new_coord = [dict_ind[bp] if bp in dict_ind.keys() else np.nan for bp in bin_pairs]
+    overlay.coords['bins'] = ('time', new_coord)
+
+    # groupby by the new dimension and .mean
+    overlay_binned = overlay.groupby('bins').mean()
+
+    # order for the new dimension, if not already done by groupby
+
+    # assign to phase_stack and unstack it --> overlay in phase_space
+    index = overlay_binned.bins.values.astype(int)
+    phase_space_stack[index] = overlay_binned.values
+
+else:
+    for i, indices in enumerate(phase_space_stack.z):
+        ind = indices.item()
+        phase_space_stack[i] = overlay.where((overlay['x_bins'] == ind[0]) & (overlay['y_bins'] == ind[1])).mean()
 
 ps_overlay = phase_space_stack.unstack('z')
 
@@ -38,4 +58,4 @@ plt.savefig('/Users/mret0001/Desktop/phase_space.pdf')
 plt.show()
 
 stop = timeit.default_timer()
-print('Run Time: ', stop - start)
+print('Script needed: {} seconds'.format(stop - start))
