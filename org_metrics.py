@@ -135,7 +135,7 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        labeled[i, :, :] = skm.label(scene, background=0, connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
@@ -146,7 +146,8 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
     get_Iorg = True
-    Iorg = xr.DataArray([I_org(pairs=all_pairs[i], objects=props[i]) for i in range(len(all_pairs))]) if get_Iorg else np.nan
+    Iorg = xr.DataArray([I_org(pairs=all_pairs[i], objects=props[i])
+                         for i in range(len(all_pairs))]) if get_Iorg else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     for cloudlist in props:
@@ -182,7 +183,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc",
+                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc",
                             splitter=False)
 
     # a quick histrogram
