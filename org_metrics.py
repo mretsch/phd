@@ -51,7 +51,7 @@ def conv_org_pot(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
-def I_org(pairs, objects):
+def i_org(pairs, objects):
     """I_org according to [Tompkins et al. 2017]"""
     if not pairs.pairlist:
         return np.nan
@@ -114,23 +114,16 @@ def max_area(clouds):
     return xr.DataArray([c.area for c in clouds]).max()
 
 
-def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc",
-                splitter=False):
+def run_metrics(artificial=False, file=""):
 
     if artificial:
         conv_0 = af.art
     else:
-        ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+file, chunks={'time': 1000})
+        ds_st = xr.open_mfdataset(file)
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
         conv_0 = conv.fillna(0.)
-
-    # splittering does not help with Iorg
-    if splitter:
-        length = len(ds_st.lat)
-        x_y_square = np.arange(length**2).reshape(length, length)
-        conv_0 = conv_0 * x_y_square
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
@@ -145,9 +138,9 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     get_cop = False
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
-    get_Iorg = True
-    Iorg = xr.DataArray([I_org(pairs=all_pairs[i], objects=props[i])
-                         for i in range(len(all_pairs))]) if get_Iorg else np.nan
+    get_iorg = True
+    iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
+                         for i in range(len(all_pairs))]) if get_iorg else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     for cloudlist in props:
@@ -164,7 +157,7 @@ def run_metrics(artificial=False, file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
                        'm1': m1,
-                       'Iorg': Iorg,
+                       'Iorg': iorg,
                        'o_number': o_number,
                        'o_area': o_area,
                        'o_area_max': o_area_max,
@@ -183,8 +176,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc",
-                            splitter=False)
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
 
     # a quick histrogram
     # ds_metric.cop.plot.hist(bins=55)
