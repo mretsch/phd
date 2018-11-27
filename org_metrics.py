@@ -51,6 +51,40 @@ def conv_org_pot(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
+def cop_mod(pairs, scaling):
+    """Modified COP to account for different areas of objects."""
+    if not pairs.pairlist:
+        return np.nan
+    diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
+    diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
+    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
+
+    # weight mean by the larger area of an object-pair
+    areas = np.zeros(shape=(2, len(v)))
+    areas[0, :] = [c.area for c in pairs.partner1]
+    areas[1, :] = [c.area for c in pairs.partner2]
+    weights = areas.max(0)
+    mod_v = v * weights
+    return np.sum(mod_v) / np.sum(weights)
+
+
+def cop_largest(pairs, max_id):
+    """COP computed only for largest object."""
+    if not pairs.pairlist:
+        return np.nan
+    diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
+    diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
+    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
+
+    # weight mean by the larger area of an object-pair
+    areas = np.zeros(shape=(2, len(v)))
+    areas[0, :] = [c.area for c in pairs.partner1]
+    areas[1, :] = [c.area for c in pairs.partner2]
+    weights = areas.max(0)
+    mod_v = v * weights
+    return np.sum(mod_v) / np.sum(weights)
+
+
 def i_org(pairs, objects):
     """I_org according to [Tompkins et al. 2017]"""
     if not pairs.pairlist:
@@ -88,6 +122,7 @@ def i_org(pairs, objects):
 
 
 def metric_1(clouds):
+    """First own metric."""
     if not clouds:
         return np.nan
     c_area = xr.DataArray([c.area for c in clouds])
@@ -97,24 +132,37 @@ def metric_1(clouds):
 
 
 def n_objects(clouds):
+    """Number of objects in one scene."""
     if not clouds:
         return np.nan
     return len(clouds)
 
 
 def avg_area(clouds):
+    """Average area of objects in one scene."""
     if not clouds:
         return np.nan
     return xr.DataArray([c.area for c in clouds]).mean()
 
 
 def max_area(clouds):
+    """Area of largest objects in one scene."""
     if not clouds:
         return np.nan
     return xr.DataArray([c.area for c in clouds]).max()
 
 
+def max_area_id(clouds):
+    """skm.regionprops-ID of largest objects in one scene."""
+    if not clouds:
+        return np.nan
+    area = xr.DataArray([c.area for c in clouds])
+    da_clouds = xr.DataArray(clouds)
+    area_max = da_clouds.where(area == area.max(), drop=True)
+    return list(area_max.values)
+
 def run_metrics(artificial=False, file=""):
+    """Compute different organisation metrics on classified data."""
 
     if artificial:
         conv_0 = af.art
@@ -138,7 +186,15 @@ def run_metrics(artificial=False, file=""):
     get_cop = False
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
-    get_iorg = True
+    get_cop_mod = False
+    cop_m = xr.DataArray([cop_mod(pairs=p) for p in all_pairs]) if get_cop_mod else np.nan
+
+    get_cop_largest = True
+    if get_cop_largest:
+        o_max_id = [max_area_id(clouds=cloudlist) for cloudlist in props]
+        cop_l = xr.DataArray([cop_largest(pairs=p, max_id=o_max_id[i]) for i, p in enumerate(all_pairs)])
+
+    get_iorg = False
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
 
@@ -156,6 +212,7 @@ def run_metrics(artificial=False, file=""):
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
+                       'cop_mod': cop_m,
                        'm1': m1,
                        'Iorg': iorg,
                        'o_number': o_number,
@@ -176,7 +233,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc")
 
     # a quick histrogram
     # ds_metric.cop.plot.hist(bins=55)
@@ -184,7 +241,7 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = False
+    save = True
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
