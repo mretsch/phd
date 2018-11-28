@@ -12,6 +12,8 @@ except FileNotFoundError:
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
 art = xr.zeros_like(ds.radar_estimated_rain_rate[:10, :, :])
 
+# the centre: art[0, 58: 58, 58: 58] = 1
+
 # large and small, together
 art[0, 53:64, 46:57] = 1
 art[0, 42:75, 60:93] = 1
@@ -41,4 +43,14 @@ art[5, 53: 64, 28: 39] = 1
 art[5, 42: 75, 42: 75] = 1
 art[5, 53: 64, 78: 89] = 1
 art[5, 78: 89, 53: 64] = 1
+
+# small row
+art[6, 57: 60, 49: 52] = 1
+art[6, 54: 63, 54: 63] = 1
+art[6, 57: 60, 65: 68] = 1
+
+# large row
+art[7, 54: 63, 30: 39] = 1
+art[7, 45: 72, 45: 72] = 1
+art[7, 54: 63, 78: 87] = 1
 

@@ -7,6 +7,7 @@ import skimage.measure as skm
 # from dask.distributed import Client
 import artificial_fields as af
 import scipy as sp
+from multiprocessing import Pool
 
 
 class Pairs:
@@ -75,14 +76,7 @@ def cop_largest(pairs, max_id):
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
-
-    # weight mean by the larger area of an object-pair
-    areas = np.zeros(shape=(2, len(v)))
-    areas[0, :] = [c.area for c in pairs.partner1]
-    areas[1, :] = [c.area for c in pairs.partner2]
-    weights = areas.max(0)
-    mod_v = v * weights
-    return np.sum(mod_v) / np.sum(weights)
+    return np.sum(v) / len(pairs.pairlist)
 
 
 def i_org(pairs, objects):
@@ -161,13 +155,14 @@ def max_area_id(clouds):
     area_max = da_clouds.where(area == area.max(), drop=True)
     return list(area_max.values)
 
-def run_metrics(artificial=False, file=""):
+
+def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
     if artificial:
         conv_0 = af.art
     else:
-        ds_st = xr.open_mfdataset(file)
+        ds_st = xr.open_mfdataset(file, chunks={'time': 1000})
 
         stein  = ds_st.steiner_echo_classification
         conv   = stein.where(stein == 2)
@@ -176,20 +171,20 @@ def run_metrics(artificial=False, file=""):
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0, connectivity=1)
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
         props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # compute the metrics
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
-    get_cop = False
+    get_cop = True
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
-    get_cop_mod = False
-    cop_m = xr.DataArray([cop_mod(pairs=p) for p in all_pairs]) if get_cop_mod else np.nan
+    get_cop_mod = True
+    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
-    get_cop_largest = True
+    get_cop_largest = False
     if get_cop_largest:
         o_max_id = [max_area_id(clouds=cloudlist) for cloudlist in props]
         cop_l = xr.DataArray([cop_largest(pairs=p, max_id=o_max_id[i]) for i, p in enumerate(all_pairs)])
@@ -231,9 +226,25 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
+    multi = True
+    if multi:
+        flist_stein = ['/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1011.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1112.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1213.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1314.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1415.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1516.nc',
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1617.nc',
+                       ]
+
+        with Pool(4) as pool:
+            rslt = list(pool.imap(run_metrics, flist_stein))
+
     # compute the metrics
-    ds_metric = run_metrics(artificial=False,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc")
+    else:
+        ds_metric = run_metrics(artificial=False,
+                                file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Jan10.nc")
 
     # a quick histrogram
     # ds_metric.cop.plot.hist(bins=55)
@@ -241,7 +252,7 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = True
+    save = False
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
