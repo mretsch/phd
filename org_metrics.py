@@ -8,6 +8,7 @@ import skimage.measure as skm
 import artificial_fields as af
 import scipy as sp
 from multiprocessing import Pool
+import netCDF4
 
 
 class Pairs:
@@ -73,10 +74,14 @@ def cop_largest(pairs, max_id):
     """COP computed only for largest object."""
     if not pairs.pairlist:
         return np.nan
-    diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
-    diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
-    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
-    return np.sum(v) / len(pairs.pairlist)
+
+    distances = np.array(pairs.distance())
+    dist_largest = np.array([distances[i] for i, pair in enumerate(pairs.pairlist) if max_id in pair])
+
+    diameter_1 = np.array([c.equivalent_diameter for i, c in enumerate(pairs.partner1) if max_id in pairs.pairlist[i]])
+    diameter_2 = np.array([c.equivalent_diameter for i, c in enumerate(pairs.partner2) if max_id in pairs.pairlist[i]])
+    v = np.array(0.5 * (diameter_1 + diameter_2) / dist_largest)
+    return np.sum(v) / len(v)
 
 
 def i_org(pairs, objects):
@@ -162,11 +167,15 @@ def run_metrics(file="", artificial=False):
     if artificial:
         conv_0 = af.art
     else:
-        ds_st = xr.open_mfdataset(file, chunks={'time': 1000})
+        #  ds_st = xr.open_mfdataset(file, chunks={'time': 1000})
+        #  stein  = ds_st.steiner_echo_classification
+        #  conv   = stein.where(stein == 2)
+        #  conv_0 = conv.fillna(0.)
 
-        stein  = ds_st.steiner_echo_classification
-        conv   = stein.where(stein == 2)
-        conv_0 = conv.fillna(0.)
+        with netCDF4.Dataset(file) as ncid:
+            stein = ncid['steiner_echo_classification'][:]
+        conv_0 = np.zeros(stein.shape, dtype=int)
+        conv_0[stein == 2] = 2
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
@@ -178,10 +187,10 @@ def run_metrics(file="", artificial=False):
 
     # compute the metrics
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
-    get_cop = True
+    get_cop = False
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
-    get_cop_mod = True
+    get_cop_mod = False
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
     get_cop_largest = False
@@ -189,16 +198,17 @@ def run_metrics(file="", artificial=False):
         o_max_id = [max_area_id(clouds=cloudlist) for cloudlist in props]
         cop_l = xr.DataArray([cop_largest(pairs=p, max_id=o_max_id[i]) for i, p in enumerate(all_pairs)])
 
-    get_iorg = False
+    get_iorg = True
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
 
+    get_others = False
     m1, o_number, o_area, o_area_max = [], [], [], []
     for cloudlist in props:
-        m1.append(metric_1(clouds=cloudlist))
-        o_number.append(n_objects(clouds=cloudlist))
-        o_area.append(avg_area(clouds=cloudlist))
-        o_area_max.append(max_area(clouds=cloudlist))
+        m1.append        (metric_1(clouds=cloudlist) if get_others else np.nan)
+        o_number.append  (n_objects(clouds=cloudlist) if get_others else np.nan)
+        o_area.append    (avg_area(clouds=cloudlist) if get_others else np.nan)
+        o_area_max.append(max_area(clouds=cloudlist) if get_others else np.nan)
 
     m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
@@ -209,15 +219,15 @@ def run_metrics(file="", artificial=False):
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
                        'm1': m1,
-                       'Iorg': iorg,
+                       'iorg': iorg,
                        'o_number': o_number,
                        'o_area': o_area,
                        'o_area_max': o_area_max,
                        })
 
     # get metrics a time dimension.
-    ds_m.coords['time'] = ('dim_0', conv_0.time)
-    ds_m = ds_m.rename({'dim_0': 'time'})
+    #  ds_m.coords['time'] = ('dim_0', conv_0.time)
+    #  ds_m = ds_m.rename({'dim_0': 'time'})
 
     return ds_m
 
@@ -228,7 +238,10 @@ if __name__ == '__main__':
 
     multi = True
     if multi:
-        flist_stein = ['/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc',
+        stein_files = [
+                       #'/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Dec09.nc',
+                       #'/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Jan10.nc'
+                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc',
                        '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1011.nc',
                        '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1112.nc',
                        '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1213.nc',
@@ -239,12 +252,12 @@ if __name__ == '__main__':
                        ]
 
         with Pool(4) as pool:
-            rslt = list(pool.imap(run_metrics, flist_stein))
+            metrics = list(pool.imap(run_metrics, stein_files))
 
     # compute the metrics
     else:
         ds_metric = run_metrics(artificial=False,
-                                file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Jan10.nc")
+                                file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc")
 
     # a quick histrogram
     # ds_metric.cop.plot.hist(bins=55)
@@ -252,8 +265,14 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = False
-    if save:
+    save = True
+    if multi and save:
+        # concetanate all output into one dataset
+        ds_metric = xr.concat(metrics, dim='dim_0')
+        # get metrics a time dimension
+        ds = xr.open_mfdataset(stein_files)
+        ds_metric.coords['time'] = ('dim_0', ds.time)
+        ds_metric = ds_metric.rename({'dim_0': 'time'})
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
 
