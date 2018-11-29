@@ -72,8 +72,8 @@ if __name__ == '__main__':
 
     # Rain rate units are mm/hour, dividing by 86400 yields mm/s == kg/m^2s. No, the factor is 3600, not 86400.
     # And 6 (=600/3600) for 10 minutes, the measurement interval.
-    conv_intensity, conv_mean, conv_area_ratio,\
-    stra_intensity, stra_mean, stra_area_ratio = precip_stats(rain=ds_rr.radar_estimated_rain_rate,  # / 6.,
+    conv_intensity, conv_mean, conv_area,\
+    stra_intensity, stra_mean, stra_area = precip_stats(rain=ds_rr.radar_estimated_rain_rate,  # / 6.,
                                                               stein=ds_st.steiner_echo_classification,
                                                               period='',
                                                               group='')
@@ -81,21 +81,21 @@ if __name__ == '__main__':
     # add some attributes for convenience to the stats
     conv_intensity.attrs['units'] = 'mm/hour'
     conv_mean.attrs['units'] = 'mm/hour'
-    conv_area_ratio.attrs['units'] = ['%']
+    conv_area.attrs['units'] = '% of radar area'
     stra_intensity.attrs['units'] = 'mm/hour'
     stra_mean.attrs['units'] = 'mm/hour'
-    stra_area_ratio.attrs['units'] = ['%']
+    stra_area.attrs['units'] = '% of radar area'
 
     # save as netcdf-files
-    path = '/Users/mret0001/Data/Analysis/'
+    path = '/Users/mret0001/Desktop/'
     xr.save_mfdataset([xr.Dataset({'conv_intensity': conv_intensity}), xr.Dataset({'conv_rr_mean': conv_mean}),
-                       xr.Dataset({'conv_area_ratio': conv_area_ratio}),
+                       xr.Dataset({'conv_area': conv_area}),
                        xr.Dataset({'stra_intensity': stra_intensity}), xr.Dataset({'stra_rr_mean': stra_mean}),
-                       xr.Dataset({'stra_area_ratio': stra_area_ratio})],
+                       xr.Dataset({'stra_area': stra_area})],
                       [path+'conv_intensity.nc', path+'conv_rr_mean.nc',
-                       path+'conv_area_ratio.nc',
+                       path+'conv_area.nc',
                        path+'stra_intensity.nc', path+'stra_rr_mean.nc',
-                       path+'stra_area_ratio.nc'])
+                       path+'stra_area.nc'])
 
     # sanity check
     check = False
