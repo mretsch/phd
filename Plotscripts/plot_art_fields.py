@@ -7,7 +7,6 @@ import org_metrics as om
 ds_metric = om.run_metrics(artificial=True)
 
 cop = ds_metric.cop
-m1 = ds_metric.m1
 cop_mod = ds_metric.cop_mod
 
 fig = plt.figure(figsize=(9, 8))

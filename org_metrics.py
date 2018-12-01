@@ -7,8 +7,6 @@ import skimage.measure as skm
 # from dask.distributed import Client
 import artificial_fields as af
 import scipy as sp
-from multiprocessing import Pool
-import netCDF4
 
 
 class Pairs:
@@ -67,7 +65,8 @@ def cop_mod(pairs, scaling):
     areas[1, :] = [c.area for c in pairs.partner2]
     weights = areas.max(0)
     mod_v = v * weights
-    return np.sum(mod_v) / np.sum(weights)
+    # return np.sum(mod_v) / np.sum(weights)
+    return np.sum(mod_v) / len(mod_v)
 
 
 def cop_largest(pairs, max_id):
@@ -164,18 +163,19 @@ def max_area_id(clouds):
 def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
+    get_cop = False
+    get_cop_mod = True
+    get_cop_largest = False
+    get_iorg = False
+    get_others = False
+
     if artificial:
         conv_0 = af.art
     else:
-        #  ds_st = xr.open_mfdataset(file, chunks={'time': 1000})
-        #  stein  = ds_st.steiner_echo_classification
-        #  conv   = stein.where(stein == 2)
-        #  conv_0 = conv.fillna(0.)
-
-        with netCDF4.Dataset(file) as ncid:
-            stein = ncid['steiner_echo_classification'][:]
-        conv_0 = np.zeros(stein.shape, dtype=int)
-        conv_0[stein == 2] = 2
+        ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
+        stein  = ds_st.steiner_echo_classification
+        conv   = stein.where(stein == 2)
+        conv_0 = conv.fillna(0.)
 
     props = []
     labeled = np.zeros_like(conv_0).astype(int)
@@ -186,29 +186,31 @@ def run_metrics(file="", artificial=False):
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # compute the metrics
+
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
-    get_cop = False
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
-    get_cop_mod = False
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
-    get_cop_largest = False
     if get_cop_largest:
         o_max_id = [max_area_id(clouds=cloudlist) for cloudlist in props]
         cop_l = xr.DataArray([cop_largest(pairs=p, max_id=o_max_id[i]) for i, p in enumerate(all_pairs)])
 
-    get_iorg = True
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
 
-    get_others = False
     m1, o_number, o_area, o_area_max = [], [], [], []
-    for cloudlist in props:
-        m1.append        (metric_1(clouds=cloudlist) if get_others else np.nan)
-        o_number.append  (n_objects(clouds=cloudlist) if get_others else np.nan)
-        o_area.append    (avg_area(clouds=cloudlist) if get_others else np.nan)
-        o_area_max.append(max_area(clouds=cloudlist) if get_others else np.nan)
+    if get_others:
+        for cloudlist in props:
+            m1.append        (metric_1 (clouds=cloudlist))
+            o_number.append  (n_objects(clouds=cloudlist))
+            o_area.append    (avg_area (clouds=cloudlist))
+            o_area_max.append(max_area (clouds=cloudlist))
+    else:
+        m1 = np.nan
+        o_number = np.nan
+        o_area = np.nan
+        o_area_max = np.nan
 
     m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
@@ -226,8 +228,8 @@ def run_metrics(file="", artificial=False):
                        })
 
     # get metrics a time dimension.
-    #  ds_m.coords['time'] = ('dim_0', conv_0.time)
-    #  ds_m = ds_m.rename({'dim_0': 'time'})
+    ds_m.coords['time'] = ('dim_0', conv_0.time)
+    ds_m = ds_m.rename({'dim_0': 'time'})
 
     return ds_m
 
@@ -236,43 +238,18 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
-    multi = True
-    if multi:
-        stein_files = [
-                       #'/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Dec09.nc',
-                       #'/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_Jan10.nc'
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1011.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1112.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1213.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1314.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1415.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1516.nc',
-                       '/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season1617.nc',
-                       ]
-
-        with Pool(4) as pool:
-            metrics = list(pool.imap(run_metrics, stein_files))
-
     # compute the metrics
-    else:
-        ds_metric = run_metrics(artificial=False,
-                                file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc")
+    ds_metric = run_metrics(artificial=False,
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
-    # ds_metric.cop.plot.hist(bins=55)
+    # ds_metric.cop_mod.plot.hist(bins=55)
     # plt.title('COP distribution, sample size: ' + str(ds_metric.cop.notnull().sum().values))
     # plt.show()
 
     # save metrics as netcdf-files
     save = True
-    if multi and save:
-        # concetanate all output into one dataset
-        ds_metric = xr.concat(metrics, dim='dim_0')
-        # get metrics a time dimension
-        ds = xr.open_mfdataset(stein_files)
-        ds_metric.coords['time'] = ('dim_0', ds.time)
-        ds_metric = ds_metric.rename({'dim_0': 'time'})
+    if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
 

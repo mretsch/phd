@@ -14,13 +14,13 @@ art = xr.zeros_like(ds.radar_estimated_rain_rate[:10, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 
-# large and small, together
-art[0, 53:64, 46:57] = 1
-art[0, 42:75, 60:93] = 1
-
 # large and small, apart
-art[1, 53:64, 16: 27] = 1
-art[1, 42:75, 80:113] = 1
+art[0, 53:64, 16: 27] = 1
+art[0, 42:75, 80:113] = 1
+
+# large and small, together
+art[1, 53:64, 46:57] = 1
+art[1, 42:75, 60:93] = 1
 
 # small and small, together
 art[2, 53:64, 47:58] = 1
