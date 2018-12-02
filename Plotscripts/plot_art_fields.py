@@ -30,16 +30,16 @@ for i, axis in enumerate(grid):
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     if i != 4:
         axis.text(x=129.8, y=-13, s='COP = ' + str(cop[i].round(decimals=2).values)
-                                    + '\nCAM = ' + str(cop_mod[i].round(decimals=2).values),
+                                    + '\nCAW = ' + str(cop_mod[i].round(decimals=2).values),
                   verticalalignment='top')
     else:
         axis.text(x=129.8, y=-13, s='COP ='
-                                    + '\nCAM =',
+                                    + '\nCAW =',
                   verticalalignment='top')
         axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
                                     + '\n' + str(cop_mod[i].round(decimals=2).values),
                   verticalalignment='top')
         # axis.tick_params(labelbottom=True, labelleft=True)
 
-plt.savefig('/Users/mret0001/Desktop/cop_m1_artificial.pdf')
+plt.savefig('/Users/mret0001/Desktop/artificial.pdf')
 plt.show()

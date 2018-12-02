@@ -65,22 +65,8 @@ def cop_mod(pairs, scaling):
     areas[1, :] = [c.area for c in pairs.partner2]
     weights = areas.max(0)
     mod_v = v * weights
-    # return np.sum(mod_v) / np.sum(weights)
-    return np.sum(mod_v) / len(mod_v)
-
-
-def cop_largest(pairs, max_id):
-    """COP computed only for largest object."""
-    if not pairs.pairlist:
-        return np.nan
-
-    distances = np.array(pairs.distance())
-    dist_largest = np.array([distances[i] for i, pair in enumerate(pairs.pairlist) if max_id in pair])
-
-    diameter_1 = np.array([c.equivalent_diameter for i, c in enumerate(pairs.partner1) if max_id in pairs.pairlist[i]])
-    diameter_2 = np.array([c.equivalent_diameter for i, c in enumerate(pairs.partner2) if max_id in pairs.pairlist[i]])
-    v = np.array(0.5 * (diameter_1 + diameter_2) / dist_largest)
-    return np.sum(v) / len(v)
+    return np.sum(mod_v) / np.sum(weights)
+    # return np.sum(mod_v) / len(mod_v)
 
 
 def i_org(pairs, objects):
@@ -163,7 +149,7 @@ def max_area_id(clouds):
 def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
-    get_cop = False
+    get_cop = True
     get_cop_mod = True
     get_cop_largest = False
     get_iorg = False
@@ -191,10 +177,6 @@ def run_metrics(file="", artificial=False):
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
-
-    if get_cop_largest:
-        o_max_id = [max_area_id(clouds=cloudlist) for cloudlist in props]
-        cop_l = xr.DataArray([cop_largest(pairs=p, max_id=o_max_id[i]) for i, p in enumerate(all_pairs)])
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
@@ -248,7 +230,7 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = True
+    save = False
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')

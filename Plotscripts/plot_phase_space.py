@@ -7,10 +7,10 @@ start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
 ds_ps = xr.open_dataset('/Users/mret0001/Data/Analysis/o_number_area_hist.nc')
-ds = xr.open_dataset('/Users/mret0001/Data/Analysis/conv_intensity.nc')
+ds = xr.open_dataset('/Users/mret0001/Data/Analysis/cop_times_area.nc')
 
 phase_space = ds_ps.hist_2D
-overlay = ds.conv_intensity
+overlay = ds.cop_mod  # .where(ds.cop_mod < 60.)
 
 # two time series with bin for each time step
 x_bins = ds_ps.x_series_bins
@@ -50,10 +50,13 @@ else:
 ps_overlay = phase_space_stack.unstack('z')
 
 # the actual plotting commands
-the_plot = ps_overlay.T.plot()
+the_plot = ps_overlay.T.plot(cmap='tab20c')
 plt.xlabel('Average object area [pixels]')
 plt.ylabel('Number of objects')
-the_plot.colorbar.set_label('Convective rain intensity [mm/h]')
+the_plot.colorbar.set_label('COP $\cdot$ larger object area [1]')
+# the_plot.colorbar.set_label('Total convective area weighted COP [1]')
+# the_plot.colorbar.set_label('COP')
+
 plt.savefig('/Users/mret0001/Desktop/phase_space.pdf')
 plt.show()
 
