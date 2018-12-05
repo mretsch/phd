@@ -7,6 +7,8 @@ import skimage.measure as skm
 # from dask.distributed import Client
 import artificial_fields as af
 import scipy as sp
+import shapely.geometry as spg
+import shapely.ops as spo
 
 
 class Pairs:
@@ -18,7 +20,7 @@ class Pairs:
         else:
             self.partner1, self.partner2 = [], []
 
-    def distance(self):
+    def distance_regionprops(self):
         """The distance in units of pixels between two centroids of cloud-objects found by skm.regionprops."""
 
         dist_x = np.array([c.centroid[1] for c in self.partner1]) - \
@@ -26,6 +28,11 @@ class Pairs:
         dist_y = np.array([c.centroid[0] for c in self.partner1]) - \
                  np.array([c.centroid[0] for c in self.partner2])
         return np.sqrt(dist_x**2 + dist_y**2)
+
+    def distance_shapely(self):
+        """The shortest distance in units of pixels between edges of cloud-objects given by shapely.MultiPolygon."""
+
+        return np.array([self.pairlist[i][0].distance(self.pairlist[i][1]) for i in range(len(self.pairlist))])
 
 
 def gen_shortlist(start, inlist):
@@ -47,7 +54,7 @@ def conv_org_pot(pairs):
         return np.nan
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
-    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
+    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
     return np.sum(v) / len(pairs.pairlist)
 
 
@@ -57,7 +64,7 @@ def cop_mod(pairs, scaling):
         return np.nan
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
-    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance())
+    v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
 
     # weight mean by the larger area of an object-pair
     areas = np.zeros(shape=(2, len(v)))
@@ -65,8 +72,19 @@ def cop_mod(pairs, scaling):
     areas[1, :] = [c.area for c in pairs.partner2]
     weights = areas.max(0)
     mod_v = v * weights
-    return np.sum(mod_v) / np.sum(weights)
-    # return np.sum(mod_v) / len(mod_v)
+    return np.sum(mod_v) / np.sum(weights)  # Bethan's proposal
+    # return np.sum(mod_v) / len(mod_v)  # my modification
+
+
+def cop_shape(pairs):
+    """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
+    two objects divided by their shortest distance."""
+    if not pairs.pairlist:
+        return np.nan
+    area_1 = np.array([c.area for c in pairs.partner1])
+    area_2 = np.array([c.area for c in pairs.partner2])
+    v = np.array((area_1 + area_2) / pairs.distance_shapely())
+    return np.sum(v) / len(v)
 
 
 def i_org(pairs, objects):
@@ -74,7 +92,7 @@ def i_org(pairs, objects):
     if not pairs.pairlist:
         return np.nan
 
-    distances = np.array(pairs.distance())
+    distances = np.array(pairs.distance_regionprops())
     dist_min = []
 
     faster = True
@@ -149,9 +167,9 @@ def max_area_id(clouds):
 def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
-    get_cop = True
-    get_cop_mod = True
-    get_cop_largest = False
+    get_cop = False
+    get_cop_mod = False
+    get_cop_shape = True
     get_iorg = False
     get_others = False
 
@@ -164,10 +182,24 @@ def run_metrics(file="", artificial=False):
         conv_0 = conv.fillna(0.)
 
     props = []
-    labeled = np.zeros_like(conv_0).astype(int)
+    m_poly = []
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-        props.append(skm.regionprops(labeled[i, :, :]))
+        # get contours to create shapely polygons
+        contours = skm.find_contours(scene, level=1, fully_connected='high')
+
+        polygons = [[[tuple(coord) for coord in poly], []] for poly in contours]
+
+        # fill holes in large objects, to avoid false polygons, pairs & and distances,
+        # by taking the union of all polygons
+        m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
+        # get rid of non-iterable Polygon class, which fails for generators later
+        props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
+
+        # m_poly[0].distance(m_poly[1])
+        # m.sqrt((abs(108.5 - 72.5)) ** 2 + (abs(38 - 43)) ** 2)
+
+        # labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        # props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
@@ -177,6 +209,8 @@ def run_metrics(file="", artificial=False):
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
+
+    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_pairs]) if get_cop_shape else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
@@ -202,6 +236,7 @@ def run_metrics(file="", artificial=False):
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
+                       'cop_shape': cop_s,
                        'm1': m1,
                        'iorg': iorg,
                        'o_number': o_number,
@@ -230,7 +265,7 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = False
+    save = True
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
