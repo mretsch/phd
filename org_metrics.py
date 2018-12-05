@@ -189,11 +189,17 @@ def run_metrics(file="", artificial=False):
 
         polygons = [[[tuple(coord) for coord in poly], []] for poly in contours]
 
-        # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
+        # fill holes in large objects, to avoid false polygons, pairs & and distances,
+        # by taking the union of all polygons
         m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
-
         # get rid of non-iterable Polygon class, which fails for generators later
         props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
+
+        # m_poly[0].distance(m_poly[1])
+        # m.sqrt((abs(108.5 - 72.5)) ** 2 + (abs(38 - 43)) ** 2)
+
+        # labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        # props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
