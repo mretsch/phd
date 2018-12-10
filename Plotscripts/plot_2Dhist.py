@@ -18,13 +18,16 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     # takes seconds
     if l_fortran:
         H, xedges, yedges, x_bin_series, y_bin_series = \
-            FORTRAN.histogram_2d(x_series, y_series, bins, [0, x_series.max()], [0, y_series.max()])
+            FORTRAN.histogram_2d(x_series, y_series, bins, [0, x_series.max()], [0, y_series.max()], 50)
         # set '-1'-values to NaN instead
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan
+        # cut out pixels comprised of than 50 cases
+        # H = np.ma.masked_less(H, 50)
         # percentages
         Hsum = H.sum()
         H = H / Hsum * 100.
+        # H = np.ma.masked_greater(H, 50)  # the cut-away part
     # takes minutes
     else:
         # range option gets rid of the original NaNs
@@ -53,7 +56,7 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(xedges, yedges, Hmasked)
+    plt.pcolormesh(xedges, yedges, Hmasked)  # , cmap='tab20c')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     cbar = plt.colorbar()
