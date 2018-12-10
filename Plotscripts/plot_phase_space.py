@@ -7,10 +7,10 @@ start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
 ds_ps = xr.open_dataset('/Users/mret0001/Desktop/o_number_area_hist.nc')
-ds = xr.open_dataset('/Users/mret0001/Data/Analysis/cop_shape.nc')
+ds = xr.open_dataset('/Users/mret0001/Data/Analysis/cop.nc')
 
 phase_space = ds_ps.hist_2D
-overlay = ds.cop_shape  # .where(ds.cop_mod < 60.)
+overlay = ds.cop  # .where(ds.cop_mod < 60.)
 
 # two time series with bin for each time step
 x_bins = ds_ps.x_series_bins

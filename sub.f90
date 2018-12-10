@@ -1,4 +1,5 @@
-SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, cut_off, hist_2d, xedges, yedges, xwhichbins, ywhichbins)
+SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, l_cut_off, cut_off, &
+                        hist_2d, xedges, yedges, xwhichbins, ywhichbins)
     INTEGER      :: length           ! length of xseries & yseries
     INTEGER      :: nbins            ! number of bins
     INTEGER      :: hist_2d(nbins, nbins)
@@ -11,7 +12,8 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, cut_off
     REAL(KIND=8) :: yedges(nbins+1)
     REAL(KIND=8) :: xwhichbins(length)
     REAL(KIND=8) :: ywhichbins(length)
-    !f2py intent(in   )                  :: nbins, xseries, yseries, xbound, ybound, cut_off
+    LOGICAL      :: l_cut_off
+    !f2py intent(in   )                  :: nbins, xseries, yseries, xbound, ybound, l_cut_off, cut_off
     !f2py intent(hide ), depend(xseries) :: length = shape(xseries, 1)
     !f2py intent(  out)                  :: hist_2d, xedges, yedges, xwhichbins, ywhichbins
 
@@ -103,25 +105,27 @@ SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, cut_off
     END DO
 
     ! Get rid of (time) steps which contributed only to weakly populated pixels
-    DO m=1,length
-        !x_indx = FINDLOC(xbins, xwhichbins(m), 1)
-        !y_indx = FINDLOC(ybins, ywhichbins(m), 1)
-        tmp = ABS(xbins - xwhichbins(m))
-        x_indx = MINLOC(tmp, 1)
-        tmp = ABS(ybins - ywhichbins(m))
-        y_indx = MINLOC(tmp, 1)
-        IF (hist_2d(y_indx, x_indx) .LT. cut_off) THEN
-            ywhichbins(m) = -1.
-            xwhichbins(m) = -1.
-        END IF
-    END DO
-    DO i=1,nbins
-        DO j=1,nbins
-            IF (hist_2d(j,i) .LT. cut_off) THEN
-                hist_2d(j,i) = 0
+    IF (l_cut_off) THEN
+        DO m=1,length
+            !x_indx = FINDLOC(xbins, xwhichbins(m), 1)
+            !y_indx = FINDLOC(ybins, ywhichbins(m), 1)
+            tmp = ABS(ybins - ywhichbins(m))
+            y_indx = MINLOC(tmp, 1)
+            tmp = ABS(xbins - xwhichbins(m))
+            x_indx = MINLOC(tmp, 1)
+            IF (hist_2d(y_indx, x_indx) .LT. cut_off) THEN
+                ywhichbins(m) = -1.
+                xwhichbins(m) = -1.
             END IF
         END DO
-    END DO
+        DO i=1,nbins
+            DO j=1,nbins
+                IF (hist_2d(j,i) .LT. cut_off) THEN
+                    hist_2d(j,i) = 0
+                END IF
+            END DO
+        END DO
+    END IF
 
     WRITE(*,*) "Hello from lovely FORTRAN."
 
