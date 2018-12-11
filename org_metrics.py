@@ -167,7 +167,7 @@ def max_area_id(clouds):
 def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
-    get_cop = False
+    get_cop = True
     get_cop_mod = False
     get_cop_shape = True
     get_iorg = False
@@ -181,20 +181,31 @@ def run_metrics(file="", artificial=False):
         conv   = stein.where(stein == 2)
         conv_0 = conv.fillna(0.)
 
+    # find objects via skm.label, to use skm.regionprops
     props = []
-    m_poly = []
+    labeled = np.zeros_like(conv_0).astype(int)
     for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        # get contours to create shapely polygons
-        contours = skm.find_contours(scene, level=1, fully_connected='high')
-
-        polygons = [[[tuple(coord) for coord in poly], []] for poly in contours]
-
-        # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
-        m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
-        # get rid of non-iterable Polygon class, which fails for generators later
-        props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        props.append(skm.regionprops(labeled[i, :, :]))
 
     all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+
+    # find objects via skm.find_contours, to use shapely
+    if get_cop_shape:
+        props = []
+        m_poly = []
+        for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+            # get contours to create shapely polygons
+            contours = skm.find_contours(scene, level=1, fully_connected='high')
+
+            polygons = [[[tuple(coord) for coord in poly], []] for poly in contours]
+
+            # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
+            m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
+            # get rid of non-iterable Polygon class, which fails for generators later
+            props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
+
+        all_pairs_s = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # compute the metrics
 
@@ -203,7 +214,7 @@ def run_metrics(file="", artificial=False):
 
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
-    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_pairs]) if get_cop_shape else np.nan
+    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_pairs_s]) if get_cop_shape else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan

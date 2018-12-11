@@ -18,7 +18,9 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     # takes seconds
     if l_fortran:
         H, xedges, yedges, x_bin_series, y_bin_series = \
-            FORTRAN.histogram_2d(x_series, y_series, bins, [0, x_series.max()], [0, y_series.max()], False, 50)
+            FORTRAN.histogram_2d(xseries=x_series, yseries=y_series, nbins=bins,
+                                 xbound=[0, x_series.max()], ybound=[0, y_series.max()],
+                                 l_cut_off=True, cut_off=50)
         # set '-1'-values to NaN instead
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan

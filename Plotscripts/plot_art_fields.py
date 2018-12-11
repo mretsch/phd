@@ -6,7 +6,7 @@ import org_metrics as om
 
 ds_metric = om.run_metrics(artificial=True)
 
-cop = ds_metric.cop_shape
+cop = ds_metric.cop
 cop_s = ds_metric.cop_shape
 
 fig = plt.figure(figsize=(9, 8))
@@ -30,11 +30,11 @@ for i, axis in enumerate(grid):
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     if i != 4:
         axis.text(x=129.8, y=-13, s='COP = ' + str(cop[i].round(decimals=2).values)
-                                    + '\nSOP = ' + str(cop_s[i].round(decimals=2).values),
+                                    + '\nSIC = ' + str(cop_s[i].round(decimals=2).values),
                   verticalalignment='top')
     else:
         axis.text(x=129.8, y=-13, s='COP ='
-                                    + '\nSOP =',
+                                    + '\nSIC =',
                   verticalalignment='top')
         axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
                                     + '\n' + str(cop_s[i].round(decimals=2).values),
