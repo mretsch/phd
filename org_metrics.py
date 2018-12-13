@@ -178,30 +178,49 @@ def run_metrics(file="", artificial=False):
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
         stein  = ds_st.steiner_echo_classification
-        conv   = stein.where(stein == 2)
-        conv_0 = conv.fillna(0.)
+        # conv   = stein.where(stein == 2)
+        # conv_0 = conv.fillna(0.)
+        conv_0 = stein.fillna(2.)
+        conv_0 = conv_0.where(conv_0 != 1, other=0)
 
-    # find objects via skm.label, to use skm.regionprops
-    props = []
-    labeled = np.zeros_like(conv_0).astype(int)
-    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-        props.append(skm.regionprops(labeled[i, :, :]))
+    # # find objects via skm.label, to use skm.regionprops
+    # props = []
+    # labeled = np.zeros_like(conv_0).astype(int)
+    # for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+    #     labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+    #     props.append(skm.regionprops(labeled[i, :, :]))
 
-    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+    # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
     if get_cop_shape:
-        props = []
-        m_poly = []
+        props, m_poly, in_poly = [], [], []
         for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
             # get contours to create shapely polygons
             contours = skm.find_contours(scene, level=1, fully_connected='high')
 
-            polygons = [[[tuple(coord) for coord in poly], []] for poly in contours]
+            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
 
             # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
-            m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
+            # m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
+            m_poly.append(spg.MultiPolygon(coordinates))
+
+            # get rid of objects touching the boundary of radar area
+            circs = np.array([len(p.exterior.coords) for p in m_poly[-1]])
+            if circs.any():
+                oc_index = circs.argmax()
+                outer_contour = m_poly[-1][oc_index]
+                try:
+                    m_poly_less = spg.MultiPolygon([m_poly[-1][:oc_index], m_poly[-1][oc_index+1:]])
+                except IndexError:
+                    m_poly_less = spg.MultiPolygon([m_poly[-1][:oc_index]])
+                #TODO sort m_poly via the Within class (shapely docu) and the get rid of last (or first) object.
+                # Sort takes too long...!
+                in_poly.append([p for p in m_poly_less if p.within(outer_contour)])
+            else:
+                in_poly.append([])
+
+
             # get rid of non-iterable Polygon class, which fails for generators later
             props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
 
@@ -261,7 +280,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
