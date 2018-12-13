@@ -169,7 +169,7 @@ def run_metrics(file="", artificial=False):
 
     get_cop = True
     get_cop_mod = False
-    get_cop_shape = True
+    get_sic = True
     get_iorg = False
     get_others = False
 
@@ -183,17 +183,17 @@ def run_metrics(file="", artificial=False):
         conv_0 = stein.fillna(2.)
         conv_0 = conv_0.where(conv_0 != 1, other=0)
 
-    # # find objects via skm.label, to use skm.regionprops
-    # props = []
-    # labeled = np.zeros_like(conv_0).astype(int)
-    # for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-    #     labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-    #     props.append(skm.regionprops(labeled[i, :, :]))
+    # find objects via skm.label, to use skm.regionprops
+    props = []
+    labeled = np.zeros_like(conv_0).astype(int)
+    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        props.append(skm.regionprops(labeled[i, :, :]))
 
-    # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
-    if get_cop_shape:
+    if get_sic:
         props, m_poly, in_poly = [], [], []
         for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
             # get contours to create shapely polygons
@@ -201,37 +201,34 @@ def run_metrics(file="", artificial=False):
 
             circs = np.array([len(c) for c in contours])
             if circs.any():
-                # determine outer contour with longest circumference
+                # single out outer contour with longest circumference
                 oc_index = circs.argmax()
                 outer_contour = contours.pop(oc_index)
                 oc_poly = spg.Polygon(outer_contour)
 
                 coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
-
-                # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
-                # m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
                 m_poly.append(spg.MultiPolygon(coordinates))
 
-                # get rid of left-over contours just outside the boundary
-                # in_poly.append([p for p in m_poly[-1] if p.within(oc_poly)])
+                # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
                 in_poly.append(spo.unary_union([p for p in m_poly[-1] if p.within(oc_poly)]))
             else:
                 in_poly.append([])
 
             # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
             props = list((p if type(p) == spg.MultiPolygon else [] for p in in_poly))
-            # props = in_poly
 
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
+    # --------------------
     # compute the metrics
+    # --------------------
 
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
 
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
-    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if get_cop_shape else np.nan
+    sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if get_sic else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
@@ -257,7 +254,7 @@ def run_metrics(file="", artificial=False):
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
-                       'cop_shape': cop_s,
+                       'sic': sic,
                        'm1': m1,
                        'iorg': iorg,
                        'o_number': o_number,
