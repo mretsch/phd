@@ -48,6 +48,31 @@ def gen_tuplelist(inlist):
             yield item1, item2
 
 
+def gen_shapely_objects(array):
+    """List of shapely objects without objects touching boundary."""
+    for field in array:
+        # get contours to create shapely polygons
+        contours = skm.find_contours(field, level=1, fully_connected='high')
+
+        circs = np.array([len(c) for c in contours])
+        if circs.any():
+            # single out outer contour with longest circumference
+            oc_index = circs.argmax()
+            outer_contour = contours.pop(oc_index)
+            oc_poly = spg.Polygon(outer_contour)
+
+            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
+            m_poly = spg.MultiPolygon(coordinates)
+
+            # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
+            in_poly = spo.unary_union([p for p in m_poly if p.within(oc_poly)])
+        else:
+            in_poly = []
+
+        # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
+        yield in_poly if type(in_poly) == spg.MultiPolygon else []
+
+
 def conv_org_pot(pairs):
     """The Convective Organisation Potential according to [White et al. 2018]"""
     if not pairs.pairlist:
@@ -167,7 +192,7 @@ def max_area_id(clouds):
 def run_metrics(file="", artificial=False):
     """Compute different organisation metrics on classified data."""
 
-    get_cop = True
+    get_cop = False
     get_cop_mod = False
     get_sic = True
     get_iorg = False
@@ -184,38 +209,18 @@ def run_metrics(file="", artificial=False):
         conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    props = []
-    labeled = np.zeros_like(conv_0).astype(int)
-    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-        props.append(skm.regionprops(labeled[i, :, :]))
+    # props = []
+    # labeled = np.zeros_like(conv_0).astype(int)
+    # for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+    #     labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+    #     props.append(skm.regionprops(labeled[i, :, :]))
 
-    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+    # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
     if get_sic:
-        props, m_poly, in_poly = [], [], []
-        for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-            # get contours to create shapely polygons
-            contours = skm.find_contours(scene, level=1, fully_connected='high')
 
-            circs = np.array([len(c) for c in contours])
-            if circs.any():
-                # single out outer contour with longest circumference
-                oc_index = circs.argmax()
-                outer_contour = contours.pop(oc_index)
-                oc_poly = spg.Polygon(outer_contour)
-
-                coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
-                m_poly.append(spg.MultiPolygon(coordinates))
-
-                # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
-                in_poly.append(spo.unary_union([p for p in m_poly[-1] if p.within(oc_poly)]))
-            else:
-                in_poly.append([])
-
-            # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
-            props = list((p if type(p) == spg.MultiPolygon else [] for p in in_poly))
+        props = list(gen_shapely_objects(conv_0))
 
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
@@ -275,7 +280,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(artificial=False,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
