@@ -199,32 +199,30 @@ def run_metrics(file="", artificial=False):
             # get contours to create shapely polygons
             contours = skm.find_contours(scene, level=1, fully_connected='high')
 
-            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
-
-            # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
-            # m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
-            m_poly.append(spg.MultiPolygon(coordinates))
-
-            # get rid of objects touching the boundary of radar area
-            circs = np.array([len(p.exterior.coords) for p in m_poly[-1]])
+            circs = np.array([len(c) for c in contours])
             if circs.any():
+                # determine outer contour with longest circumference
                 oc_index = circs.argmax()
-                outer_contour = m_poly[-1][oc_index]
-                try:
-                    m_poly_less = spg.MultiPolygon([m_poly[-1][:oc_index], m_poly[-1][oc_index+1:]])
-                except IndexError:
-                    m_poly_less = spg.MultiPolygon([m_poly[-1][:oc_index]])
-                #TODO sort m_poly via the Within class (shapely docu) and the get rid of last (or first) object.
-                # Sort takes too long...!
-                in_poly.append([p for p in m_poly_less if p.within(outer_contour)])
+                outer_contour = contours.pop(oc_index)
+                oc_poly = spg.Polygon(outer_contour)
+
+                coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
+
+                # fill holes in objects, to avoid false polygons, pairs & and distances, by taking union of all polygons
+                # m_poly.append(spo.unary_union(spg.MultiPolygon(polygons)))
+                m_poly.append(spg.MultiPolygon(coordinates))
+
+                # get rid of left-over contours just outside the boundary
+                # in_poly.append([p for p in m_poly[-1] if p.within(oc_poly)])
+                in_poly.append(spo.unary_union([p for p in m_poly[-1] if p.within(oc_poly)]))
             else:
                 in_poly.append([])
 
+            # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
+            props = list((p if type(p) == spg.MultiPolygon else [] for p in in_poly))
+            # props = in_poly
 
-            # get rid of non-iterable Polygon class, which fails for generators later
-            props = list((p if type(p) == spg.MultiPolygon else [] for p in m_poly))
-
-        all_pairs_s = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+        all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # compute the metrics
 
@@ -233,7 +231,7 @@ def run_metrics(file="", artificial=False):
 
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
 
-    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_pairs_s]) if get_cop_shape else np.nan
+    cop_s = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if get_cop_shape else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
                          for i in range(len(all_pairs))]) if get_iorg else np.nan
