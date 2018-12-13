@@ -48,6 +48,25 @@ def gen_tuplelist(inlist):
             yield item1, item2
 
 
+def gen_shapely_objects_all(array):
+    """List of shapely objects with objects touching boundary."""
+    for field in array:
+        # get contours to create shapely polygons
+        contours = skm.find_contours(field, level=1, fully_connected='high')
+
+        circs = np.array([len(c) for c in contours])
+        if circs.any():
+            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
+
+            # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
+            in_poly = spo.unary_union(spg.MultiPolygon(coordinates))
+        else:
+            in_poly = []
+
+        # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
+        yield in_poly if type(in_poly) == spg.MultiPolygon else []
+
+
 def gen_shapely_objects(array):
     """List of shapely objects without objects touching boundary."""
     for field in array:
@@ -189,16 +208,10 @@ def max_area_id(clouds):
     return list(area_max.values)
 
 
-def run_metrics(file="", artificial=False):
+def run_metrics(file="", switch={}):
     """Compute different organisation metrics on classified data."""
 
-    get_cop = False
-    get_cop_mod = False
-    get_sic = True
-    get_iorg = False
-    get_others = False
-
-    if artificial:
+    if switch['artificial']:
         conv_0 = af.art
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
@@ -218,9 +231,11 @@ def run_metrics(file="", artificial=False):
     # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
-    if get_sic:
-
-        props = list(gen_shapely_objects(conv_0))
+    if switch['sic']:
+        if switch['boundary']:
+            props = list(gen_shapely_objects_all(conv_0))
+        else:
+            props = list(gen_shapely_objects    (conv_0))
 
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
@@ -229,17 +244,17 @@ def run_metrics(file="", artificial=False):
     # --------------------
 
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
-    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if get_cop else np.nan
+    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if switch['cop'] else np.nan
 
-    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if get_cop_mod else np.nan
+    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if switch['cop_mod'] else np.nan
 
-    sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if get_sic else np.nan
+    sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
-                         for i in range(len(all_pairs))]) if get_iorg else np.nan
+                         for i in range(len(all_pairs))]) if switch['iorg'] else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
-    if get_others:
+    if switch['basics']:
         for cloudlist in props:
             m1.append        (metric_1 (clouds=cloudlist))
             o_number.append  (n_objects(clouds=cloudlist))
@@ -278,8 +293,12 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
+    switch = {'artificial': False,
+              'cop': False, 'cop_mod': False, 'sic': True, 'iorg': False, 'basics': False,
+              'boundary': False}
+
     # compute the metrics
-    ds_metric = run_metrics(artificial=False,
+    ds_metric = run_metrics(switch=switch,
                             file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
