@@ -313,12 +313,12 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False,
-              'cop': True, 'cop_mod': False, 'sic': False, 'iorg': False, 'basics': True,
+              'cop': False, 'cop_mod': True, 'sic': False, 'iorg': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)

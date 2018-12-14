@@ -19,17 +19,16 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     if l_fortran:
         H, xedges, yedges, x_bin_series, y_bin_series = \
             FORTRAN.histogram_2d(xseries=x_series, yseries=y_series, nbins=bins,
-                                 xbound=[0, x_series.max()], ybound=[0, y_series.max()],
+                                 xbound=[0, 200.], ybound=[0, 80],
                                  l_cut_off=True, cut_off=50)
         # set '-1'-values to NaN instead
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan
-        # cut out pixels comprised of than 50 cases
-        # H = np.ma.masked_less(H, 50)
+        # the cut-away part
+        # H = np.ma.masked_greater(H, 50)
         # percentages
         Hsum = H.sum()
         H = H / Hsum * 100.
-        # H = np.ma.masked_greater(H, 50)  # the cut-away part
     # takes minutes
     else:
         # range option gets rid of the original NaNs
@@ -72,8 +71,8 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/o_area.nc",
-                            "/Users/mret0001/Data/Analysis/o_number.nc",
+    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
+                            "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
                             ])
 
     # don't take scenes where convection is 1 pixel large only
