@@ -216,10 +216,13 @@ def run_metrics(file="", switch={}):
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
         stein  = ds_st.steiner_echo_classification
-        # conv   = stein.where(stein == 2)
-        # conv_0 = conv.fillna(0.)
-        conv_0 = stein.fillna(2.)
-        conv_0 = conv_0.where(conv_0 != 1, other=0)
+        if switch['boundary']:
+            conv   = stein.where(stein == 2)
+            conv_0 = conv.fillna(0.)
+        else:
+            # fill surrounding with convective pixels
+            conv_0 = stein.fillna(2.)
+            conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
     # props = []
@@ -229,6 +232,17 @@ def run_metrics(file="", switch={}):
     #     props.append(skm.regionprops(labeled[i, :, :]))
 
     # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+
+    props = []
+    labeled = np.zeros_like(conv_0).astype(int)
+    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
+        props.append(skm.regionprops(labeled[i, :, :]))
+        box_areas = np.array([o.bbox_area for o in props[-1]])
+        oo_index = box_areas.argmax()
+        del props[-1][oo_index]
+
+    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
     if switch['sic']:
@@ -294,7 +308,7 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False,
-              'cop': False, 'cop_mod': False, 'sic': True, 'iorg': False, 'basics': False,
+              'cop': True, 'cop_mod': False, 'sic': False, 'iorg': False, 'basics': True,
               'boundary': False}
 
     # compute the metrics
