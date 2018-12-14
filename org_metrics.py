@@ -36,20 +36,20 @@ class Pairs:
 
 
 def gen_shortlist(start, inlist):
-    """List of iterator items starting at 'start', not 0."""
+    """Iterator items starting at 'start', not 0."""
     for j in range(start, len(inlist)):
         yield inlist[j]
 
 
 def gen_tuplelist(inlist):
-    """List of tuples of all possible unique pairs in an iterator."""
+    """Tuples of all possible unique pairs in an iterator."""
     for i, item1 in enumerate(inlist):
         for item2 in gen_shortlist(start=i + 1, inlist=inlist):
             yield item1, item2
 
 
 def gen_shapely_objects_all(array):
-    """List of shapely objects with objects touching boundary."""
+    """Shapely objects including objects touching radar boundary."""
     for field in array:
         # get contours to create shapely polygons
         contours = skm.find_contours(field, level=1, fully_connected='high')
@@ -68,7 +68,7 @@ def gen_shapely_objects_all(array):
 
 
 def gen_shapely_objects(array):
-    """List of shapely objects without objects touching boundary."""
+    """Shapely objects without objects touching radar boundary."""
     for field in array:
         # get contours to create shapely polygons
         contours = skm.find_contours(field, level=1, fully_connected='high')
@@ -90,6 +90,24 @@ def gen_shapely_objects(array):
 
         # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
         yield in_poly if type(in_poly) == spg.MultiPolygon else []
+
+
+def gen_regionprops_objects_all(array):
+    """skimage.regionprops objects including objects touching radar boundary."""
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        yield skm.regionprops(labeled)
+
+
+def gen_regionprops_objects(array):
+    """skimage.regionprops objects without objects touching radar boundary."""
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        objects = skm.regionprops(labeled)
+        box_areas = np.array([o.bbox_area for o in objects])
+        outer_index = box_areas.argmax()
+        del objects[outer_index]
+        yield objects
 
 
 def conv_org_pot(pairs):
@@ -225,24 +243,12 @@ def run_metrics(file="", switch={}):
             conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    # props = []
-    # labeled = np.zeros_like(conv_0).astype(int)
-    # for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-    #     labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-    #     props.append(skm.regionprops(labeled[i, :, :]))
-
-    # all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
-
-    props = []
-    labeled = np.zeros_like(conv_0).astype(int)
-    for i, scene in enumerate(conv_0):  # conv has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled[i, :, :] = skm.label(scene, background=0)  # , connectivity=1)
-        props.append(skm.regionprops(labeled[i, :, :]))
-        box_areas = np.array([o.bbox_area for o in props[-1]])
-        oo_index = box_areas.argmax()
-        del props[-1][oo_index]
-
-    all_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics']:
+        if switch['boundary']:
+            props = list(gen_regionprops_objects_all(conv_0))
+        else:
+            props = list(gen_regionprops_objects    (conv_0))
+        all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
     if switch['sic']:
@@ -250,7 +256,6 @@ def run_metrics(file="", switch={}):
             props = list(gen_shapely_objects_all(conv_0))
         else:
             props = list(gen_shapely_objects    (conv_0))
-
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # --------------------
@@ -258,14 +263,14 @@ def run_metrics(file="", switch={}):
     # --------------------
 
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
-    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_pairs]) if switch['cop'] else np.nan
+    cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_r_pairs]) if switch['cop'] else np.nan
 
-    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_pairs]) if switch['cop_mod'] else np.nan
+    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_r_pairs]) if switch['cop_mod'] else np.nan
 
     sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    iorg = xr.DataArray([i_org(pairs=all_pairs[i], objects=props[i])
-                         for i in range(len(all_pairs))]) if switch['iorg'] else np.nan
+    iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
+                         for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     if switch['basics']:
@@ -313,7 +318,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
