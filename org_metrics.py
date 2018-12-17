@@ -9,6 +9,7 @@ import artificial_fields as af
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
+from collections import defaultdict
 
 
 class Pairs:
@@ -228,6 +229,7 @@ def max_area_id(clouds):
 
 def run_metrics(file="", switch={}):
     """Compute different organisation metrics on classified data."""
+    switch = defaultdict(lambda: False, switch)
 
     if switch['artificial']:
         conv_0 = af.art

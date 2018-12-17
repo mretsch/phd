@@ -4,10 +4,11 @@ import numpy as np
 import artificial_fields as af
 import org_metrics as om
 
-ds_metric = om.run_metrics(artificial=True)
+
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'cop': True, 'sic': True})
 
 cop = ds_metric.cop
-cop_s = ds_metric.cop_shape
+sic = ds_metric.sic
 
 fig = plt.figure(figsize=(9, 8))
 grid = AxesGrid(fig, 111,
@@ -28,16 +29,16 @@ for i, axis in enumerate(grid):
     axis.tick_params(bottom=False, labelbottom=False,
                      left=False, labelleft=False)
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
-    if i != 4:
+    if i != 5:
         axis.text(x=129.8, y=-13, s='COP = ' + str(cop[i].round(decimals=2).values)
-                                    + '\nSIC = ' + str(cop_s[i].round(decimals=2).values),
+                                    + '\nSIC = ' + str(sic[i].round(decimals=2).values),
                   verticalalignment='top')
     else:
         axis.text(x=129.8, y=-13, s='COP ='
                                     + '\nSIC =',
                   verticalalignment='top')
         axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
-                                    + '\n' + str(cop_s[i].round(decimals=2).values),
+                                    + '\n' + str(sic[i].round(decimals=2).values),
                   verticalalignment='top')
         # axis.tick_params(labelbottom=True, labelleft=True)
 

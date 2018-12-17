@@ -6,7 +6,8 @@ import timeit
 start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
-ds_ps = xr.open_dataset('/Users/mret0001/Desktop/o_number_area_hist.nc')
+#ds_ps = xr.open_dataset('/Users/mret0001/Desktop/o_number_area_hist.nc')
+ds_ps = xr.open_dataset('/Users/mret0001/Data/Analysis/No_Boundary/o_number_area_gt50_hist.nc')
 ds    = xr.open_dataset('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
 
 phase_space = ds_ps.hist_2D
@@ -50,7 +51,7 @@ else:
 ps_overlay = phase_space_stack.unstack('z')
 
 # the actual plotting commands
-the_plot = ps_overlay.T.plot()  # cmap='tab20c')
+the_plot = ps_overlay.T.plot(cmap='inferno')  # cmap='tab20c')
 plt.xlabel('Average object area [pixels]')
 plt.ylabel('Number of objects')
 the_plot.colorbar.set_label('SIC')

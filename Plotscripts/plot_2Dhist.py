@@ -71,8 +71,8 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
-                            "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
+    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/o_area.nc",
+                            "/Users/mret0001/Data/Analysis/With_Boundary/o_number.nc",
                             ])
 
     # don't take scenes where convection is 1 pixel large only
