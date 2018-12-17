@@ -150,6 +150,39 @@ def cop_shape(pairs):
     return np.sum(v) / len(v)
 
 
+
+
+def _shape_independent_cop(func):  # , pairs=None):
+    """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
+    two objects divided by their shortest distance."""
+
+    def wrapper(pairs):
+        if not pairs.pairlist:
+            return np.nan
+        area_1 = np.array([c.area for c in pairs.partner1])
+        area_2 = np.array([c.area for c in pairs.partner2])
+
+        # modify area_1 and area_2 for ESO.
+        # func()
+
+        v = np.array((area_1 + area_2) / pairs.distance_shapely())
+        result = np.sum(v) / len(v)
+
+        r = func(result)
+        print(r)
+
+    return wrapper
+
+
+
+@_shape_independent_cop
+def elliptic_shape_organisation(argument):
+    # all_r_pairs (.regionprops) have to be available here
+    # pseudo:
+    # area_1 = area_1 * pairs.partner1.major_axis_length
+    return argument * 2
+
+
 def i_org(pairs, objects):
     """I_org according to [Tompkins et al. 2017]"""
     if not pairs.pairlist:
@@ -258,7 +291,16 @@ def run_metrics(file="", switch={}):
             props = list(gen_shapely_objects_all(conv_0))
         else:
             props = list(gen_shapely_objects    (conv_0))
+
+
+
+        global all_s_pairs
+
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+
+
+
+
 
     # --------------------
     # compute the metrics
@@ -314,13 +356,13 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
-    switch = {'artificial': False,
-              'cop': False, 'cop_mod': True, 'sic': False, 'iorg': False, 'basics': False,
-              'boundary': False}
+    switch = {'artificial': True,
+              'cop': False, 'cop_mod': True, 'sic': True, 'iorg': False, 'basics': False,
+              'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
