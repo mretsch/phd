@@ -151,9 +151,9 @@ def _shape_independent_cop(in_func):
         if r_pairs:
             # modify area_1 and area_2. SIC --> ESO.
             ma_mi_1, ma_mi_2 = in_func(r_pairs)
-            v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely())
+            v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
         else:
-            v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely())
+            v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
 
         return np.mean(v)
     return wrapper
@@ -351,12 +351,12 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False,
-              'cop': False, 'cop_mod': False, 'sic': True, 'eso': True, 'iorg': False, 'basics': False,
-              'boundary': True}
+              'cop': True, 'cop_mod': False, 'sic': True, 'eso': False, 'iorg': False, 'basics': False,
+              'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
@@ -364,7 +364,7 @@ if __name__ == '__main__':
     # plt.show()
 
     # save metrics as netcdf-files
-    save = True
+    save = False
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
