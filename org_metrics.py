@@ -1,15 +1,15 @@
+import collections
+import functools
 import math as m
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-# from dask.distributed import Client
 import artificial_fields as af
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
-from collections import defaultdict
 
 
 class Pairs:
@@ -121,7 +121,7 @@ def conv_org_pot(pairs):
     return np.sum(v) / len(pairs.pairlist)
 
 
-def cop_mod(pairs, scaling):
+def cop_mod(pairs):
     """Modified COP to account for different areas of objects."""
     if not pairs.pairlist:
         return np.nan
@@ -139,69 +139,45 @@ def cop_mod(pairs, scaling):
     # return np.sum(mod_v) / len(mod_v)  # my modification
 
 
-def cop_shape(pairs):
-    """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
-    two objects divided by their shortest distance."""
-    if not pairs.pairlist:
-        return np.nan
-    area_1 = np.array([c.area for c in pairs.partner1])
-    area_2 = np.array([c.area for c in pairs.partner2])
-    v = np.array((area_1 + area_2) / pairs.distance_shapely())
-    return np.sum(v) / len(v)
+def _shape_independent_cop(in_func):
 
-
-
-
-#def outer(pairs):
-
-def _shape_independent_cop(in_func):  # , pairs=None):
-    """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
-    two objects divided by their shortest distance."""
-
-    def wrapper(s_pairs, r_pairs):
+    @functools.wraps(in_func)
+    def wrapper(s_pairs, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
         area_1 = np.array([c.area for c in s_pairs.partner1])
         area_2 = np.array([c.area for c in s_pairs.partner2])
 
-        # modify area_1 and area_2 for ESO.
-        # func()
-        # if func_has_arguments:
-        #     area_1 * func()
         if r_pairs:
-            ma_mi_1, ma_mi_2 = in_func()
+            # modify area_1 and area_2. SIC --> ESO.
+            ma_mi_1, ma_mi_2 = in_func(r_pairs)
+            v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely())
+        else:
+            v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely())
 
-        v = np.array((area_1 + area_2) / s_pairs.distance_shapely())
-        result = np.sum(v) / len(v)
-
-        #r = func(result)
-        print(ma_mi_1)
-
+        return np.mean(v)
     return wrapper
 
-#    return _shape_independent_cop
 
-
-#@outer()
-#def sic():
-#    pass
-
-
-# test = _shape_independent_cop(elliptic_shape_organisation)
-# test(all_s_pairs[0])
-#@outer(all_s_pairs)
 @_shape_independent_cop
-def elliptic_shape_organisation(s_pairs, r_pairs):
-    # all_r_pairs (.regionprops) have to be available here
+def shape_independent_cop():
+    """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
+    two objects divided by their shortest distance."""
+    pass
+
+
+@_shape_independent_cop
+def elliptic_shape_organisation(r_pairs):
+    """Decorated with SIC, to compute ESO. Multiply object area of SIC with its major-minor axis ratio first."""
     major, minor = [], []
     for c in r_pairs.partner1:
-        major = major.append(c.major_axis_length)
-        minor = minor.append(c.minor_axis_length)
+        major.append(c.major_axis_length)
+        minor.append(c.minor_axis_length)
     ma_mi_1 = np.array(major) / np.array(minor)
     major, minor = [], []
     for c in r_pairs.partner2:
-        major = major.append(c.major_axis_length)
-        minor = minor.append(c.minor_axis_length)
+        major.append(c.major_axis_length)
+        minor.append(c.minor_axis_length)
     ma_mi_2 = np.array(major) / np.array(minor)
     return ma_mi_1, ma_mi_2
 
@@ -285,7 +261,7 @@ def max_area_id(clouds):
 
 def run_metrics(file="", switch={}):
     """Compute different organisation metrics on classified data."""
-    switch = defaultdict(lambda: False, switch)
+    switch = collections.defaultdict(lambda: False, switch)
 
     if switch['artificial']:
         conv_0 = af.art
@@ -301,7 +277,7 @@ def run_metrics(file="", switch={}):
             conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics']:
+    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics'] or switch['eso']:
         if switch['boundary']:
             props = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -309,21 +285,12 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic']:
+    if switch['sic'] or switch['eso']:
         if switch['boundary']:
             props = list(gen_shapely_objects_all(conv_0))
         else:
             props = list(gen_shapely_objects    (conv_0))
-
-
-
-        global all_s_pairs
-
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
-
-
-
-
 
     # --------------------
     # compute the metrics
@@ -332,11 +299,12 @@ def run_metrics(file="", switch={}):
     # conv_org_pot needs 94% of time (tested with splitter=True for data of one day). Because pairs.distance.
     cop = xr.DataArray([conv_org_pot(pairs=p) for p in all_r_pairs]) if switch['cop'] else np.nan
 
-    cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_r_pairs]) if switch['cop_mod'] else np.nan
+    cop_m = xr.DataArray([cop_mod(pairs=p) for p in all_r_pairs]) if switch['cop_mod'] else np.nan
 
-    sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
+    sic = xr.DataArray([shape_independent_cop(p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    eso = xr.DataArray([elliptic_shape_organisation(pairs=p) for p in all_s_pairs]) if switch['eso'] else np.nan
+    eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
@@ -363,6 +331,7 @@ def run_metrics(file="", switch={}):
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
                        'sic': sic,
+                       'eso': eso,
                        'm1': m1,
                        'iorg': iorg,
                        'o_number': o_number,
@@ -381,13 +350,13 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
-    switch = {'artificial': True,
-              'cop': False, 'cop_mod': True, 'sic': True, 'iorg': False, 'basics': False,
+    switch = {'artificial': False,
+              'cop': False, 'cop_mod': False, 'sic': True, 'eso': True, 'iorg': False, 'basics': False,
               'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
