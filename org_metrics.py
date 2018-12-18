@@ -152,35 +152,58 @@ def cop_shape(pairs):
 
 
 
-def _shape_independent_cop(func):  # , pairs=None):
+#def outer(pairs):
+
+def _shape_independent_cop(in_func):  # , pairs=None):
     """COP-analogous metric independent of shape and accounting for different areas of objects. The area sum of
     two objects divided by their shortest distance."""
 
-    def wrapper(pairs):
-        if not pairs.pairlist:
+    def wrapper(s_pairs, r_pairs):
+        if not s_pairs.pairlist:
             return np.nan
-        area_1 = np.array([c.area for c in pairs.partner1])
-        area_2 = np.array([c.area for c in pairs.partner2])
+        area_1 = np.array([c.area for c in s_pairs.partner1])
+        area_2 = np.array([c.area for c in s_pairs.partner2])
 
         # modify area_1 and area_2 for ESO.
         # func()
+        # if func_has_arguments:
+        #     area_1 * func()
+        if r_pairs:
+            ma_mi_1, ma_mi_2 = in_func()
 
-        v = np.array((area_1 + area_2) / pairs.distance_shapely())
+        v = np.array((area_1 + area_2) / s_pairs.distance_shapely())
         result = np.sum(v) / len(v)
 
-        r = func(result)
-        print(r)
+        #r = func(result)
+        print(ma_mi_1)
 
     return wrapper
 
+#    return _shape_independent_cop
 
 
+#@outer()
+#def sic():
+#    pass
+
+
+# test = _shape_independent_cop(elliptic_shape_organisation)
+# test(all_s_pairs[0])
+#@outer(all_s_pairs)
 @_shape_independent_cop
-def elliptic_shape_organisation(argument):
+def elliptic_shape_organisation(s_pairs, r_pairs):
     # all_r_pairs (.regionprops) have to be available here
-    # pseudo:
-    # area_1 = area_1 * pairs.partner1.major_axis_length
-    return argument * 2
+    major, minor = [], []
+    for c in r_pairs.partner1:
+        major = major.append(c.major_axis_length)
+        minor = minor.append(c.minor_axis_length)
+    ma_mi_1 = np.array(major) / np.array(minor)
+    major, minor = [], []
+    for c in r_pairs.partner2:
+        major = major.append(c.major_axis_length)
+        minor = minor.append(c.minor_axis_length)
+    ma_mi_2 = np.array(major) / np.array(minor)
+    return ma_mi_1, ma_mi_2
 
 
 def i_org(pairs, objects):
@@ -312,6 +335,8 @@ def run_metrics(file="", switch={}):
     cop_m = xr.DataArray([cop_mod(pairs=p, scaling=1) for p in all_r_pairs]) if switch['cop_mod'] else np.nan
 
     sic = xr.DataArray([cop_shape(pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
+
+    eso = xr.DataArray([elliptic_shape_organisation(pairs=p) for p in all_s_pairs]) if switch['eso'] else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
