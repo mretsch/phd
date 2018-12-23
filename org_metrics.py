@@ -173,12 +173,18 @@ def elliptic_shape_organisation(r_pairs):
     for c in r_pairs.partner1:
         major.append(c.major_axis_length)
         minor.append(c.minor_axis_length)
-    ma_mi_1 = np.array(major) / np.array(minor)
+    ma, mi = np.array(major), np.array(minor)
+    ma = np.where(ma == 0., 1., ma)
+    mi = np.where(mi == 0., 1., mi)
+    ma_mi_1 = ma / mi
     major, minor = [], []
     for c in r_pairs.partner2:
         major.append(c.major_axis_length)
         minor.append(c.minor_axis_length)
-    ma_mi_2 = np.array(major) / np.array(minor)
+    ma, mi = np.array(major), np.array(minor)
+    ma = np.where(ma == 0., 1., ma)
+    mi = np.where(mi == 0., 1., mi)
+    ma_mi_2 = ma / mi
     return ma_mi_1, ma_mi_2
 
 
@@ -351,12 +357,12 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False,
-              'cop': True, 'cop_mod': False, 'sic': True, 'eso': False, 'iorg': False, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'eso': True, 'iorg': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
