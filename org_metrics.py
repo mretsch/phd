@@ -84,6 +84,7 @@ def gen_shapely_objects(array):
             coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
             m_poly = spg.MultiPolygon(coordinates)
 
+            # only take objects inside of outermost (largest circumference) contour.
             # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
             in_poly = spo.unary_union([p for p in m_poly if p.within(oc_poly)])
         else:
@@ -309,8 +310,19 @@ def run_metrics(file="", switch={}):
 
     sic = xr.DataArray([shape_independent_cop(p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
-                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
+    #eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
+    #                    for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
+
+    eso = []
+    counter = 0
+    if switch['eso']:
+        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs)):
+            print(counter)
+            eso.append(elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p))
+            counter += 1
+        eso = xr.DataArray(eso)
+    else:
+        eso.append(np.nan)
 
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
@@ -362,7 +374,8 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            # file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Desktop/shapely_rprops_test.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
