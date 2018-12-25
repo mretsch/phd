@@ -51,47 +51,31 @@ def gen_tuplelist(inlist):
 
 def gen_shapely_objects_all(array):
     """Shapely objects including objects touching radar boundary."""
-    for field in array:
-        # get contours to create shapely polygons
-        contours = skm.find_contours(field, level=1, fully_connected='high')
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        objects = skm.regionprops(labeled)
 
-        circs = np.array([len(c) for c in contours])
-        if circs.any():
-            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
-
-            # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
-            in_poly = spo.unary_union(spg.MultiPolygon(coordinates))
-        else:
-            in_poly = []
-
-        # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
-        yield in_poly if type(in_poly) == spg.MultiPolygon else []
-
-
-def gen_shapely_objects_old(array):
-    """Shapely objects without objects touching radar boundary."""
-    for field in array:
-        # get contours to create shapely polygons
-        contours = skm.find_contours(field, level=1, fully_connected='high')
-
-        circs = np.array([len(c) for c in contours])
-        if circs.any():
-            # single out outer contour with longest circumference
-            oc_index = circs.argmax()
-            outer_contour = contours.pop(oc_index)
-            oc_poly = spg.Polygon(outer_contour)
-
-            coordinates = [[[tuple(coord) for coord in poly], []] for poly in contours]
+        # apply find_contours on each regionprop object, then make shapely out of it. To have correct order.
+        polys = []
+        for o in objects:
+            # the layout and properties of the regionprops-object
+            layout = o.image.astype(int)
+            bounds = o.bbox
+            y_length = bounds[2] - bounds[0]
+            x_length = bounds[3] - bounds[1]
+            # prepare bed to put layout in
+            bed = np.zeros(shape=(y_length + 2, x_length + 2))
+            bed[1:-1, 1:-1] = layout
+            # get the contour needed for shapely
+            contour = skm.find_contours(bed, level=0.5, fully_connected='high')
+            # increase coordinates to get placement inside of original input array right
+            contour[0][:, 0] += bounds[0]  # increase y-values
+            contour[0][:, 1] += bounds[1]  # increase x-values
+            # sugar coating needed for shapely (contour only consists of 1 object...anyways)
+            coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
             m_poly = spg.MultiPolygon(coordinates)
-
-            # only take objects inside of outermost (largest circumference) contour.
-            # fill object holes, to avoid false polygons, pairs & and distances, by taking union of all polygons
-            in_poly = spo.unary_union([p for p in m_poly if p.within(oc_poly)])
-        else:
-            in_poly = []
-
-        # get rid of non-iterable Polygon class, i.e. single objects, which fail for generators later
-        yield in_poly if type(in_poly) == spg.MultiPolygon else []
+            polys.append(m_poly[0])
+        yield polys
 
 
 def gen_shapely_objects(array):
@@ -404,7 +388,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
 
     # save metrics as netcdf-files
     save = True
