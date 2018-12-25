@@ -101,6 +101,46 @@ def gen_regionprops_objects_all(array):
         yield skm.regionprops(labeled)
 
 
+def gen_shapely_objects_2(array):
+    """Shapely objects without objects touching radar boundary."""
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        objects = skm.regionprops(labeled)
+        box_areas = np.array([o.bbox_area for o in objects])
+        outer_index = box_areas.argmax()
+        del objects[outer_index]
+
+        # apply find_contours on each regionprop object, then make shapely out of it. To have correct order.
+        polys = []
+        for o in objects:
+            # the layout and properties of the regionprops-object
+            layout = o.image.astype(int)
+            bounds = o.bbox
+            y_length = bounds[2] - bounds[0]
+            x_length = bounds[3] - bounds[1]
+            # prepare bed to put layout in
+            bed = np.zeros(shape=(y_length + 2, x_length + 2))
+            bed[1:-1, 1:-1] = layout
+            # get the contour needed for shapely
+            contour = skm.find_contours(bed, level=0.5, fully_connected='high')
+            # increase coordinates to get placement inside of original input array right
+            contour[0][:, 0] += bounds[0]  # increase y-values
+            contour[0][:, 1] += bounds[1]  # increase x-values
+            # sugar coating needed for shapely (contour only consists of 1 object...anyways)
+            coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
+            m_poly = spg.MultiPolygon(coordinates)
+            # i2 = all_r_pairs[28].partner2[5].image.astype(int)
+            # bed = np.zeros(shape=(6, 10))
+            # bed[1:-1, 1:-1] = i2
+            # contour = skm.find_contours(bed, level=0.5, fully_connected='high' )
+            # contour[0][:, 0] += 69 # increase y-values (derived from bbox)
+            # contour[0][:, 1] +=  9 # increase x-values (derived from bbox)
+            # coordinates = [[[tuple(coord) for coord in poly], []] for poly in contour]
+            # m_poly = spg.MultiPolygon(coordinates)
+            polys.append(m_poly[0])
+        yield polys
+
+
 def gen_regionprops_objects(array):
     """skimage.regionprops objects without objects touching radar boundary."""
     for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
@@ -146,8 +186,9 @@ def _shape_independent_cop(in_func):
     def wrapper(s_pairs, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
-        area_1 = np.array([c.area for c in s_pairs.partner1])
-        area_2 = np.array([c.area for c in s_pairs.partner2])
+        # + 0.5 because shapely contours 'skip' edges of pixels
+        area_1 = np.array([c.area for c in s_pairs.partner1]) + 0.5
+        area_2 = np.array([c.area for c in s_pairs.partner2]) + 0.5
 
         if r_pairs:
             # modify area_1 and area_2. SIC --> ESO.
@@ -297,7 +338,9 @@ def run_metrics(file="", switch={}):
             props = list(gen_shapely_objects_all(conv_0))
         else:
             props = list(gen_shapely_objects    (conv_0))
+            props_2 = list(gen_shapely_objects_2    (conv_0))
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+        all_s_pairs_2 = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_2]
 
     # --------------------
     # compute the metrics
@@ -374,8 +417,8 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            # file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
-                            file="/Users/mret0001/Desktop/shapely_rprops_test.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            # file="/Users/mret0001/Desktop/shapely_rprops_test.nc")
 
     # a quick histrogram
     # ds_metric.cop_mod.plot.hist(bins=55)
