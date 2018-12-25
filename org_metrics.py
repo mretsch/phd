@@ -68,7 +68,7 @@ def gen_shapely_objects_all(array):
         yield in_poly if type(in_poly) == spg.MultiPolygon else []
 
 
-def gen_shapely_objects(array):
+def gen_shapely_objects_old(array):
     """Shapely objects without objects touching radar boundary."""
     for field in array:
         # get contours to create shapely polygons
@@ -94,14 +94,7 @@ def gen_shapely_objects(array):
         yield in_poly if type(in_poly) == spg.MultiPolygon else []
 
 
-def gen_regionprops_objects_all(array):
-    """skimage.regionprops objects including objects touching radar boundary."""
-    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled = skm.label(scene, background=0)  # , connectivity=1)
-        yield skm.regionprops(labeled)
-
-
-def gen_shapely_objects_2(array):
+def gen_shapely_objects(array):
     """Shapely objects without objects touching radar boundary."""
     for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
         labeled = skm.label(scene, background=0)  # , connectivity=1)
@@ -129,16 +122,15 @@ def gen_shapely_objects_2(array):
             # sugar coating needed for shapely (contour only consists of 1 object...anyways)
             coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
             m_poly = spg.MultiPolygon(coordinates)
-            # i2 = all_r_pairs[28].partner2[5].image.astype(int)
-            # bed = np.zeros(shape=(6, 10))
-            # bed[1:-1, 1:-1] = i2
-            # contour = skm.find_contours(bed, level=0.5, fully_connected='high' )
-            # contour[0][:, 0] += 69 # increase y-values (derived from bbox)
-            # contour[0][:, 1] +=  9 # increase x-values (derived from bbox)
-            # coordinates = [[[tuple(coord) for coord in poly], []] for poly in contour]
-            # m_poly = spg.MultiPolygon(coordinates)
             polys.append(m_poly[0])
         yield polys
+
+
+def gen_regionprops_objects_all(array):
+    """skimage.regionprops objects including objects touching radar boundary."""
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        yield skm.regionprops(labeled)
 
 
 def gen_regionprops_objects(array):
@@ -311,6 +303,10 @@ def run_metrics(file="", switch={}):
     """Compute different organisation metrics on classified data."""
     switch = collections.defaultdict(lambda: False, switch)
 
+    # -------------------------------
+    # prepare input and find objects
+    # -------------------------------
+
     if switch['artificial']:
         conv_0 = af.art
     else:
@@ -338,9 +334,7 @@ def run_metrics(file="", switch={}):
             props = list(gen_shapely_objects_all(conv_0))
         else:
             props = list(gen_shapely_objects    (conv_0))
-            props_2 = list(gen_shapely_objects_2    (conv_0))
         all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
-        all_s_pairs_2 = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_2]
 
     # --------------------
     # compute the metrics
@@ -353,19 +347,8 @@ def run_metrics(file="", switch={}):
 
     sic = xr.DataArray([shape_independent_cop(p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    #eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
-    #                    for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
-
-    eso = []
-    counter = 0
-    if switch['eso']:
-        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs)):
-            print(counter)
-            eso.append(elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p))
-            counter += 1
-        eso = xr.DataArray(eso)
-    else:
-        eso.append(np.nan)
+    eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
 
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
@@ -382,6 +365,10 @@ def run_metrics(file="", switch={}):
         o_number = np.nan
         o_area = np.nan
         o_area_max = np.nan
+
+    # ---------------
+    # create dataset
+    # ---------------
 
     m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
@@ -413,20 +400,14 @@ if __name__ == '__main__':
 
     switch = {'artificial': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'eso': True, 'iorg': False, 'basics': False,
-              'boundary': False}
+              'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
-                            # file="/Users/mret0001/Desktop/shapely_rprops_test.nc")
-
-    # a quick histrogram
-    # ds_metric.cop_mod.plot.hist(bins=55)
-    # plt.title('COP distribution, sample size: ' + str(ds_metric.cop.notnull().sum().values))
-    # plt.show()
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # save metrics as netcdf-files
-    save = False
+    save = True
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
