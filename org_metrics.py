@@ -157,6 +157,7 @@ def cop_mod(pairs):
 
 
 def _shape_independent_cop(in_func):
+    """Decorator for metrics SIC and ESO."""
 
     @functools.wraps(in_func)
     def wrapper(s_pairs, r_pairs=None):
@@ -172,8 +173,8 @@ def _shape_independent_cop(in_func):
             v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
         else:
             v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
-
         return np.mean(v)
+
     return wrapper
 
 
@@ -384,11 +385,11 @@ if __name__ == '__main__':
 
     switch = {'artificial': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'eso': True, 'iorg': False, 'basics': False,
-              'boundary': True}
+              'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # save metrics as netcdf-files
     save = True
