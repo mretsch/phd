@@ -10,7 +10,7 @@ except FileNotFoundError:
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
-art = xr.zeros_like(ds.radar_estimated_rain_rate[:8, :, :])
+art = xr.zeros_like(ds.radar_estimated_rain_rate[:12, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 
@@ -54,23 +54,37 @@ art[5, 78:111, 42: 75] = 2
 
 # =========================
 
-# stick and square
+# vertical stick and square
 art[6, 29: 88, 30: 39] = 2
 art[6, 54: 63, 78: 87] = 2
 
-# tilted stick and square
+# horizontal stick and square
 art[7, 54: 63,  5: 64] = 2
 art[7, 54: 63, 78: 87] = 2
 
 # =========================
 
-# # small and small, together
-# art[2, 53:64, 47:58] = 2
-# art[2, 53:64, 59:70] = 2
-#
-# # large and large, together
-# art[3, 42:75, 24:57] = 2
-# art[3, 42:75, 60:93] = 2
+# large and small square
+art[8, 42: 75, 31: 64] = 2
+art[8, 54: 63, 78: 87] = 2
+
+# same sized stick and small square
+art[9,  9:108, 53: 64] = 2
+art[9, 54: 63, 78: 87] = 2
+
+# =========================
+
+# large and small square
+art[10, 35: 82, 11: 58] = 2
+art[10, 54: 63, 78: 87] = 2
+# art[10, 37: 80, 21: 64] = 2
+# art[10, 54: 63, 78: 87] = 2
+
+# small stick and small square
+art[11, 35: 82, 49: 58] = 2
+art[11, 54: 63, 78: 87] = 2
+# art[11, 37: 80, 53: 64] = 2
+# art[11, 54: 63, 78: 87] = 2
 
 # =========================
 
