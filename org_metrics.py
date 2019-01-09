@@ -49,65 +49,54 @@ def gen_tuplelist(inlist):
             yield item1, item2
 
 
-def gen_shapely_objects_all(array):
+def _gen_shapely_objects(in_func):
+    """Decorator returning shapely objects in each slice of 3D-array."""
+
+    @functools.wraps(in_func)
+    def wrapper(array):
+        for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+            labeled = skm.label(scene, background=0)  # , connectivity=1)
+            objects = skm.regionprops(labeled)
+
+            objects = in_func(objects)
+
+            # apply find_contours on each regionprop object, then make shapely out of it. To have correct order.
+            polys = []
+            for o in objects:
+                # the layout and properties of the regionprops-object
+                layout = o.image.astype(int)
+                bounds = o.bbox
+                y_length = bounds[2] - bounds[0]
+                x_length = bounds[3] - bounds[1]
+                # prepare bed to put layout in
+                bed = np.zeros(shape=(y_length + 2, x_length + 2))
+                bed[1:-1, 1:-1] = layout
+                # get the contour needed for shapely
+                contour = skm.find_contours(bed, level=0.5, fully_connected='high')
+                # increase coordinates to get placement inside of original input array right
+                contour[0][:, 0] += bounds[0]  # increase y-values
+                contour[0][:, 1] += bounds[1]  # increase x-values
+                # sugar coating needed for shapely (contour only consists of 1 object...anyways)
+                coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
+                m_poly = spg.MultiPolygon(coordinates)
+                polys.append(m_poly[0])
+            yield polys
+
+    return wrapper
+
+
+@_gen_shapely_objects
+def gen_shapely_objects_all(_):
     """Shapely objects including objects touching radar boundary."""
-    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled = skm.label(scene, background=0)  # , connectivity=1)
-        objects = skm.regionprops(labeled)
+    return _
 
-        # apply find_contours on each regionprop object, then make shapely out of it. To have correct order.
-        polys = []
-        for o in objects:
-            # the layout and properties of the regionprops-object
-            layout = o.image.astype(int)
-            bounds = o.bbox
-            y_length = bounds[2] - bounds[0]
-            x_length = bounds[3] - bounds[1]
-            # prepare bed to put layout in
-            bed = np.zeros(shape=(y_length + 2, x_length + 2))
-            bed[1:-1, 1:-1] = layout
-            # get the contour needed for shapely
-            contour = skm.find_contours(bed, level=0.5, fully_connected='high')
-            # increase coordinates to get placement inside of original input array right
-            contour[0][:, 0] += bounds[0]  # increase y-values
-            contour[0][:, 1] += bounds[1]  # increase x-values
-            # sugar coating needed for shapely (contour only consists of 1 object...anyways)
-            coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
-            m_poly = spg.MultiPolygon(coordinates)
-            polys.append(m_poly[0])
-        yield polys
-
-
-def gen_shapely_objects(array):
-    """Shapely objects without objects touching radar boundary."""
-    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled = skm.label(scene, background=0)  # , connectivity=1)
-        objects = skm.regionprops(labeled)
-        box_areas = np.array([o.bbox_area for o in objects])
-        outer_index = box_areas.argmax()
-        del objects[outer_index]
-
-        # apply find_contours on each regionprop object, then make shapely out of it. To have correct order.
-        polys = []
-        for o in objects:
-            # the layout and properties of the regionprops-object
-            layout = o.image.astype(int)
-            bounds = o.bbox
-            y_length = bounds[2] - bounds[0]
-            x_length = bounds[3] - bounds[1]
-            # prepare bed to put layout in
-            bed = np.zeros(shape=(y_length + 2, x_length + 2))
-            bed[1:-1, 1:-1] = layout
-            # get the contour needed for shapely
-            contour = skm.find_contours(bed, level=0.5, fully_connected='high')
-            # increase coordinates to get placement inside of original input array right
-            contour[0][:, 0] += bounds[0]  # increase y-values
-            contour[0][:, 1] += bounds[1]  # increase x-values
-            # sugar coating needed for shapely (contour only consists of 1 object...anyways)
-            coordinates = [[[tuple(coord) for coord in c], []] for c in contour]
-            m_poly = spg.MultiPolygon(coordinates)
-            polys.append(m_poly[0])
-        yield polys
+@_gen_shapely_objects
+def gen_shapely_objects(r_objects):
+    """Shapely objects without objects touching radar boundary. Decorated by function which finds all objects."""
+    box_areas = np.array([o.bbox_area for o in r_objects])
+    outer_index = box_areas.argmax()
+    del r_objects[outer_index]
+    return r_objects
 
 
 def gen_regionprops_objects_all(array):
@@ -330,7 +319,7 @@ def run_metrics(file="", switch={}):
 
     cop_m = xr.DataArray([cop_mod(pairs=p) for p in all_r_pairs]) if switch['cop_mod'] else np.nan
 
-    sic = xr.DataArray([shape_independent_cop(p) for p in all_s_pairs]) if switch['sic'] else np.nan
+    sic = xr.DataArray([shape_independent_cop(s_pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
     eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
                         for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
