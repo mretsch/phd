@@ -5,21 +5,21 @@ import artificial_fields as af
 import org_metrics as om
 
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'eso': True, 'sic': True})
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'cop': True, 'sic': True})
 
-eso = ds_metric.eso
+cop = ds_metric.cop
 sic = ds_metric.sic
 
-fig = plt.figure(figsize=(9, 12))  # width 9, height 10 (2 per row)
+fig = plt.figure(figsize=(9, 14))  # width 9, height 10 (2 per row)
 grid = AxesGrid(fig, 111,
-                nrows_ncols=(6, 2),
+                nrows_ncols=(7, 2),
                 axes_pad=0.05
                 # cbar_mode='single',
                 # cbar_location='right',
                 # cbar_pad=0.1
                 )
 
-alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
+alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']
 for i, axis in enumerate(grid):
     # ax.set_axis_off()
     # im = ax.imshow(af.art[i, :, :])
@@ -30,14 +30,14 @@ for i, axis in enumerate(grid):
                      left=False, labelleft=False)
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     if i != 5:
-        axis.text(x=129.8, y=-13, s='ESO = ' + str(eso[i].round(decimals=2).values)
+        axis.text(x=129.8, y=-13, s='COP = ' + str(cop[i].round(decimals=2).values)
                                     + '\nSIC = ' + str(sic[i].round(decimals=2).values),
                   verticalalignment='top')
     else:
-        axis.text(x=129.8, y=-13, s='ESO ='
+        axis.text(x=129.8, y=-13, s='COP ='
                                     + '\nSIC =',
                   verticalalignment='top')
-        axis.text(x=131.5, y=-13, s=str(eso[i].round(decimals=2).values)
+        axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
                                     + '\n' + str(sic[i].round(decimals=2).values),
                   verticalalignment='top')
         # axis.tick_params(labelbottom=True, labelleft=True)

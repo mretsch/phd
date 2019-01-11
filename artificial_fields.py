@@ -10,7 +10,7 @@ except FileNotFoundError:
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
-art = xr.zeros_like(ds.radar_estimated_rain_rate[:12, :, :])
+art = xr.zeros_like(ds.radar_estimated_rain_rate[:14, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 
@@ -54,37 +54,54 @@ art[5, 78:111, 42: 75] = 2
 
 # =========================
 
-# vertical stick and square
-art[6, 29: 88, 30: 39] = 2
-art[6, 54: 63, 78: 87] = 2
+# large square surrounded by small ones
+art[6, 42: 75, 42: 75] = 2
+art[6, 78: 81, 57: 60] = 2
+art[6, 78: 81, 36: 39] = 2
+art[6, 57: 60, 36: 39] = 2
+art[6, 36: 39, 36: 39] = 2
+art[6, 36: 39, 57: 60] = 2
+art[6, 36: 39, 78: 81] = 2
+art[6, 57: 60, 78: 81] = 2
+art[6, 78: 81, 78: 81] = 2
 
-# horizontal stick and square
-art[7, 54: 63,  5: 64] = 2
-art[7, 54: 63, 78: 87] = 2
+# no cross, only small and large square
+art[7, 42: 75, 42: 75] = 2
+art[7, 78: 81, 57: 60] = 2
 
 # =========================
 
-# large and small square
-art[8, 42: 75, 31: 64] = 2
+# vertical stick and square
+art[8, 29: 88, 30: 39] = 2
 art[8, 54: 63, 78: 87] = 2
 
-# same sized stick and small square
-art[9,  9:108, 53: 64] = 2
+# horizontal stick and square
+art[9, 54: 63,  5: 64] = 2
 art[9, 54: 63, 78: 87] = 2
 
 # =========================
 
 # large and small square
-art[10, 35: 82, 11: 58] = 2
+art[10, 42: 75, 31: 64] = 2
 art[10, 54: 63, 78: 87] = 2
-# art[10, 37: 80, 21: 64] = 2
-# art[10, 54: 63, 78: 87] = 2
+
+# same sized stick and small square
+art[11,  9:108, 53: 64] = 2
+art[11, 54: 63, 78: 87] = 2
+
+# =========================
 
 # small stick and small square
-art[11, 35: 82, 49: 58] = 2
-art[11, 54: 63, 78: 87] = 2
-# art[11, 37: 80, 53: 64] = 2
-# art[11, 54: 63, 78: 87] = 2
+art[12, 35: 82, 49: 58] = 2
+art[12, 54: 63, 78: 87] = 2
+# art[12, 37: 80, 53: 64] = 2
+# art[12, 54: 63, 78: 87] = 2
+
+# large and small square
+art[13, 35: 82, 11: 58] = 2
+art[13, 54: 63, 78: 87] = 2
+# art[13, 37: 80, 21: 64] = 2
+# art[13, 54: 63, 78: 87] = 2
 
 # =========================
 
