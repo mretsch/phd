@@ -176,7 +176,7 @@ def shape_independent_cop():
 
 @_shape_independent_cop
 def elliptic_shape_organisation(r_pairs):
-    """Decorated with SIC, to compute ESO. Multiply object area of SIC with its major-minor axis ratio first."""
+    """Decorated by SIC, to compute ESO. Multiply object area of SIC with its major-minor axis ratio first."""
     major, minor = [], []
     for c in r_pairs.partner1:
         major.append(c.major_axis_length)
@@ -285,7 +285,7 @@ def run_metrics(file="", switch={}):
         conv_0 = af.art
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
-        stein  = ds_st.steiner_echo_classification
+        stein  = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
         if switch['boundary']:
             conv   = stein.where(stein == 2)
             conv_0 = conv.fillna(0.)
@@ -373,15 +373,15 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'eso': True, 'iorg': False, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': True, 'eso': True, 'iorg': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_oneday.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
 
     # save metrics as netcdf-files
-    save = False
+    save = True
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')

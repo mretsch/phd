@@ -19,8 +19,10 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     if l_fortran:
         H, xedges, yedges, x_bin_series, y_bin_series = \
             FORTRAN.histogram_2d(xseries=x_series, yseries=y_series, nbins=bins,
-                                 xbound=[0, 200.], ybound=[0, 80],
-                                 l_cut_off=True, cut_off=50)
+                                 # xbound=[0, 200.], ybound=[0, 80],
+                                 xbound=[0, x_series.max()], ybound=[0, y_series.max()],
+                                 # l_cut_off=True, cut_off=50)
+                                 l_cut_off=False, cut_off=50)
         # set '-1'-values to NaN instead
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan
@@ -71,18 +73,19 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/o_area.nc",
-                            "/Users/mret0001/Data/Analysis/With_Boundary/o_number.nc",
+    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/sic.nc",
+                            "/Users/mret0001/Data/Analysis/With_Boundary/stra_rr_ratio.nc",
                             ])
 
     # don't take scenes where convection is 1 pixel large only
     # area_max = ds.o_area_max.where(ds.o_area_max != 1)
     # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-    fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number, bins=40, x_label='Avg object area', y_label='Number of objects')
+    fig_h_2d, h_2d = histogram_2d(ds.sic, ds.stra_rr_ratio * 100., bins=40,
+                                  x_label='SIC', y_label='Stratiform to total mean precipitation (incl boundary) [%]')
     fig_h_2d.show()
 
-    h_2d.to_netcdf('/Users/mret0001/Desktop/o_number_area_hist.nc', mode='w')
+    h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
