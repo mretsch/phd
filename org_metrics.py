@@ -374,7 +374,7 @@ if __name__ == '__main__':
 
     switch = {'artificial': False,
               'cop': False, 'cop_mod': False, 'sic': True, 'eso': True, 'iorg': False, 'basics': False,
-              'boundary': False}
+              'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
