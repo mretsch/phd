@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 import numpy as np
 import artificial_fields as af
+import random_fields as rf
 import org_metrics as om
 
 

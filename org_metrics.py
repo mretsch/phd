@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
 import artificial_fields as af
+import random_fields as rf
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
@@ -283,6 +284,8 @@ def run_metrics(file="", switch={}):
 
     if switch['artificial']:
         conv_0 = af.art
+    elif switch['random']:
+        conv_0 = rf.rand_objects
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
         stein  = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
