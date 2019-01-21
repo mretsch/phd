@@ -10,9 +10,9 @@ metric_3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
 ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*')
 
 
-consecutive = False
+consecutive = True
 if consecutive:
-    steiner = ds_steiner.steiner_echo_classification.sel(time=slice('2010-01-07T13:00:00', '2010-01-07T14:00:00'))
+    steiner = ds_steiner.steiner_echo_classification.sel(time=slice('2013-03-16T09:00:00', '2013-03-16T12:10:00'))
     p = steiner.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1, size=4)
 
 else:
