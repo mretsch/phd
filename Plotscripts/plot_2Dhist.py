@@ -14,7 +14,7 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     x_series = x_series.fillna(-1.)
     y_series = y_series.fillna(-1.)
 
-    l_fortran = True
+    l_fortran = False
     # takes seconds
     if l_fortran:
         H, xedges, yedges, x_bin_series, y_bin_series = \
@@ -34,6 +34,7 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     # takes minutes
     else:
         # range option gets rid of the original NaNs
+        bins = [[0., 0.01, 0.02, 0.04], []]
         H, xedges, yedges = np.histogram2d(x_series, y_series, bins=bins, range=[[0, x_series.max()], [0, y_series.max()]])
         x_bin_series = pd.cut(np.array(x_series), xedges, labels=np.linspace(1, bins, bins), right=False).get_values()
         y_bin_series = pd.cut(np.array(y_series), yedges, labels=np.linspace(1, bins, bins), right=False).get_values()
@@ -73,16 +74,16 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/sic.nc",
-                            "/Users/mret0001/Data/Analysis/With_Boundary/stra_rr_ratio.nc",
+    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/cop_threedays.nc",
+                            "/Users/mret0001/Data/Analysis/With_Boundary/m1_threedays.nc",
                             ])
 
     # don't take scenes where convection is 1 pixel large only
     # area_max = ds.o_area_max.where(ds.o_area_max != 1)
     # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-    fig_h_2d, h_2d = histogram_2d(ds.sic, ds.stra_rr_ratio * 100., bins=40,
-                                  x_label='SIC', y_label='Stratiform to total mean precipitation (incl boundary) [%]')
+    fig_h_2d, h_2d = histogram_2d(ds.cop, ds.m1, bins=40,
+                                  x_label='COP', y_label='M1')
     fig_h_2d.show()
 
     h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
