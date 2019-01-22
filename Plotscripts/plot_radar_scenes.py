@@ -4,13 +4,13 @@ import timeit
 
 start = timeit.default_timer()
 
-metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/eso.nc')
-metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
+metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/eso_random.nc')
+metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic_random.nc')
 metric_3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
-ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*')
+ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/STEINER_random_scenes_noBound.nc')
 
 
-consecutive = True
+consecutive = False
 if consecutive:
     start_date = '2013-03-16T09:00:00'
     end_date   = '2013-03-16T12:10:00'
@@ -46,7 +46,7 @@ p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1 - a
 for i, ax in enumerate(p.axes.flat):
     ax.annotate('ESO: {:5.1f}\nSIC: {:5.1f}'.format(metric1_select[i].item(),
                                                     metric2_select[i].item()), (131.78, -11.2), color='blue')
-    ax.annotate('COP: {:5.1f}'.format(metric3_select[i].item()), (131.78, -13.4), color='blue')
+    # ax.annotate('COP: {:5.1f}'.format(metric3_select[i].item()), (131.78, -13.4), color='blue')
 
 plt.savefig('/Users/mret0001/Desktop/test.pdf')
 #plt.show()

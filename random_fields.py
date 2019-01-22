@@ -1,18 +1,26 @@
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
+import timeit
+
+start = timeit.default_timer()
 
 # parameters to indirectly control the number and size of random objects
 # times to play Game of Life, growing objects at each iteration
-n_steps = 50  # 60
+# n_steps = 10  # 60
 # take randomly distributed pixels of interval [0,1) above this threshold
-cut_off = 0.95
+# threshold = 0.90
 
 # radar = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 steiner = xr.open_dataarray('/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 
-rand = np.random.random(steiner.shape)
-rand = np.where(rand > cut_off, True, False)
+np.random.seed(seed=71897190)
+real_rand = np.random.random(steiner.shape)
+rand = np.empty_like(real_rand, dtype='bool')
+
+for i, array in enumerate(real_rand):
+    threshold = np.random.random() * 0.15 + 0.85  # random number between 0.85 and 1
+    rand[i, :, :] = np.where(array > threshold, True, False)
 
 # implement Game of Life rules, to extinct solo positive pixels. Yet spare the rule
 # of overpopulation, to generate as large objects as possible.
@@ -32,14 +40,21 @@ def game_of_life_step(array, fill=False):
         return (array_nbrs_count == 3) | (array & (array_nbrs_count >= 2))
 
 
-for i, field in enumerate(rand):
+for i, array in enumerate(rand):
+    n_steps = round(np.random.random() * 45 + 5)  # random number between 5 and 50
     for _ in range(n_steps):
         # rand_o[i], field = field, game_of_life_step(field)
-        rand[i, :, :], field = field, game_of_life_step(field, fill=False)
+        rand[i, :, :], array = array, game_of_life_step(array, fill=False)
 
-    rand[i, :, :] = game_of_life_step(field, fill=True)
+    rand[i, :, :] = game_of_life_step(array, fill=True)
 
 nan_mask, dummy = xr.broadcast(steiner[28, :, :], xr.zeros_like(steiner))
 nan_mask_t = nan_mask.transpose('time', 'lat', 'lon')
 rand_objects = xr.where(nan_mask_t.isnull(), nan_mask_t, rand*2)
 
+save = True
+if save:
+    rand_objects.to_netcdf('/Users/mret0001/Desktop/random_scenes.nc')
+
+stop = timeit.default_timer()
+print('This script needed {} seconds.'.format(stop - start))
