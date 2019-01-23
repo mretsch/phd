@@ -34,22 +34,31 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     # takes minutes
     else:
         # range option gets rid of the original NaNs
-        bins = [[0., 0.01, 0.02, 0.04], []]
-        H, xedges, yedges = np.histogram2d(x_series, y_series, bins=bins, range=[[0, x_series.max()], [0, y_series.max()]])
-        x_bin_series = pd.cut(np.array(x_series), xedges, labels=np.linspace(1, bins, bins), right=False).get_values()
-        y_bin_series = pd.cut(np.array(y_series), yedges, labels=np.linspace(1, bins, bins), right=False).get_values()
+        # bins2 prescribing the bin edges
+        bins2 = [np.linspace(start=0., stop=0.8, num=18)**2, np.linspace(start=0., stop=17, num=18)**2]
+        H, xedges, yedges = np.histogram2d(x_series, y_series, bins=bins2,
+                                           range=[[0, x_series.max()], [0, y_series.max()]],
+                                           density=True
+                                           )
         # percentages
         Hsum = H.sum()
-        H = H / Hsum * 100.
+        # H = H / Hsum * 100.
+        # to have "density=True", don't multiply by 100 and divide by dx*dy (bin-area),
+        # which in case of COP vs. M1 with 40 bins is:
+        # H = H / Hsum / (6.795294 * 0.013159)
         # H needs to transposed for correct plot
-        H = H.T
+        H = H.T * 100.
 
     # Mask zeros, hence they do not show in plot
     Hmasked = np.ma.masked_where(H == 0, H)
 
     # create xarray dataset from 2D histogram
-    abscissa = xedges[:-1] + (xedges[1:] - xedges[:-1]) / 2.
-    ordinate = yedges[:-1] + (yedges[1:] - yedges[:-1]) / 2.
+    x_bin_series = pd.cut(np.array(x_series), xedges, labels=np.linspace(1, len(xedges)-1, len(xedges)-1),
+                          right=False).get_values()
+    y_bin_series = pd.cut(np.array(y_series), yedges, labels=np.linspace(1, len(yedges)-1, len(yedges)-1),
+                          right=False).get_values()
+    abscissa = xedges[:-1] + 0.5 * (xedges[1:] - xedges[:-1])
+    ordinate = yedges[:-1] + 0.5 * (yedges[1:] - yedges[:-1])
     ds_out = xr.Dataset(data_vars={'hist_2D': (['y', 'x'], Hmasked, {'units': '%'}),
                                    'x_series_bins': (['time'], x_bin_series, {'units': 'bin number'}),
                                    'y_series_bins': (['time'], y_bin_series, {'units': 'bin_number'})},
@@ -61,10 +70,11 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     # Plot 2D histogram
     fig = plt.figure()
     plt.pcolormesh(xedges, yedges, Hmasked)  # , cmap='tab20c')
+    # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     cbar = plt.colorbar()
-    cbar.ax.set_ylabel('[%], Sample size: {:g}'.format(Hsum))
+    cbar.ax.set_ylabel('[% dx$^{{-1}}$ dy$^{{-1}}$], Sample size: {:g}'.format(Hsum))
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)
