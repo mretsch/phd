@@ -53,10 +53,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     Hmasked = np.ma.masked_where(H == 0, H)
 
     # create xarray dataset from 2D histogram
-    x_bin_series = pd.cut(np.array(x_series), x_edges, labels=np.linspace(1, len(x_edges)-1, len(x_edges)-1),
-                          right=False).get_values()
-    y_bin_series = pd.cut(np.array(y_series), y_edges, labels=np.linspace(1, len(y_edges)-1, len(y_edges)-1),
-                          right=False).get_values()
+    x_bin_series = xr.DataArray(pd.cut(np.array(x_series), x_edges, labels=np.linspace(1, len(x_edges)-1, len(x_edges)-1),
+                                       right=False).get_values())
+    y_bin_series = xr.DataArray(pd.cut(np.array(y_series), y_edges, labels=np.linspace(1, len(y_edges)-1, len(y_edges)-1),
+                                       right=False).get_values())
     abscissa = x_edges[:-1] + 0.5 * (x_edges[1:] - x_edges[:-1])
     ordinate = y_edges[:-1] + 0.5 * (y_edges[1:] - y_edges[:-1])
     ds_out = xr.Dataset(data_vars={'hist_2D': (['y', 'x'], Hmasked, {'units': '%'}),
@@ -65,7 +65,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
                         coords={'x': (['x'], abscissa),
                                 'y': (['y'], ordinate),
                                 'time': (['time'], x_series.time)},
-                        attrs={'Sample size': '{:g}'.format(Hsum)})
+                        attrs={'Sample size': '{:g}'.format(x_bin_series.notnull().sum().values)})
 
     # Plot 2D histogram
     fig = plt.figure()
@@ -74,7 +74,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     cbar = plt.colorbar()
-    cbar.ax.set_ylabel('[% dx$^{{-1}}$ dy$^{{-1}}$], Sample size: {:g}'.format(Hsum))
+    cbar.ax.set_ylabel('[% dx$^{{-1}}$ dy$^{{-1}}$], Sample size: {:g}'.format(x_bin_series.notnull().sum().values))
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)
