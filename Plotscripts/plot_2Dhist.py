@@ -15,42 +15,39 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     y_series = y_series.fillna(-1.)
 
     if type(nbins) == int:
-        bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins),
-                     np.linspace(start=0., stop=y_series.max(), num=nbins)]
+        bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
+                     np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
     else:
         bin_edges = [np.linspace(start=0., stop=0.8, num=18)**2, np.linspace(start=0., stop=17, num=18)**2]
     x_edges = bin_edges[0]
     y_edges = bin_edges[1]
 
-    l_fortran = False
+    l_fortran = True
     # takes seconds
     if l_fortran:
         H = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                  xedges=x_edges, yedges=y_edges,
-                                 # xbound=[0, x_series.max()], ybound=[0, y_series.max()],
-                                 l_cut_off=False, cut_off=50)
-                                 # xbound=[0, 200.], ybound=[0, 80],
+                                 l_cut_off=False, cut_off=50, l_density=True)
                                  # l_cut_off=True, cut_off=50)
         # the cut-away part
         # H = np.ma.masked_greater(H, 50)
         # percentages
         Hsum = H.sum()
-        # H = H / Hsum * 100.
+        H = H * 100.  # / Hsum
     # takes minutes
     else:
         # range option gets rid of the original NaNs
         H, x_edges, y_edges = np.histogram2d(x_series, y_series, bins=bin_edges,
                                              range=[[0, x_series.max()], [0, y_series.max()]],
-                                             density=False
-                                             )
+                                             density=True)
         # percentages
-        Hsum = H.sum()
-        H = H / Hsum * 100.
+        # Hsum = H.sum()
+        # H = H * 100. / Hsum
         # to have "density=True", don't multiply by 100 and divide by dx*dy (bin-area),
         # which in case of COP vs. M1 with 40 bins is:
         # H = H / Hsum / (6.795294 * 0.013159)
         # H needs to transposed for correct plot
-        H = H.T # * 100.
+        H = H.T
 
     # Mask zeros, hence they do not show in plot
     Hmasked = np.ma.masked_where(H == 0, H)
@@ -95,7 +92,7 @@ if __name__ == '__main__':
     # area_max = ds.o_area_max.where(ds.o_area_max != 1)
     # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-    fig_h_2d, h_2d = histogram_2d(ds.cop, ds.m1, nbins=40,
+    fig_h_2d, h_2d = histogram_2d(ds.cop, ds.m1,  # nbins=40,
                                   x_label='COP', y_label='M1')
     fig_h_2d.show()
 
