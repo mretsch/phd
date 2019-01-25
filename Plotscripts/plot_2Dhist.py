@@ -17,12 +17,14 @@ def histogram_2d(x_series, y_series, bins=10, x_label='', y_label=''):
     l_fortran = False
     # takes seconds
     if l_fortran:
+        bins2 = [np.linspace(start=0., stop=0.8, num=18)**2, np.linspace(start=0., stop=17, num=18)**2]
         H, xedges, yedges, x_bin_series, y_bin_series = \
-            FORTRAN.histogram_2d(xseries=x_series, yseries=y_series, nbins=bins,
-                                 # xbound=[0, 200.], ybound=[0, 80],
-                                 xbound=[0, x_series.max()], ybound=[0, y_series.max()],
-                                 # l_cut_off=True, cut_off=50)
+            FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
+                                 xedges=bins2[0], yedges=bins2[1],
+                                 # xbound=[0, x_series.max()], ybound=[0, y_series.max()],
                                  l_cut_off=False, cut_off=50)
+                                 # xbound=[0, 200.], ybound=[0, 80],
+                                 # l_cut_off=True, cut_off=50)
         # set '-1'-values to NaN instead
         x_bin_series[x_bin_series == -1] = np.nan
         y_bin_series[y_bin_series == -1] = np.nan

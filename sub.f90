@@ -1,37 +1,30 @@
-SUBROUTINE histogram_2d(xseries, yseries, length, nbins, xbound, ybound, l_cut_off, cut_off, &
-                        hist_2d, xedges, yedges, xwhichbins, ywhichbins)
-    INTEGER      :: length           ! length of xseries & yseries
-    INTEGER      :: nbins            ! number of bins
-    INTEGER      :: hist_2d(nbins, nbins)
-    INTEGER      :: cut_off          ! pixels containing less than cut_off cases will not returned
-    REAL(KIND=8) :: xseries(length)
-    REAL(KIND=8) :: yseries(length)
-    REAL(KIND=8) :: xbound(2)    ! min and max boundaries for bin selection
-    REAL(KIND=8) :: ybound(2)    ! min and max boundaries for bin selection
-    REAL(KIND=8) :: xedges(nbins+1)
-    REAL(KIND=8) :: yedges(nbins+1)
-    REAL(KIND=8) :: xwhichbins(length)
-    REAL(KIND=8) :: ywhichbins(length)
-    LOGICAL      :: l_cut_off
-    !f2py intent(in   )                  :: nbins, xseries, yseries, xbound, ybound, l_cut_off, cut_off
-    !f2py intent(hide ), depend(xseries) :: length = shape(xseries, 1)
-    !f2py intent(  out)                  :: hist_2d, xedges, yedges, xwhichbins, ywhichbins
+SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, l_cut_off, cut_off, &
+                        hist_2d, xwhichbins, ywhichbins)
+
+    INTEGER      :: length                !     length of xseries & yseries
+    INTEGER      :: xnbins                !     number of bins for x-axis
+    INTEGER      :: ynbins                !     number of bins for y-axis
+    INTEGER      :: hist_2d(nbins, nbins) ! OUT
+    INTEGER      :: cut_off               !  IN pixels containing less than cut_off cases will not returned
+
+    REAL(KIND=8) :: xseries(length)       !  IN
+    REAL(KIND=8) :: yseries(length)       !  IN
+    REAL(KIND=8) :: xedges(xnbins+1)      !  IN
+    REAL(KIND=8) :: yedges(ynbins+1)      !  IN
+    REAL(KIND=8) :: xwhichbins(length)    ! OUT
+    REAL(KIND=8) :: ywhichbins(length)    ! OUT
+
+    LOGICAL      :: l_cut_off             !  IN
+
+    !f2py intent(in   )                  :: xseries, yseries, xedges, yedges, l_cut_off, cut_off
+    !f2py intent(hide ), depend(xseries) :: length=shape(xseries,1)
+    !f2py intent(hide ), depend(xedges)  :: xnbins=shape(xedges,1)-1
+    !f2py intent(hide ), depend(yedges)  :: ynbins=shape(yedges,1)-1
+    !f2py intent(  out)                  :: hist_2d, xwhichbins, ywhichbins
 
     INTEGER      :: x_indx, y_indx
-    REAL(KIND=8) :: xstep, ystep, ymasked(length), xbins(nbins), ybins(nbins), tmp(nbins)
+    REAL(KIND=8) :: ymasked(length), xbins(nbins), ybins(nbins), tmp(nbins)
     LOGICAL      :: l_mask(length), l_temp
-
-    xedges(      1) = xbound(1)
-    xedges(nbins+1) = xbound(2)
-    yedges(      1) = ybound(1)
-    yedges(nbins+1) = ybound(2)
-
-    xstep = ABS(xbound(1) - xbound(2)) / nbins
-    ystep = ABS(ybound(1) - ybound(2)) / nbins
-    DO i=2,nbins
-        xedges(i) = xedges(i-1) + xstep
-        yedges(i) = yedges(i-1) + ystep
-    END DO
 
     DO n=1,nbins
         xbins(n) = xedges(n) + (xedges(n+1) - xedges(n)) / 2.
