@@ -68,7 +68,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
         DO m=1,length
             l_temp = (yedges(nybins) .LE. ymasked(m)) .AND. (ymasked(m) .LE. yedges(nybins+1))
             hist_2d(nybins,i) = MERGE(hist_2d(nybins,i) + 1,&
-                                      hist_2d(nxbins,i)    ,&
+                                      hist_2d(nybins,i)    ,&
                                       l_temp                )
             ! save which (time) step fell into which bin
             ywhichbins(m) = MERGE(ybins(nybins), ywhichbins(m), l_temp)
@@ -85,7 +85,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
     DO j=1,nybins-1
         DO m=1,length
             l_temp = (yedges(j) .LE. ymasked(m)) .AND. (ymasked(m) .LT. yedges(j+1))
-            hist_2d(j,nxbins) = MERGE(hist_2d(j,nybins) + 1,&
+            hist_2d(j,nxbins) = MERGE(hist_2d(j,nxbins) + 1,&
                                       hist_2d(j,nxbins)    ,&
                                       l_temp                )
             ! save which (time) step fell into which bin

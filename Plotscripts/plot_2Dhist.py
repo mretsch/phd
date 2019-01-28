@@ -20,7 +20,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
                      np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
     else:
         bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
-                     np.linspace(start=0., stop=m.sqrt(y_series.max()), num=18)**2]
+                     np.linspace(start=0., stop=y_series.max(), num=40+1)]
     x_edges = bin_edges[0]
     y_edges = bin_edges[1]
 
@@ -49,7 +49,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
         # which in case of COP vs. M1 with 40 bins is:
         # H = H / Hsum / (6.795294 * 0.013159)
         # H needs to transposed for correct plot
-        H = H.T
+        H = H.T # * 100.
 
     # Mask zeros, hence they do not show in plot
     Hmasked = np.ma.masked_where(H == 0, H)
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
     fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                  x_label='avg. area', y_label='object number')
+                                  x_label='Avg. object area', y_label='Number of objects')
     fig_h_2d.show()
 
     h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
