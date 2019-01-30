@@ -19,8 +19,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
         bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
                      np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
     else:
-        bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
-                     np.linspace(start=0., stop=y_series.max(), num=40+1)]
+        # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
+        #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
+        bin_edges = [np.linspace(start=0., stop=m.sqrt(250), num=18)**2,
+                     np.linspace(start=0., stop=        80 , num=40+1)]
     x_edges = bin_edges[0]
     y_edges = bin_edges[1]
 
@@ -55,15 +57,19 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     Hmasked = np.ma.masked_where(H == 0, H)
 
     # create xarray dataset from 2D histogram
-    x_bin_series = xr.DataArray(pd.cut(np.array(x_series), x_edges, labels=np.linspace(1, len(x_edges)-1, len(x_edges)-1),
-                                       right=False).get_values())
-    y_bin_series = xr.DataArray(pd.cut(np.array(y_series), y_edges, labels=np.linspace(1, len(y_edges)-1, len(y_edges)-1),
-                                       right=False).get_values())
     abscissa = x_edges[:-1] + 0.5 * (x_edges[1:] - x_edges[:-1])
     ordinate = y_edges[:-1] + 0.5 * (y_edges[1:] - y_edges[:-1])
+
+    x_bin_series = xr.DataArray(pd.cut(np.array(x_series), x_edges,
+                                       labels=abscissa,  # np.linspace(1, len(x_edges)-1, len(x_edges)-1),
+                                       right=False).get_values())
+    y_bin_series = xr.DataArray(pd.cut(np.array(y_series), y_edges,
+                                       labels=ordinate,  # np.linspace(1, len(y_edges)-1, len(y_edges)-1),
+                                       right=False).get_values())
+
     ds_out = xr.Dataset(data_vars={'hist_2D': (['y', 'x'], Hmasked, {'units': '%'}),
-                                   'x_series_bins': (['time'], x_bin_series, {'units': 'bin number'}),
-                                   'y_series_bins': (['time'], y_bin_series, {'units': 'bin_number'})},
+                                   'x_series_bins': (['time'], x_bin_series, {'units': 'bin by value'}),
+                                   'y_series_bins': (['time'], y_bin_series, {'units': 'bin by value'})},
                         coords={'x': (['x'], abscissa),
                                 'y': (['y'], ordinate),
                                 'time': (['time'], x_series.time)},
@@ -86,8 +92,8 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/With_Boundary/o_area.nc",
-                            "/Users/mret0001/Data/Analysis/With_Boundary/o_number.nc",
+    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
+                            "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
                             ])
 
     # don't take scenes where convection is 1 pixel large only
@@ -95,7 +101,7 @@ if __name__ == '__main__':
     # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
     fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                  x_label='Avg. object area', y_label='Number of objects')
+                                  x_label='Avg. no boundary object area', y_label='Number of no boundary objects')
     fig_h_2d.show()
 
     h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')

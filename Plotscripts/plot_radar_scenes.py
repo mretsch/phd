@@ -4,16 +4,15 @@ import timeit
 
 start = timeit.default_timer()
 
-metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/eso_random.nc')
-metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic_random.nc')
+metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/eso.nc')  # eso_random.nc')
+metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')  # sic_random.nc')
 metric_3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
-ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/STEINER_random_scenes_noBound.nc')
+ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*')  # STEINER_random_scenes_noBound.nc')
 
-
-consecutive = False
+consecutive = True
 if consecutive:
-    start_date = '2013-03-16T09:00:00'
-    end_date   = '2013-03-16T12:10:00'
+    start_date = '2015-11-10T03:00:00'
+    end_date   = '2015-11-10T06:10:00'
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=slice(start_date, end_date))
     metric1_select = metric_1.sel(time=slice(start_date, end_date))
     metric2_select = metric_2.sel(time=slice(start_date, end_date))
