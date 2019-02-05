@@ -31,13 +31,13 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     if l_fortran:
         H = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                  xedges=x_edges, yedges=y_edges,
-                                 l_cut_off=False, cut_off=50, l_density=True)
+                                 l_cut_off=False, cut_off=50, l_density=False)
                                  # l_cut_off=True, cut_off=50)
         # the cut-away part
         # H = np.ma.masked_greater(H, 50)
         # percentages
         Hsum = H.sum()
-        H = H * 100.  # / Hsum
+        # H = H * 100.  # / Hsum
     # takes minutes
     else:
         # range option gets rid of the original NaNs
@@ -72,7 +72,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
                                    'y_series_bins': (['time'], y_bin_series, {'units': 'bin by value'})},
                         coords={'x': (['x'], abscissa),
                                 'y': (['y'], ordinate),
-                                'time': (['time'], x_series.time)},
+                                'time': (['time'], x_series[x_series.dims[-1]])},
                         attrs={'Sample size': '{:g}'.format(x_bin_series.notnull().sum().values)})
 
     # Plot 2D histogram
