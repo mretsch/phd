@@ -375,13 +375,13 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
-    switch = {'artificial': False,
-              'cop': False, 'cop_mod': False, 'sic': True, 'eso': True, 'iorg': False, 'basics': False,
-              'boundary': True}
+    switch = {'artificial': False, 'random': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'eso': False, 'iorg': True, 'basics': False,
+              'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc")
+                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
 
     # save metrics as netcdf-files
     save = True

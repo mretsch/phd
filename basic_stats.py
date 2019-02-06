@@ -1,9 +1,26 @@
-import math as m
 import xarray as xr
 from dask.distributed import Client
-import numpy as np
-import matplotlib.pyplot as plt
+import bottleneck as bn
 import timeit
+
+
+def covariance(x, y):
+    """Covariance. From http://xarray.pydata.org/en/stable/dask.html#automatic-parallelization. """
+    return ((x - x.mean(axis=-1)) * (y - y.mean(axis=-1))).mean(axis=-1)
+
+
+def pearson_correlation(x, y):
+    """Pearson's r, or correlation coefficient.
+    From http://xarray.pydata.org/en/stable/dask.html#automatic-parallelization. """
+    return covariance(x, y) / (x.std(axis=-1) * y.std(axis=-1))
+
+
+def spearman_correlation(x, y):
+    """Spearman's s, or rank correlation coefficient.
+    From http://xarray.pydata.org/en/stable/dask.html#automatic-parallelization. """
+    x_ranks = bn.rankdata(x, axis=-1)
+    y_ranks = bn.rankdata(y, axis=-1)
+    return pearson_correlation(x_ranks, y_ranks)
 
 
 def precip_stats(rain, stein, period='', group=''):

@@ -1,10 +1,64 @@
+import timeit
 import matplotlib.pyplot as plt
 import math as m
 import numpy as np
 import pandas as pd
 import xarray as xr
-import timeit
+import seaborn as sns
 import sub as FORTRAN
+
+plt.rc('font'  , size=12)
+plt.rc('legend', fontsize=12)
+#font = {'fontname': 'Helvetica'}
+#plt.rc('font',**{'family':'serif','serif':['Times']})
+# plt.rc('text.latex' , preamble=r'\usepackage{cmbright}')
+
+
+def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[]):
+    """Probability distributions for multiple variables in a xarray-dataset."""
+
+    fig, ax = plt.subplots()
+    linestyle = ['dashed', 'solid', 'dotted']
+
+    for i, metric in enumerate([dataset.eso, dataset.sic, dataset.cop]):
+
+        if type(nbins) == int:
+            bins = np.linspace(start=0., stop=metric.max(), num=nbins+1)  # 50
+        else:
+            bins = np.linspace(start=m.sqrt(metric.min()), stop=m.sqrt(metric.max()), num=18)**2
+
+        # sns.distplot(metric[metric.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
+
+        total = metric.notnull().sum().values
+        metric_clean = metric.fillna(-1)
+        h, edges = np.histogram(metric_clean, bins=bins)  # , density=True)
+
+        bin_centre = 0.5* (edges[1:] + edges[:-1])
+        dx         =       edges[1:] - edges[:-1]
+        dlogx      = dx / (bin_centre * m.log(10))
+
+        if l_xlog:
+            h_normed = h / dlogx / total * 100  # equals density=True in percent
+        else:
+            h_normed = h / dx / total  # equals density=True
+
+        plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
+
+    if l_xlog:
+        plt.xscale('log')
+
+    plt.ylabel(y_label)
+    plt.xlabel(x_label)#, **font)
+    plt.legend(legend_label)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_position('zero')
+    #ax.yaxis.set_ticks_position('none')  # 'left', 'right'
+    ax.tick_params(axis='y', direction='in')
+    ax.tick_params(axis='x', length=5)
+
+    return fig
 
 
 def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
@@ -92,19 +146,38 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
-                            "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
-                            ])
+    hist_2d = False
+    if hist_2d:
+        ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
+                                "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
+                                ])
 
-    # don't take scenes where convection is 1 pixel large only
-    # area_max = ds.o_area_max.where(ds.o_area_max != 1)
-    # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
+        # don't take scenes where convection is 1 pixel large only
+        # area_max = ds.o_area_max.where(ds.o_area_max != 1)
+        # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-    fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                  x_label='Avg. no boundary object area', y_label='Number of no boundary objects')
-    fig_h_2d.show()
+        fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
+                                      x_label='Avg. no boundary object area', y_label='Number of no boundary objects')
+        fig_h_2d.show()
 
-    h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
+        h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
+
+    hist_1d = True
+    if hist_1d:
+        ds = xr.open_mfdataset(['/Users/mret0001/Data/Analysis/No_Boundary/sic.nc',
+                                '/Users/mret0001/Data/Analysis/No_Boundary/eso.nc',
+                                '/Users/mret0001/Data/Analysis/No_Boundary/cop.nc',
+                                ])
+
+        fig_h_1d = histogram_1d(ds, l_xlog=True,
+                                x_label='Metric $\mathcal{M}$  [1]',
+                                y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
+                                legend_label=['ESO', 'SIC', 'COP'])
+
+        fig_h_1d.show()
+
+
+
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)

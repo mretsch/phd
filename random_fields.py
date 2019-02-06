@@ -52,9 +52,9 @@ nan_mask, dummy = xr.broadcast(steiner[28, :, :], xr.zeros_like(steiner))
 nan_mask_t = nan_mask.transpose('time', 'lat', 'lon')
 rand_objects = xr.where(nan_mask_t.isnull(), nan_mask_t, rand*2)
 
-save = True
+save = False
 if save:
     rand_objects.to_netcdf('/Users/mret0001/Desktop/random_scenes.nc')
 
 stop = timeit.default_timer()
-print('This script needed {} seconds.'.format(stop - start))
+print('Random field script needed {} seconds.'.format(stop - start))
