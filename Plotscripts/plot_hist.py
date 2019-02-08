@@ -61,7 +61,7 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
     return fig
 
 
-def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
+def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_label=''):
     """Computes and plots a 2D histogram."""
     start_h = timeit.default_timer()
 
@@ -91,7 +91,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
         # H = np.ma.masked_greater(H, 50)
         # percentages
         Hsum = H.sum()
-        # H = H * 100.  # / Hsum
+        H = H * 100.   / Hsum
     # takes minutes
     else:
         # range option gets rid of the original NaNs
@@ -136,7 +136,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label=''):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     cbar = plt.colorbar()
-    cbar.ax.set_ylabel('[% dx$^{{-1}}$ dy$^{{-1}}$], Sample size: {:g}'.format(x_bin_series.notnull().sum().values))
+    cbar.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(x_bin_series.notnull().sum().values))
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)
@@ -157,7 +157,9 @@ if __name__ == '__main__':
         # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
         fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                      x_label='Avg. no boundary object area', y_label='Number of no boundary objects')
+                                      x_label='Avg. no boundary object area',
+                                      y_label='Number of no boundary objects',
+                                      cbar_label='[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
         h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')

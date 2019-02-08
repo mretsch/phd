@@ -11,8 +11,8 @@ ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*')  # STEIN
 
 consecutive = True
 if consecutive:
-    start_date = '2015-11-10T03:00:00'
-    end_date   = '2015-11-10T06:10:00'
+    start_date = '2009-12-07T11:20:00'  #  '2015-11-10T03:00:00'
+    end_date   = '2009-12-07T11:20:00'  #  '2015-11-10T06:10:00'
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=slice(start_date, end_date))
     metric1_select = metric_1.sel(time=slice(start_date, end_date))
     metric2_select = metric_2.sel(time=slice(start_date, end_date))
@@ -41,6 +41,9 @@ else:
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 # p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1, size=4)
 p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1 - abs(1 - 679./740), size=4)
+
+#m1_perc = metric_1.rank(dim='time', pct=True).sel(time=slice(start_date, end_date))
+#m2_perc = metric_2.rank(dim='time', pct=True).sel(time=slice(start_date, end_date))
 
 for i, ax in enumerate(p.axes.flat):
     ax.annotate('ESO: {:5.1f}\nSIC: {:5.1f}'.format(metric1_select[i].item(),
