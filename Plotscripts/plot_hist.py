@@ -18,19 +18,19 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
     """Probability distributions for multiple variables in a xarray-dataset."""
 
     fig, ax = plt.subplots()
-    linestyle = ['dashed', 'solid', 'dotted']
+    linestyle = ['dashed', 'solid', 'densely dotted', 'dashdotdotted', 'densely dashdotted']
 
-    for i, metric in enumerate([dataset.eso, dataset.sic, dataset.cop]):
+    for i, var in enumerate(dataset.data_vars):
 
         if type(nbins) == int:
-            bins = np.linspace(start=0., stop=metric.max(), num=nbins+1)  # 50
+            bins = np.linspace(start=0., stop=var.max(), num=nbins+1)  # 50
         else:
-            bins = np.linspace(start=m.sqrt(metric.min()), stop=m.sqrt(metric.max()), num=18)**2
+            bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
 
-        # sns.distplot(metric[metric.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
+        # sns.distplot(var[var.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
 
-        total = metric.notnull().sum().values
-        metric_clean = metric.fillna(-1)
+        total = var.notnull().sum().values
+        metric_clean = var.fillna(-1)
         h, edges = np.histogram(metric_clean, bins=bins)  # , density=True)
 
         bin_centre = 0.5* (edges[1:] + edges[:-1])
@@ -42,7 +42,8 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         else:
             h_normed = h / dx / total  # equals density=True
 
-        plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
+        #plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
+        plt.plot(bin_centre, h_normed, linewidth=2.)
 
     if l_xlog:
         plt.xscale('log')
@@ -75,8 +76,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
-        bin_edges = [np.linspace(start=0., stop=m.sqrt(250), num=18)**2,
-                     np.linspace(start=0., stop=        80 , num=40+1)]
+        #bin_edges = [np.linspace(start=0., stop=m.sqrt(250), num=18)**2,
+        #             np.linspace(start=0., stop=        80 , num=40+1)]
+        bin_edges = [np.linspace(start=0.5, stop= 5.5 , num=5+1),
+                     np.linspace(start=0., stop=y_series.max(), num=100+1)]
     x_edges = bin_edges[0]
     y_edges = bin_edges[1]
 
@@ -121,13 +124,15 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
                                        labels=ordinate,  # np.linspace(1, len(y_edges)-1, len(y_edges)-1),
                                        right=False).get_values())
 
+    samplesize = min(x_bin_series.notnull().sum(), y_bin_series.notnull().sum())
+
     ds_out = xr.Dataset(data_vars={'hist_2D': (['y', 'x'], Hmasked, {'units': '%'}),
                                    'x_series_bins': (['time'], x_bin_series, {'units': 'bin by value'}),
                                    'y_series_bins': (['time'], y_bin_series, {'units': 'bin by value'})},
                         coords={'x': (['x'], abscissa),
                                 'y': (['y'], ordinate),
                                 'time': (['time'], x_series[x_series.dims[-1]])},
-                        attrs={'Sample size': '{:g}'.format(x_bin_series.notnull().sum().values)})
+                        attrs={'Sample size': '{:g}'.format(samplesize.values)})
 
     # Plot 2D histogram
     fig = plt.figure()
@@ -136,7 +141,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     cbar = plt.colorbar()
-    cbar.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(x_bin_series.notnull().sum().values))
+    cbar.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(samplesize.values))
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)
