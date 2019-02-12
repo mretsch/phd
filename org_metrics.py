@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-import artificial_fields as af
-import random_fields as rf
+# import artificial_fields as af
+# import random_fields as rf
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
@@ -157,13 +157,22 @@ def _shape_independent_cop(in_func):
         area_1 = np.array([c.area for c in s_pairs.partner1]) + 0.5
         area_2 = np.array([c.area for c in s_pairs.partner2]) + 0.5
 
+        large_area = np.maximum(area_1, area_2)
+        small_area = np.minimum(area_1, area_2)
+        # TODO do not hardcode total area
+        radar_area = 9841  # pixels
+
         if r_pairs:
             # modify area_1 and area_2. SIC --> ESO.
             ma_mi_1, ma_mi_2 = in_func(r_pairs)
             v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
         else:
+            # v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
+            # new version of SIC
             v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
-        return np.mean(v)
+            single_sic = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
+        # return np.mean(v)
+        return single_sic.prod()**(1./len(large_area))
 
     return wrapper
 
@@ -376,15 +385,15 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'eso': False, 'iorg': True, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': True, 'eso': False, 'iorg': False, 'basics': True,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
+                            file="/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*")
 
     # save metrics as netcdf-files
-    save = True
+    save = False
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
