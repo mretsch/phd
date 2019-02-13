@@ -22,6 +22,9 @@ class Pairs:
         else:
             self.partner1, self.partner2 = [], []
 
+    def __len__(self):
+        return len(self.pairlist)
+
     def distance_regionprops(self):
         """The distance in units of pixels between two centroids of cloud-objects found by skm.regionprops."""
 
@@ -44,10 +47,14 @@ def gen_shortlist(start, inlist):
 
 
 def gen_tuplelist(inlist):
-    """Tuples of all possible unique pairs in an iterator."""
-    for i, item1 in enumerate(inlist):
-        for item2 in gen_shortlist(start=i + 1, inlist=inlist):
-            yield item1, item2
+    """Tuples of all possible unique pairs in an iterator. For one element only in iterator, yields tuple with two
+    times the same item."""
+    if len(inlist) == 1:
+        yield inlist[0], inlist[0]
+    else:
+        for i, item1 in enumerate(inlist):
+            for item2 in gen_shortlist(start=i + 1, inlist=inlist):
+                yield item1, item2
 
 
 def _gen_shapely_objects(in_func):
@@ -122,6 +129,9 @@ def conv_org_pot(pairs):
     """The Convective Organisation Potential according to [White et al. 2018]"""
     if not pairs.pairlist:
         return np.nan
+    if len(pairs) == 1:
+        if pairs.partner1 == pairs.partner2:
+            return (0.5 * pairs.partner1.equivalent_diameter).item()
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -132,6 +142,9 @@ def cop_mod(pairs):
     """Modified COP to account for different areas of objects."""
     if not pairs.pairlist:
         return np.nan
+    if len(pairs) == 1:
+        if pairs.partner1 == pairs.partner2:
+            return (0.5 * pairs.partner1.equivalent_diameter).item()
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -162,6 +175,11 @@ def _shape_independent_cop(in_func):
         # TODO do not hardcode total area
         radar_area = 9841  # pixels
 
+        if len(s_pairs) == 1:
+            if s_pairs.partner1 == s_pairs.partner2:
+                #return area_1.item()
+                return (area_1 / radar_area).item()
+
         if r_pairs:
             # modify area_1 and area_2. SIC --> ESO.
             ma_mi_1, ma_mi_2 = in_func(r_pairs)
@@ -170,9 +188,9 @@ def _shape_independent_cop(in_func):
             # v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
             # new version of SIC
             v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
-            single_sic = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
-        # return np.mean(v)
-        return single_sic.prod()**(1./len(large_area))
+            single_connection = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
+        #return np.mean(v)
+        return single_connection.prod()**(1./len(large_area))
 
     return wrapper
 
@@ -390,7 +408,8 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*")
+                            # file="/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*")
+                            file="/Users/mret0001/Data/Steiner/*season*")
 
     # save metrics as netcdf-files
     save = False
