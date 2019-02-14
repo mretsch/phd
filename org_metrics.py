@@ -6,11 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import timeit
 import skimage.measure as skm
-# import artificial_fields as af
-# import random_fields as rf
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
+# import artificial_fields as af
+# import random_fields as rf
+from basic_stats import notnull_area
 
 
 class Pairs:
@@ -163,7 +164,29 @@ def _shape_independent_cop(in_func):
     """Decorator for metrics SIC and ESO."""
 
     @functools.wraps(in_func)
-    def wrapper(s_pairs, r_pairs=None):
+    def wrapper(s_pairs, radar_area, r_pairs=None):
+        if not s_pairs.pairlist:
+            return np.nan
+        # + 0.5 because shapely contours 'skip' edges of pixels
+        area_1 = np.array([c.area for c in s_pairs.partner1]) + 0.5
+        area_2 = np.array([c.area for c in s_pairs.partner2]) + 0.5
+
+        if r_pairs:
+            # modify area_1 and area_2. SIC --> ESO.
+            ma_mi_1, ma_mi_2 = in_func(r_pairs)
+            v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
+        else:
+            v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
+        return np.mean(v)
+
+    return wrapper
+
+
+def _radar_organisation_metric(in_func):
+    """Decorator for metric ROM."""
+
+    @functools.wraps(in_func)
+    def wrapper(s_pairs, radar_area, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
         # + 0.5 because shapely contours 'skip' edges of pixels
@@ -172,12 +195,9 @@ def _shape_independent_cop(in_func):
 
         large_area = np.maximum(area_1, area_2)
         small_area = np.minimum(area_1, area_2)
-        # TODO do not hardcode total area
-        radar_area = 9841  # pixels
 
         if len(s_pairs) == 1:
             if s_pairs.partner1 == s_pairs.partner2:
-                #return area_1.item()
                 return (area_1 / radar_area).item()
 
         if r_pairs:
@@ -185,11 +205,9 @@ def _shape_independent_cop(in_func):
             ma_mi_1, ma_mi_2 = in_func(r_pairs)
             v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
         else:
-            # v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
-            # new version of SIC
             v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
-            single_connection = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
-        #return np.mean(v)
+
+        single_connection = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
         return single_connection.prod()**(1./len(large_area))
 
     return wrapper
@@ -222,6 +240,11 @@ def elliptic_shape_organisation(r_pairs):
     mi = np.where(mi == 0., 1., mi)
     ma_mi_2 = ma / mi
     return ma_mi_1, ma_mi_2
+
+
+@_radar_organisation_metric
+def radar_organisation_metric():
+    pass
 
 
 def i_org(pairs, objects):
@@ -311,11 +334,15 @@ def run_metrics(file="", switch={}):
 
     if switch['artificial']:
         conv_0 = af.art
+        total_area = notnull_area(af.art)
     elif switch['random']:
         conv_0 = rf.rand_objects
+        total_area = notnull_area(rf.rand_objects)
     else:
         ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
         stein  = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
+        total_area = notnull_area(stein)
+
         if switch['boundary']:
             conv   = stein.where(stein == 2)
             conv_0 = conv.fillna(0.)
@@ -333,7 +360,7 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic'] or switch['eso']:
+    if switch['sic'] or switch['eso'] or switch['rom']:
         if switch['boundary']:
             props = list(gen_shapely_objects_all(conv_0))
         else:
@@ -356,6 +383,9 @@ def run_metrics(file="", switch={}):
 
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
+
+    rom = xr.DataArray([radar_organisation_metric(s_pairs=p, radar_area=total_area)
+                        for p in all_s_pairs]) if switch['rom'] else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     if switch['basics']:
@@ -384,6 +414,7 @@ def run_metrics(file="", switch={}):
                        'cop_mod': cop_m,
                        'sic': sic,
                        'eso': eso,
+                       'rom': rom,
                        'm1': m1,
                        'iorg': iorg,
                        'o_number': o_number,
@@ -403,13 +434,13 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'eso': False, 'iorg': False, 'basics': True,
+              'cop':False, 'cop_mod':False, 'sic':False, 'eso':False, 'iorg':False, 'rom':True, 'basics':False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             # file="/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*")
-                            file="/Users/mret0001/Data/Steiner/*season*")
+                            file="/Users/mret0001/Data/Steiner/*threedays*")
 
     # save metrics as netcdf-files
     save = False
