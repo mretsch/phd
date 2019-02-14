@@ -403,7 +403,7 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': True, 'eso': False, 'iorg': False, 'basics': True,
+              'cop': False, 'cop_mod': False, 'sic': False, 'eso': False, 'iorg': False, 'basics': True,
               'boundary': False}
 
     # compute the metrics

@@ -4,21 +4,21 @@ import timeit
 
 start = timeit.default_timer()
 
-# metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/eso.nc')  # eso_random.nc')
-# metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')  # sic_random.nc')
-# metric_3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
-# ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*')  # STEINER_random_scenes_noBound.nc')
+metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/moo.nc')  # eso_random.nc')
+metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')  # sic_random.nc')
+metric_3 = metric_2  # xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
+ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season1213*', chunks=40)  # STEINER_random_scenes_noBound.nc')
 
-metric_1 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/sic.nc').\
-    sel({'time': slice('2009-10-01', '2010-03-31')})
-metric_2 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/iorg_season0910.nc')
-metric_3 = metric_1
-ds_steiner = xr.open_mfdataset('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*')
+# metric_1 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/sic.nc').\
+#     sel({'time': slice('2009-10-01', '2010-03-31')})
+# metric_2 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/iorg_season0910.nc')
+# metric_3 = metric_1
+# ds_steiner = xr.open_mfdataset('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*')
 
 consecutive = True
 if consecutive:
-    start_date = '2009-12-07T09:10:00'  #  '2015-11-10T03:00:00'
-    end_date   = '2009-12-07T12:20:00'  #  '2015-11-10T06:10:00'
+    start_date = '2013-03-16T09:00:00'  # '2009-12-07T09:10:00'  #  '2015-11-10T03:00:00'
+    end_date   = '2013-03-16T12:10:00'  # '2009-12-07T12:20:00'  #  '2015-11-10T06:10:00'
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=slice(start_date, end_date))
     metric1_select = metric_1.sel(time=slice(start_date, end_date))
     metric2_select = metric_2.sel(time=slice(start_date, end_date))
@@ -44,20 +44,25 @@ else:
 p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1 - abs(1 - 679./740), size=4)
 
 percentiles = True
+as_coordinate = True
 if percentiles:
-    print1 = metric_1.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
-    print2 = metric_2.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
+    if as_coordinate:
+        print1 = metric1_select.percentile * 100
+        print2 = metric2_select.percentile * 100
+    else:
+        print1 = metric_1.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
+        print2 = metric_2.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
 else:
-    print1 = metric_1
-    print2 = metric_2
+    print1 = metric1_select
+    print2 = metric2_select
 
 for i, ax in enumerate(p.axes.flat):
-    ax.annotate('SIC: {:5.0f}\n'
-                'Ior: {:5.0f}'.format(print1[i].item(),
+    ax.annotate('MOO: {:5.0f}\n'
+                'SIC: {:5.0f}'.format(print1[i].item(),
                                       print2[i].item()), (131.78, -11.2), color='blue')
     # ax.annotate('COP: {:5.1f}'.format(metric3_select[i].item()), (131.78, -13.4), color='blue')
 
-plt.savefig('/Users/matthiasretsch/Desktop/test.pdf')
+plt.savefig('/Users/mret0001/Desktop/radar_scenes.pdf')
 #plt.show()
 
 # Have all scenes separately as a pdf to create a gif
