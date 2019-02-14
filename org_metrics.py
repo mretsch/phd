@@ -9,7 +9,7 @@ import skimage.measure as skm
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
-# import artificial_fields as af
+import artificial_fields as af
 # import random_fields as rf
 from basic_stats import notnull_area
 
@@ -164,7 +164,7 @@ def _shape_independent_cop(in_func):
     """Decorator for metrics SIC and ESO."""
 
     @functools.wraps(in_func)
-    def wrapper(s_pairs, radar_area, r_pairs=None):
+    def wrapper(s_pairs, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
         # + 0.5 because shapely contours 'skip' edges of pixels

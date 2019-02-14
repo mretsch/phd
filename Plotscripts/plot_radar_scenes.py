@@ -4,16 +4,16 @@ import timeit
 
 start = timeit.default_timer()
 
-metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/moo.nc')
-metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
-ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season1213*', chunks=40)
+metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
+metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/moo.nc')
+ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*', chunks=40)
 
 # metric_1 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/sic.nc').\
 #     sel({'time': slice('2009-10-01', '2010-03-31')})
 # metric_2 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/iorg_season0910.nc')
 # ds_steiner = xr.open_mfdataset('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*')
 
-consecutive = True
+consecutive = False
 if consecutive:
     start_date = '2013-03-16T09:00:00'
     end_date   = '2013-03-16T12:10:00'
@@ -53,8 +53,8 @@ else:
     print2 = metric2_select
 
 for i, ax in enumerate(p.axes.flat):
-    ax.annotate('MOO: {:5.0f}\n'
-                'SIC: {:5.0f}'.format(print1[i].item(),
+    ax.annotate('SIC: {:5.0f}\n'
+                'MOO: {:5.0f}'.format(print1[i].item(),
                                       print2[i].item()), (131.78, -11.2), color='blue')
 
 plt.savefig('/Users/mret0001/Desktop/radar_scenes.pdf')

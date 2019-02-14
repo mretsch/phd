@@ -6,9 +6,9 @@ import random_fields as rf
 import org_metrics as om
 
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'cop': True, 'sic': True})
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'sic': True})
 
-cop = ds_metric.cop
+cop = ds_metric.rom
 sic = ds_metric.sic
 
 fig = plt.figure(figsize=(9, 14))  # width 9, height 10 (2 per row)
@@ -31,11 +31,11 @@ for i, axis in enumerate(grid):
                      left=False, labelleft=False)
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     if i != 5:
-        axis.text(x=129.8, y=-13, s='COP = ' + str(cop[i].round(decimals=2).values)
+        axis.text(x=129.8, y=-13, s='ROM = ' + str(cop[i].round(decimals=2).values)
                                     + '\nSIC = ' + str(sic[i].round(decimals=2).values),
                   verticalalignment='top')
     else:
-        axis.text(x=129.8, y=-13, s='COP ='
+        axis.text(x=129.8, y=-13, s='ROM ='
                                     + '\nSIC =',
                   verticalalignment='top')
         axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
