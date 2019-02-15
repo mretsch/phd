@@ -1,5 +1,5 @@
 import xarray as xr
-from dask.distributed import Client
+# from dask.distributed import Client
 import bottleneck as bn
 import timeit
 
@@ -29,7 +29,6 @@ def notnull_area(array):
     while array[i, :, :].isnull().all():
         i += 1
     return int(array[i, :, :].notnull().sum())
-
 
 
 def precip_stats(rain, stein, period='', group=''):

@@ -3,14 +3,14 @@ import xarray as xr
 import numpy as np
 
 try:
-    ds = xr.open_dataset('~/Desktop/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
+    ds = xr.open_dataset('~/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 except FileNotFoundError:
-    ds = xr.open_dataset('~/Data/RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_threedays.nc')
+    ds = xr.open_dataset('~/Desktop/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
-art = xr.zeros_like(ds.radar_estimated_rain_rate[:14, :, :])
+art = xr.zeros_like(ds.steiner_echo_classification[:14, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 

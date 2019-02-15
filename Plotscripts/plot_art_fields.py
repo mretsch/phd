@@ -1,8 +1,10 @@
+from os.path import expanduser
+home = expanduser("~")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 import numpy as np
 import artificial_fields as af
-import random_fields as rf
+# import random_fields as rf
 import org_metrics as om
 
 
@@ -43,5 +45,5 @@ for i, axis in enumerate(grid):
                   verticalalignment='top')
         # axis.tick_params(labelbottom=True, labelleft=True)
 
-plt.savefig('/Users/mret0001/Desktop/artificial.pdf')
+plt.savefig(home+'/Desktop/artificial.pdf')
 plt.show()

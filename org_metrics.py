@@ -1,3 +1,5 @@
+from os.path import expanduser
+home = expanduser("~")
 import collections
 import functools
 import math as m
@@ -11,7 +13,6 @@ import shapely.geometry as spg
 import shapely.ops as spo
 import artificial_fields as af
 # import random_fields as rf
-from basic_stats import notnull_area
 
 
 class Pairs:
@@ -186,7 +187,7 @@ def _radar_organisation_metric(in_func):
     """Decorator for metric ROM."""
 
     @functools.wraps(in_func)
-    def wrapper(s_pairs, radar_area, r_pairs=None):
+    def wrapper(s_pairs, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
         # + 0.5 because shapely contours 'skip' edges of pixels
@@ -198,17 +199,16 @@ def _radar_organisation_metric(in_func):
 
         if len(s_pairs) == 1:
             if s_pairs.partner1 == s_pairs.partner2:
-                return (area_1 / radar_area).item()
+                return area_1.item()
 
-        if r_pairs:
-            # modify area_1 and area_2. SIC --> ESO.
-            ma_mi_1, ma_mi_2 = in_func(r_pairs)
-            v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
-        else:
-            v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
+        # if r_pairs:
+        #     # modify area_1 and area_2. SIC --> ESO.
+        #     ma_mi_1, ma_mi_2 = in_func(r_pairs)
+        #     v = np.array((area_1 * ma_mi_1 + area_2 * ma_mi_2) / s_pairs.distance_shapely()**2)
+        # else:
+        #     v = np.array((area_1           + area_2          ) / s_pairs.distance_shapely()**2)
 
-        single_connection = (large_area / radar_area) * (1 - small_area / large_area * v / radar_area)
-        return single_connection.prod()**(1./len(large_area))
+        return np.mean(large_area + np.minimum(small_area, (small_area / s_pairs.distance_shapely())**2))
 
     return wrapper
 
@@ -334,14 +334,11 @@ def run_metrics(file="", switch={}):
 
     if switch['artificial']:
         conv_0 = af.art
-        total_area = notnull_area(af.art)
     elif switch['random']:
         conv_0 = rf.rand_objects
-        total_area = notnull_area(rf.rand_objects)
     else:
-        ds_st  = xr.open_mfdataset(file, chunks={'time': 40})
-        stein  = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
-        total_area = notnull_area(stein)
+        ds_st = xr.open_mfdataset(file, chunks={'time': 40})
+        stein = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
 
         if switch['boundary']:
             conv   = stein.where(stein == 2)
@@ -384,8 +381,7 @@ def run_metrics(file="", switch={}):
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
-    rom = xr.DataArray([radar_organisation_metric(s_pairs=p, radar_area=total_area)
-                        for p in all_s_pairs]) if switch['rom'] else np.nan
+    rom = xr.DataArray([radar_organisation_metric(s_pairs=p) for p in all_s_pairs]) if switch['rom'] else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     if switch['basics']:
@@ -439,8 +435,8 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            # file="/Users/matthiasretsch/Google Drive File Stream/My Drive/Data/steiner*")
-                            file="/Users/mret0001/Data/Steiner/*threedays*")
+                            file=home+"/Desktop/steiner*")
+                            #file="/Users/mret0001/Data/Steiner/*threedays*")
 
     # save metrics as netcdf-files
     save = False
