@@ -1,3 +1,5 @@
+from os.path import expanduser
+home_dir = expanduser("~")
 import collections
 import functools
 import math as m
@@ -381,13 +383,13 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file="/Users/mret0001/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
+                            file=home_dir+"/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season0910.nc")
 
     # save metrics as netcdf-files
     save = True
     if save:
         for var in ds_metric.variables:
-            xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
+            xr.Dataset({var: ds_metric[var]}).to_netcdf(home_dir+'/Desktop/'+var+'_new.nc')
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
