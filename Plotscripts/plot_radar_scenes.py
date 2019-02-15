@@ -4,8 +4,8 @@ import timeit
 
 start = timeit.default_timer()
 
-metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
-metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/moo.nc')
+metric_1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
+metric_2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
 ds_steiner = xr.open_mfdataset('/Users/mret0001/Data/Steiner/*season*', chunks=40)
 
 # metric_1 = xr.open_dataarray('/Users/matthiasretsch/Google Drive File Stream/My Drive/Data_Analysis/sic.nc').\
@@ -39,7 +39,7 @@ else:
 # p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1, size=4)
 p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=1 - abs(1 - 679./740), size=4)
 
-percentiles = True
+percentiles = False
 as_coordinate = True
 if percentiles:
     if as_coordinate:
@@ -53,8 +53,8 @@ else:
     print2 = metric2_select
 
 for i, ax in enumerate(p.axes.flat):
-    ax.annotate('SIC: {:5.0f}\n'
-                'MOO: {:5.0f}'.format(print1[i].item(),
+    ax.annotate('ROM: {:5.0f}\n'
+                'SIC: {:5.0f}'.format(print1[i].item(),
                                       print2[i].item()), (131.78, -11.2), color='blue')
 
 plt.savefig('/Users/mret0001/Desktop/radar_scenes.pdf')
