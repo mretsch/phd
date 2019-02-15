@@ -20,8 +20,9 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
     fig, ax = plt.subplots()
     linestyle = ['dashed', 'solid', 'densely dotted', 'dashdotdotted', 'densely dashdotted']
 
-    for i, var in enumerate(dataset.data_vars):
+    for i, variable in enumerate(dataset):
 
+        var = dataset[variable]
         if type(nbins) == int:
             bins = np.linspace(start=0., stop=var.max(), num=nbins+1)  # 50
         else:
@@ -171,15 +172,17 @@ if __name__ == '__main__':
 
     hist_1d = True
     if hist_1d:
-        ds = xr.open_mfdataset(['/Users/mret0001/Data/Analysis/No_Boundary/sic.nc',
-                                '/Users/mret0001/Data/Analysis/No_Boundary/eso.nc',
-                                '/Users/mret0001/Data/Analysis/No_Boundary/cop.nc',
-                                ])
+        var1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
+        var2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
+        var3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
+        del var1['percentile']
+        del var2['percentile']
+        ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
 
         fig_h_1d = histogram_1d(ds, l_xlog=True,
                                 x_label='Metric $\mathcal{M}$  [1]',
                                 y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
-                                legend_label=['ESO', 'SIC', 'COP'])
+                                legend_label=['SIC', 'ROM', 'COP'])
 
         fig_h_1d.show()
 
