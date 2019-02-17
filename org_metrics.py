@@ -127,6 +127,26 @@ def gen_regionprops_objects(array):
         yield objects
 
 
+def gen_regionprops_pixels(array):
+    """skimage.regionprops for every single pixel without objects touching radar boundary."""
+    for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
+        labeled = skm.label(scene, background=0)  # , connectivity=1)
+        # the big object with all the former NaN outside the radar has always the label 1?
+        no_outer = labeled.where(labeled != 1, other=0)
+        # background stays, but all labeled objects are back to 2, the steiner convective number.
+        conv = no_outer.where(no_outer == 0, other=2)
+        # every pixels gets unique integer as its label
+
+        array_shape = array.shape()
+        row = np.arange()
+
+        objects = skm.regionprops(labeled)
+        box_areas = np.array([o.bbox_area for o in objects])
+        outer_index = box_areas.argmax()
+        del objects[outer_index]
+        yield objects
+
+
 def conv_org_pot(pairs):
     """The Convective Organisation Potential according to [White et al. 2018]"""
     if not pairs.pairlist:
@@ -435,7 +455,7 @@ if __name__ == '__main__':
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Desktop/steiner*")
+                            file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
                             #file="/Users/mret0001/Data/Steiner/*threedays*")
 
     # save metrics as netcdf-files

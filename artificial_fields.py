@@ -5,7 +5,7 @@ import numpy as np
 try:
     ds = xr.open_dataset('~/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 except FileNotFoundError:
-    ds = xr.open_dataset('~/Desktop/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
+    ds = xr.open_dataset('~/Google Drive File Stream/My Drive/Data/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
