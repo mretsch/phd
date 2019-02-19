@@ -8,21 +8,21 @@ import artificial_fields as af
 import org_metrics as om
 
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'sic': True})
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': True})
 
-cop = ds_metric.rom
-sic = ds_metric.sic
+m1 = ds_metric.rom
+m2 = ds_metric.rome
 
-fig = plt.figure(figsize=(9, 14))  # width 9, height 10 (2 per row)
+fig = plt.figure(figsize=(9, 16))  # width 9, height 10 (2 per row)
 grid = AxesGrid(fig, 111,
-                nrows_ncols=(7, 2),
+                nrows_ncols=(8, 2),
                 axes_pad=0.05
                 # cbar_mode='single',
                 # cbar_location='right',
                 # cbar_pad=0.1
                 )
 
-alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']
+alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
 for i, axis in enumerate(grid):
     # ax.set_axis_off()
     # im = ax.imshow(af.art[i, :, :])
@@ -33,15 +33,15 @@ for i, axis in enumerate(grid):
                      left=False, labelleft=False)
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     if i != 5:
-        axis.text(x=129.8, y=-13, s='ROM = ' + str(cop[i].round(decimals=2).values)
-                                    + '\nSIC = ' + str(sic[i].round(decimals=2).values),
-                  verticalalignment='top')
+        axis.text(x=129.8, y=-13, s='ROM = ' + str(m1[i].round(decimals=2).values)
+                                    + '\nROME = ' + str(m2[i].round(decimals=2).values),
+                  verticalalignment='top', color='r')
     else:
         axis.text(x=129.8, y=-13, s='ROM ='
-                                    + '\nSIC =',
+                                    + '\nROME =',
                   verticalalignment='top')
-        axis.text(x=131.5, y=-13, s=str(cop[i].round(decimals=2).values)
-                                    + '\n' + str(sic[i].round(decimals=2).values),
+        axis.text(x=131.5, y=-13, s=str(m1[i].round(decimals=2).values)
+                                    + '\n' + str(m2[i].round(decimals=2).values),
                   verticalalignment='top')
         # axis.tick_params(labelbottom=True, labelleft=True)
 

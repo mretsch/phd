@@ -10,7 +10,7 @@ except FileNotFoundError:
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
-art = xr.zeros_like(ds.steiner_echo_classification[:14, :, :])
+art = xr.zeros_like(ds.steiner_echo_classification[:16, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 
@@ -94,14 +94,20 @@ art[11, 54: 63, 78: 87] = 2
 # small stick and small square
 art[12, 35: 82, 49: 58] = 2
 art[12, 54: 63, 78: 87] = 2
-# art[12, 37: 80, 53: 64] = 2
-# art[12, 54: 63, 78: 87] = 2
 
 # large and small square
 art[13, 35: 82, 11: 58] = 2
 art[13, 54: 63, 78: 87] = 2
-# art[13, 37: 80, 21: 64] = 2
-# art[13, 54: 63, 78: 87] = 2
 
 # =========================
+
+# stick
+art[14, 16:101, 53: 64] = 2
+
+# same area stick in pieces
+art[15, 10: 27, 53: 64] = 2
+art[15, 30: 47, 53: 64] = 2
+art[15, 50: 67, 53: 64] = 2
+art[15, 70: 87, 53: 64] = 2
+art[15, 90:107, 53: 64] = 2
 

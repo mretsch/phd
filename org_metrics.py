@@ -129,22 +129,20 @@ def gen_regionprops_objects(array):
 
 def gen_regionprops_pixels(array):
     """skimage.regionprops for every single pixel without objects touching radar boundary."""
+    array_shape = array.shape
     for scene in array:  # array has dimension (time, lat, lon). A scene is a lat-lon slice.
-        labeled = skm.label(scene, background=0)  # , connectivity=1)
-        # the big object with all the former NaN outside the radar has always the label 1?
+        labeled = xr.DataArray(skm.label(scene, background=0))  # , connectivity=1)
+        # the big object with all the former NaN outside the radar has always the label 1.
         no_outer = labeled.where(labeled != 1, other=0)
         # background stays, but all labeled objects are back to 2, the steiner convective number.
         conv = no_outer.where(no_outer == 0, other=2)
-        # every pixels gets unique integer as its label
+        # every pixels gets unique integer as its label.
+        unique = xr.DataArray(np.reshape(np.arange(array_shape[-1] * array_shape[-2]),
+                                         newshape=(array_shape[-2], array_shape[-1])))
 
-        array_shape = array.shape()
-        row = np.arange()
-
-        objects = skm.regionprops(labeled)
-        box_areas = np.array([o.bbox_area for o in objects])
-        outer_index = box_areas.argmax()
-        del objects[outer_index]
-        yield objects
+        pixel_label = unique.where(conv != 0, other=0)
+        pixel_objects = skm.regionprops(pixel_label)
+        yield pixel_objects
 
 
 def conv_org_pot(pairs):
@@ -153,7 +151,7 @@ def conv_org_pot(pairs):
         return np.nan
     if len(pairs) == 1:
         if pairs.partner1 == pairs.partner2:
-            return (0.5 * pairs.partner1.equivalent_diameter).item()
+            return 0.5 * pairs.partner1[0].equivalent_diameter
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -166,7 +164,7 @@ def cop_mod(pairs):
         return np.nan
     if len(pairs) == 1:
         if pairs.partner1 == pairs.partner2:
-            return (0.5 * pairs.partner1.equivalent_diameter).item()
+            return 0.5 * pairs.partner1[0].equivalent_diameter
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -210,9 +208,14 @@ def _radar_organisation_metric(in_func):
     def wrapper(s_pairs, r_pairs=None):
         if not s_pairs.pairlist:
             return np.nan
+
         # + 0.5 because shapely contours 'skip' edges of pixels
         area_1 = np.array([c.area for c in s_pairs.partner1]) + 0.5
         area_2 = np.array([c.area for c in s_pairs.partner2]) + 0.5
+        if r_pairs:
+            ma_mi_1, ma_mi_2 = in_func(r_pairs)
+            area_1 *= ma_mi_1
+            area_2 *= ma_mi_2
 
         large_area = np.maximum(area_1, area_2)
         small_area = np.minimum(area_1, area_2)
@@ -240,9 +243,14 @@ def shape_independent_cop():
     pass
 
 
-@_shape_independent_cop
+@_radar_organisation_metric
+def radar_organisation_metric():
+    pass
+
+
+@_radar_organisation_metric
 def elliptic_shape_organisation(r_pairs):
-    """Decorated by SIC, to compute ESO. Multiply object area of SIC with its major-minor axis ratio first."""
+    """Ratio of objects major to minor axis given by the .regionprop properties. To modify existing metric."""
     major, minor = [], []
     for c in r_pairs.partner1:
         major.append(c.major_axis_length)
@@ -260,11 +268,6 @@ def elliptic_shape_organisation(r_pairs):
     mi = np.where(mi == 0., 1., mi)
     ma_mi_2 = ma / mi
     return ma_mi_1, ma_mi_2
-
-
-@_radar_organisation_metric
-def radar_organisation_metric():
-    pass
 
 
 def i_org(pairs, objects):
@@ -369,7 +372,7 @@ def run_metrics(file="", switch={}):
             conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics'] or switch['eso']:
+    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics'] or switch['rome']:
         if switch['boundary']:
             props = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -377,7 +380,7 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic'] or switch['eso'] or switch['rom']:
+    if switch['sic'] or switch['rome'] or switch['rom']:
         if switch['boundary']:
             props = list(gen_shapely_objects_all(conv_0))
         else:
@@ -395,13 +398,13 @@ def run_metrics(file="", switch={}):
 
     sic = xr.DataArray([shape_independent_cop(s_pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    eso = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
-                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['eso'] else np.nan
-
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
     rom = xr.DataArray([radar_organisation_metric(s_pairs=p) for p in all_s_pairs]) if switch['rom'] else np.nan
+
+    rome = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
+                         for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rome'] else np.nan
 
     m1, o_number, o_area, o_area_max = [], [], [], []
     if switch['basics']:
@@ -429,7 +432,7 @@ def run_metrics(file="", switch={}):
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
                        'sic': sic,
-                       'eso': eso,
+                       'rome': rome,
                        'rom': rom,
                        'm1': m1,
                        'iorg': iorg,
@@ -450,13 +453,13 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop':False, 'cop_mod':False, 'sic':False, 'eso':False, 'iorg':False, 'rom':True, 'basics':False,
+              'cop': True, 'cop_mod': False, 'sic': False, 'rome': False, 'iorg': False, 'rom': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
-                            #file="/Users/mret0001/Data/Steiner/*threedays*")
+                            #file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
+                            file=home+"/Data/Steiner/*threedays*")
 
     # save metrics as netcdf-files
     save = False

@@ -1,3 +1,5 @@
+from os.path import expanduser
+home = expanduser("~")
 import timeit
 import matplotlib.pyplot as plt
 import math as m
@@ -14,11 +16,11 @@ plt.rc('legend', fontsize=12)
 # plt.rc('text.latex' , preamble=r'\usepackage{cmbright}')
 
 
-def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[]):
+def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[], l_color=True):
     """Probability distributions for multiple variables in a xarray-dataset."""
 
     fig, ax = plt.subplots()
-    linestyle = ['dashed', 'solid', 'densely dotted', 'dashdotdotted', 'densely dashdotted']
+    linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
 
     for i, variable in enumerate(dataset):
 
@@ -43,8 +45,10 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         else:
             h_normed = h / dx / total  # equals density=True
 
-        #plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
-        plt.plot(bin_centre, h_normed, linewidth=2.)
+        if l_color:
+            plt.plot(bin_centre, h_normed, linewidth=2.)
+        else:
+            plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
 
     if l_xlog:
         plt.xscale('log')
@@ -154,8 +158,8 @@ if __name__ == '__main__':
 
     hist_2d = False
     if hist_2d:
-        ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
-                                "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
+        ds = xr.open_mfdataset([home+"/Data/Analysis/No_Boundary/o_area.nc",
+                                home+"/Data/Analysis/No_Boundary/o_number.nc",
                                 ])
 
         # don't take scenes where convection is 1 pixel large only
@@ -168,13 +172,13 @@ if __name__ == '__main__':
                                       cbar_label='[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
-        h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
+        h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
     hist_1d = True
     if hist_1d:
-        var1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/sic.nc')
-        var2 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
-        var3 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/cop.nc')
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+        var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
         del var1['percentile']
         del var2['percentile']
         ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
@@ -182,7 +186,8 @@ if __name__ == '__main__':
         fig_h_1d = histogram_1d(ds, l_xlog=True,
                                 x_label='Metric $\mathcal{M}$  [1]',
                                 y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
-                                legend_label=['SIC', 'ROM', 'COP'])
+                                legend_label=['SIC', 'ROM', 'COP'],
+                                l_color=False)
 
         fig_h_1d.show()
 
