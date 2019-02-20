@@ -7,8 +7,8 @@ import timeit
 start = timeit.default_timer()
 
 try:
-    metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
-    metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+    metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+    metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
     ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 except FileNotFoundError:
     metric_1 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom.nc')#\
@@ -16,7 +16,7 @@ except FileNotFoundError:
     metric_2 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/sic.nc')
     ds_steiner = xr.open_mfdataset(home+'/Google Drive File Stream/My Drive/Data/Steiner/*season*')
 
-consecutive = True
+consecutive = False
 if consecutive:
     start_date = '2009-11-30T04:40:00'
     end_date   = '2009-11-30T23:50:00'
@@ -33,8 +33,9 @@ else:
     idx_median = int(len(m_sort) / 2)
     idx_mean = int(abs(m_sort - m_sort.mean()).argmin())
     idx_90percent = round(0.9 * len(m_sort))
+    idx_99percent = round(0.99 * len(m_sort))
     idx_value = abs(m_sort - 10.8).argmin().item()
-    metric1_select = m_sort[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[idx_90percent-10:idx_90percent+10]  #[-60:-40] #
+    metric1_select = m_sort[idx_99percent-10:idx_99percent+10]  #[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[-60:-40] #
 
     steiner_select = steiner.loc[metric1_select.time]
     metric2_select = metric_2.loc[metric1_select.time]
@@ -57,12 +58,12 @@ print1 = metric1_select
 print2 = metric2_select
 
 for i, ax in enumerate(p.axes.flat):
-    ax.annotate('ROM: {:5.1f}\n'
-                'SIC: {:5.1f}'.format(print1[i].item(),
+    ax.annotate('SIC: {:5.1f}\n'
+                'ROM: {:5.1f}'.format(print1[i].item(),
                                       print2[i].item()), (131.78, -11.2), color='blue')
     if percentiles:
-        ax.annotate('ROM: {:3.0f}%\n'
-                    'SIC: {:3.0f}%'.format(perct1[i].item(),
+        ax.annotate('SIC: {:3.0f}%\n'
+                    'ROM: {:3.0f}%'.format(perct1[i].item(),
                                            perct2[i].item()), (131.78, -13.5), color='blue')
 
 plt.savefig(home+'/Desktop/radar_scenes1.pdf')

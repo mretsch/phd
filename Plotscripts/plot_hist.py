@@ -156,25 +156,24 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
-        ds = xr.open_mfdataset([home+"/Data/Analysis/No_Boundary/o_area.nc",
-                                home+"/Data/Analysis/No_Boundary/o_number.nc",
-                                ])
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
 
         # don't take scenes where convection is 1 pixel large only
         # area_max = ds.o_area_max.where(ds.o_area_max != 1)
         # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-        fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                      x_label='Avg. no boundary object area',
-                                      y_label='Number of no boundary objects',
-                                      cbar_label='[% dx$^{{-1}}$ dy$^{{-1}}$]')
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
+                                      x_label='ROM [1]',
+                                      y_label='ROME [1]',
+                                      cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
         var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
