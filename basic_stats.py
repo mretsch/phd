@@ -1,5 +1,5 @@
 import xarray as xr
-from dask.distributed import Client
+# from dask.distributed import Client
 import bottleneck as bn
 import timeit
 
@@ -23,6 +23,14 @@ def spearman_correlation(x, y):
     return pearson_correlation(x_ranks, y_ranks)
 
 
+def notnull_area(array):
+    """Pixels not NaN for the two fast dimensions of a 3D x-array."""
+    i = 0
+    while array[i, :, :].isnull().all():
+        i += 1
+    return int(array[i, :, :].notnull().sum())
+
+
 def precip_stats(rain, stein, period='', group=''):
     """Calculates area and rate of stratiform and convective precipitation and area ratio to scan area."""
     grouped = (period == '')
@@ -31,14 +39,8 @@ def precip_stats(rain, stein, period='', group=''):
     rain_conv = rain_conv.where(rain_conv != 0.)
     rain_stra = rain_stra.where(rain_stra != 0.)
 
-    i = 0
-    while rain[i, :, :].isnull().all():
-        i += 1
-    else:
-        first_scene = rain[i, :, :]
-
     # The total area (number of pixels) of one radar scan. All cells have same area.
-    area_scan = first_scene.notnull().sum()
+    area_scan = notnull_area(rain)
 
     # Total rain in one time slice. And the corresponding number of cells.
     if grouped:

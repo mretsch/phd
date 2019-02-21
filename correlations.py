@@ -1,5 +1,8 @@
+from os.path import expanduser
+home = expanduser("~")
 import matplotlib.pyplot as plt
 import xarray as xr
+import numpy as np
 import seaborn as sns
 import scipy as sp
 import bottleneck as bn
@@ -8,9 +11,15 @@ import basic_stats as stats
 
 if __name__ == '__main__':
 
-    sic = xr.open_dataarray(
-        '/Users/mret0001/Data/Analysis/No_Boundary/sic.nc').sel({'time': slice('2009-10-01', '2010-03-31')})
-    ior = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/iorg_season0910.nc')
+    var_in_1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
+    var_in_2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
+
+    if len(var_in_1) != len(var_in_2):
+        var1 = var_in_1[var_in_1.notnull()]
+        var2 = var_in_2[var_in_1.notnull()]
+    else:
+        var1 = var_in_1
+        var2 = var_in_2
 
     # a, b = sp.stats.pearsonr (ds.sic[ds.sic.notnull()], ds.eso[ds.eso.notnull()])
     # c, d = sp.stats.spearmanr(ds.sic[ds.sic.notnull()], ds.eso[ds.eso.notnull()])
@@ -18,27 +27,29 @@ if __name__ == '__main__':
     # plt.show()
     # plt.close()
 
-    r   = stats.pearson_correlation (sic[sic.notnull()], ior[ior.notnull()])
-    rho = stats.spearman_correlation(sic[sic.notnull()], ior[ior.notnull()])
+    r   = stats.pearson_correlation (var1[var1.notnull()], var2[var2.notnull()])
+    rho = stats.spearman_correlation(var1[var1.notnull()], var2[var2.notnull()])
 
-    percentiles = False
+    percentiles = True
     if percentiles:
-        fig, h_2d = h.histogram_2d(sic.percentile.fillna(-1.) * 100., eso.percentile.fillna(-1)  * 100., nbins=100,
-                                   x_label='SIC percentiles [%]',
-                                   y_label='ESO percentiles [%]',
+        fig, h_2d = h.histogram_2d(var1.percentile.fillna(-1.) * 100., var2.percentile.fillna(-1) * 100., nbins=100,
+                                   x_label='ROM percentiles [%]',
+                                   y_label='ROME percentiles [%]',
                                    cbar_label='[%]')
-        plt.plot(sic.percentile.sortby(sic.percentile)*100., sic.percentile.sortby(sic.percentile)*100.,
+        # plot identity
+        plt.plot(var1.percentile.sortby(var1.percentile) * 100., var1.percentile.sortby(var1.percentile) * 100.,
                  color='w', linewidth=0.5)
 
     else:
-        sic_rank = xr.DataArray(bn.nanrankdata(sic))
-        ior_rank = xr.DataArray(bn.nanrankdata(ior))
+        var1_rank = xr.DataArray(bn.nanrankdata(var1))
+        var2_rank = xr.DataArray(bn.nanrankdata(var2))
 
-        fig, h_2d = h.histogram_2d(sic_rank.fillna(-1.), ior_rank.fillna(-1.), nbins=100,
+        fig, h_2d = h.histogram_2d(var1_rank.fillna(-1.), var2_rank.fillna(-1.), nbins=100,
                                    x_label='SIC rank',
-                                   y_label='I$_{org}$ rank',
+                                   y_label='ROM rank',
                                    cbar_label='[%]')
-        plt.plot(sic_rank.sortby(sic_rank), sic_rank.sortby(sic_rank),
+        # plot identity
+        plt.plot(var1_rank.sortby(var1_rank), var1_rank.sortby(var1_rank),
                  color='w', linewidth=0.5)
 
     save = True

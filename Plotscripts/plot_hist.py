@@ -1,3 +1,5 @@
+from os.path import expanduser
+home = expanduser("~")
 import timeit
 import matplotlib.pyplot as plt
 import math as m
@@ -14,14 +16,15 @@ plt.rc('legend', fontsize=12)
 # plt.rc('text.latex' , preamble=r'\usepackage{cmbright}')
 
 
-def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[]):
+def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[], l_color=True):
     """Probability distributions for multiple variables in a xarray-dataset."""
 
     fig, ax = plt.subplots()
-    linestyle = ['dashed', 'solid', 'densely dotted', 'dashdotdotted', 'densely dashdotted']
+    linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
 
-    for i, var in enumerate(dataset.data_vars):
+    for i, variable in enumerate(dataset):
 
+        var = dataset[variable]
         if type(nbins) == int:
             bins = np.linspace(start=0., stop=var.max(), num=nbins+1)  # 50
         else:
@@ -42,8 +45,10 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         else:
             h_normed = h / dx / total  # equals density=True
 
-        #plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
-        plt.plot(bin_centre, h_normed, linewidth=2.)
+        if l_color:
+            plt.plot(bin_centre, h_normed, linewidth=2.)
+        else:
+            plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
 
     if l_xlog:
         plt.xscale('log')
@@ -151,35 +156,37 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
-        ds = xr.open_mfdataset(["/Users/mret0001/Data/Analysis/No_Boundary/o_area.nc",
-                                "/Users/mret0001/Data/Analysis/No_Boundary/o_number.nc",
-                                ])
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
 
         # don't take scenes where convection is 1 pixel large only
         # area_max = ds.o_area_max.where(ds.o_area_max != 1)
         # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
-        fig_h_2d, h_2d = histogram_2d(ds.o_area, ds.o_number,  # nbins=40,
-                                      x_label='Avg. no boundary object area',
-                                      y_label='Number of no boundary objects',
-                                      cbar_label='[% dx$^{{-1}}$ dy$^{{-1}}$]')
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
+                                      x_label='ROM [1]',
+                                      y_label='ROME [1]',
+                                      cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
-        h_2d.to_netcdf('/Users/mret0001/Desktop/hist.nc', mode='w')
+        h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
-        ds = xr.open_mfdataset(['/Users/mret0001/Data/Analysis/No_Boundary/sic.nc',
-                                '/Users/mret0001/Data/Analysis/No_Boundary/eso.nc',
-                                '/Users/mret0001/Data/Analysis/No_Boundary/cop.nc',
-                                ])
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+        var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+        del var1['percentile']
+        del var2['percentile']
+        ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
 
         fig_h_1d = histogram_1d(ds, l_xlog=True,
                                 x_label='Metric $\mathcal{M}$  [1]',
                                 y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
-                                legend_label=['ESO', 'SIC', 'COP'])
+                                legend_label=['SIC', 'ROM', 'COP'],
+                                l_color=False)
 
         fig_h_1d.show()
 
