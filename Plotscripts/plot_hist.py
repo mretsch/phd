@@ -26,9 +26,10 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
 
         var = dataset[variable]
         if type(nbins) == int:
-            bins = np.linspace(start=0., stop=var.max(), num=nbins+1)  # 50
+            bins = np.linspace(start=var.min(), stop=var.max(), num=nbins+1)  # 50
         else:
             bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
+            #bins = np.linspace(start=0., stop=1., num=11)
 
         # sns.distplot(var[var.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
 
@@ -38,12 +39,13 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
 
         bin_centre = 0.5* (edges[1:] + edges[:-1])
         dx         =       edges[1:] - edges[:-1]
-        dlogx      = dx / (bin_centre * m.log(10))
+        dlogx      = dx / (bin_centre * m.log(10, m.e))
 
         if l_xlog:
             h_normed = h / dlogx / total * 100  # equals density=True in percent
         else:
-            h_normed = h / dx / total  # equals density=True
+            h_normed = h /    dx / total * 100 # equals density=True in percent
+            #h_normed = h / total
 
         if l_color:
             plt.plot(bin_centre, h_normed, linewidth=2.)
@@ -156,7 +158,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = True
+    hist_2d = False
     if hist_2d:
         var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
@@ -173,16 +175,17 @@ if __name__ == '__main__':
 
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = False
+    hist_1d = True
     if hist_1d:
         var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
         var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
         del var1['percentile']
         del var2['percentile']
-        ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
+        #ds = xr.Dataset({'sic': var1, 'rom': var2})#, 'cop': var3})
+        ds = xr.Dataset({'rom': var2})#, 'cop': var3})
 
-        fig_h_1d = histogram_1d(ds, l_xlog=True,
+        fig_h_1d = histogram_1d(ds, l_xlog=False,
                                 x_label='Metric $\mathcal{M}$  [1]',
                                 y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
                                 legend_label=['SIC', 'ROM', 'COP'],
