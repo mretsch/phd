@@ -1,5 +1,4 @@
 from os.path import expanduser
-home = expanduser("~")
 import timeit
 import matplotlib.pyplot as plt
 import math as m
@@ -7,20 +6,21 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import seaborn as sns
-import sub as FORTRAN
+import Plotscripts.colors_solarized as col
+#import sub as FORTRAN
+home = expanduser("~")
 
 plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
-#font = {'fontname': 'Helvetica'}
-#plt.rc('font',**{'family':'serif','serif':['Times']})
-# plt.rc('text.latex' , preamble=r'\usepackage{cmbright}')
+#sns.set()
 
-
-def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[], l_color=True):
+def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[],
+                 l_color=True, l_percentage=True, l_rel_mode=False):
     """Probability distributions for multiple variables in a xarray-dataset."""
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
     linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
+    color = [col.sol['blue'], col.sol['red'], col.sol['green'], col.sol['cyan'], col.sol['magenta'], col.sol['yellow']]
 
     for i, variable in enumerate(dataset):
 
@@ -28,14 +28,17 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         if type(nbins) == int:
             bins = np.linspace(start=var.min(), stop=var.max(), num=nbins+1)  # 50
         else:
-            bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
-            #bins = np.linspace(start=0., stop=1., num=11)
+            #bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
+            bins = nbins
 
         # sns.distplot(var[var.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
 
         total = var.notnull().sum().values
         metric_clean = var.fillna(-1)
         h, edges = np.histogram(metric_clean, bins=bins)  # , density=True)
+
+        if l_rel_mode:
+            total = h.max()
 
         bin_centre = 0.5* (edges[1:] + edges[:-1])
         dx         =       edges[1:] - edges[:-1]
@@ -44,11 +47,13 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         if l_xlog:
             h_normed = h / dlogx / total * 100  # equals density=True in percent
         else:
-            h_normed = h /    dx / total * 100 # equals density=True in percent
-            #h_normed = h / total
+            if l_percentage:
+                h_normed = h / total * 100
+            else:
+                h_normed = h / dx / total * 100  # equals density=True in percent
 
         if l_color:
-            plt.plot(bin_centre, h_normed, linewidth=2.)
+            plt.plot(bin_centre, h_normed, color=color[i], linewidth=2.)
         else:
             plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
 
@@ -57,14 +62,20 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
 
     plt.ylabel(y_label)
     plt.xlabel(x_label)#, **font)
-    plt.legend(legend_label)
+    lg = plt.legend(legend_label)
+    # this sets only the legend background color to transparent (not the surrounding box)
+    lg.get_frame().set_facecolor('none')
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_position('zero')
-    #ax.yaxis.set_ticks_position('none')  # 'left', 'right'
+
+    #ax.spines['bottom'].set_position('zero')
+    ax.xaxis.set_ticks_position('none')  # 'left', 'right'
+    ax.tick_params(axis='x', direction='in')
+    ax.yaxis.set_ticks_position('none')  # 'left', 'right'
     ax.tick_params(axis='y', direction='in')
-    ax.tick_params(axis='x', length=5)
+    #ax.tick_params(axis='x', length=5)
+    ax.set_xlim(0,100)
 
     return fig
 

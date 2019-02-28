@@ -5,7 +5,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
-import solarized_colors as col
+from Plotscripts.colors_solarized import sol as col
 
 start = timeit.default_timer()
 
@@ -58,10 +58,10 @@ ax_r3 = ax_host.twinx() # this one draws the line from ax_host again (visible)
 ax_r2.spines["right"].set_position(("axes", 1.11))
 
 # one-element unpacking
-p0, = ax_host.plot(var_actual[0].time, var_actual[0], "k",        lw=2, label="ROM", alpha=0.)
-p1, =   ax_r1.plot(var_actual[1].time, var_actual[1], col.orange, lw=1, label="Conv. rain intensity")
-p2, =   ax_r2.plot(var_actual[2].time, var_actual[2], col.violet, lw=1, label="Conv. mean rain")
-p3, =   ax_r3.plot(var_actual[0].time, var_actual[0], "k",        lw=2, label="ROM")
+p0, = ax_host.plot(var_actual[0].time, var_actual[0], "k",           lw=2, label="ROM", alpha=0.)
+p1, =   ax_r1.plot(var_actual[1].time, var_actual[1], col['orange'], lw=1, label="Conv. rain intensity")
+p2, =   ax_r2.plot(var_actual[2].time, var_actual[2], col['violet'], lw=1, label="Conv. mean rain")
+p3, =   ax_r3.plot(var_actual[0].time, var_actual[0], "k",           lw=2, label="ROM")
 
 ax_host.set_xlim('2019-01-07T00:00:00', '2019-01-07T23:50:00')
 ax_r3.  set_xlim('2019-01-07T00:00:00', '2019-01-07T23:50:00')
