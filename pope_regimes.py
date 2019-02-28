@@ -45,7 +45,7 @@ perc_pope_5 = var_perc.where(pope == 5)# , drop=True)
 # create dataset and plot it
 ds = xr.Dataset({'all': var_perc.where(pope),
                  'pp1': perc_pope_1, 'pp2': perc_pope_2, 'pp3': perc_pope_3, 'pp4': perc_pope_4, 'pp5': perc_pope_5})
-bins = np.linspace(0., 100., num=25+1)
+bins = np.linspace(0., 100., num=10+1)
 fig_h_1d = histogram_1d(ds, l_xlog=False, nbins=bins,
                         x_label='ROM Percentile $P$ [%]',
                         y_label='% / d$P$',

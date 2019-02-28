@@ -21,6 +21,7 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
     fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
     linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
     color = [col.sol['blue'], col.sol['red'], col.sol['green'], col.sol['cyan'], col.sol['magenta'], col.sol['yellow']]
+    lw = [1., 2., 2., 2., 2., 2.]
 
     for i, variable in enumerate(dataset):
 
@@ -53,7 +54,7 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
                 h_normed = h / dx / total * 100  # equals density=True in percent
 
         if l_color:
-            plt.plot(bin_centre, h_normed, color=color[i], linewidth=2.)
+            plt.plot(bin_centre, h_normed, color=color[i], linewidth=lw[i])
         else:
             plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
 
