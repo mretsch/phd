@@ -96,11 +96,12 @@ ax_r1.  tick_params(axis='y', direction='in', right=False)
 ax_r2.  tick_params(axis='y', direction='in', right=False)
 
 plots = [p3, p1, p2]
-ax_host.legend(plots, [p.get_label() for p in plots], framealpha=1.)  # ,frameon=False)
+lg = ax_host.legend(plots, [p.get_label() for p in plots], framealpha=1.)  # ,frameon=False)
+lg.get_frame().set_facecolor('none')
 
 ax_host.grid(which='both', axis='x', **dict(linestyle='--'))
 
-save = False
+save = True
 if save:
     # bbox_inches captures the right portion of the plot
     plt.savefig(home+'/Desktop/plot.pdf', bbox_inches='tight', transparent=True)

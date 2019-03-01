@@ -6,15 +6,16 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import seaborn as sns
+import matplotlib.ticker as ticker
 import Plotscripts.colors_solarized as col
-#import sub as FORTRAN
+import sub as FORTRAN
 home = expanduser("~")
 
 plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
 #sns.set()
 
-def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', legend_label=[],
+def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label='', y_label='', legend_label=[],
                  l_color=True, l_percentage=True, l_rel_mode=False):
     """Probability distributions for multiple variables in a xarray-dataset."""
 
@@ -29,8 +30,10 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
         if type(nbins) == int:
             bins = np.linspace(start=var.min(), stop=var.max(), num=nbins+1)  # 50
         else:
-            #bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
-            bins = nbins
+            if l_adjust_bins:
+                bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
+            else:
+                bins = nbins
 
         # sns.distplot(var[var.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
 
@@ -70,13 +73,16 @@ def histogram_1d(dataset, nbins=None, l_xlog=False, x_label='', y_label='', lege
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    #ax.spines['bottom'].set_position('zero')
-    ax.xaxis.set_ticks_position('none')  # 'left', 'right'
-    ax.tick_params(axis='x', direction='in')
-    ax.yaxis.set_ticks_position('none')  # 'left', 'right'
-    ax.tick_params(axis='y', direction='in')
+    #ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+    #ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
     #ax.tick_params(axis='x', length=5)
+    #ax.spines['bottom'].set_position('zero')
+    ax.tick_params(axis='x', direction='in')
+    ax.xaxis.set_ticks_position('none')  # 'left', 'right'
     ax.set_xlim(0,100)
+
+    ax.tick_params(axis='y', direction='in')
+    ax.yaxis.set_ticks_position('none')  # 'left', 'right'
 
     return fig
 
@@ -194,12 +200,12 @@ if __name__ == '__main__':
         var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
         del var1['percentile']
         del var2['percentile']
-        #ds = xr.Dataset({'sic': var1, 'rom': var2})#, 'cop': var3})
-        ds = xr.Dataset({'rom': var2})#, 'cop': var3})
+        ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
+        #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
 
-        fig_h_1d = histogram_1d(ds, l_xlog=False,
+        fig_h_1d = histogram_1d(ds, l_xlog=True, l_adjust_bins=True,
                                 x_label='Metric $\mathcal{M}$  [1]',
-                                y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot 1^{-1}$]',
+                                y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot$ 1$^{-1}$]',
                                 legend_label=['SIC', 'ROM', 'COP'],
                                 l_color=False)
 

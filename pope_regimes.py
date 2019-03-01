@@ -11,7 +11,7 @@ a = date(2009, 10,  1)
 b = date(2017,  3, 31)
 
 # get the Pope regimes per day
-dfr_pope = pd.read_csv(home+'/Google Drive File Stream/My Drive/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
+dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
 dse = pd.Series(dfr_pope['regime'])
 
 da_pope = xr.DataArray(dse)
@@ -21,7 +21,7 @@ pope = pope_years.swap_dims({'timestring': 'time'})
 del pope['timestring']
 
 # get the metric
-var = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom.nc')
+var = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
 var_perc = var.percentile * 100
 
 downsample = False
@@ -47,8 +47,8 @@ ds = xr.Dataset({'all': var_perc.where(pope),
                  'pp1': perc_pope_1, 'pp2': perc_pope_2, 'pp3': perc_pope_3, 'pp4': perc_pope_4, 'pp5': perc_pope_5})
 bins = np.linspace(0., 100., num=10+1)
 fig_h_1d = histogram_1d(ds, l_xlog=False, nbins=bins,
-                        x_label='ROM Percentile $P$ [%]',
-                        y_label='% / d$P$',
+                        x_label='ROME percentile $P$  [%]',
+                        y_label='d$\mathcal{P}$ / d$P$  [% $\cdot$ %$^{-1}$]',
                         legend_label=['All', 'PR 1', 'PR 2', 'PR 3', 'PR 4', 'PR 5'],
                         l_color=True,
                         l_percentage=False,

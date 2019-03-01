@@ -453,13 +453,13 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': True, 'iorg': False, 'rom': False, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False, 'iorg': True, 'rom': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             #file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
-                            file=home+"/Data/Steiner/*season*")
+                            file=home+"/Data/Steiner/*season1112*")
 
     # save metrics as netcdf-files
     save = True
