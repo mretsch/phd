@@ -6,53 +6,60 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 home = expanduser("~")
 
-# get the Pope regimes per day
-dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
-dse = pd.Series(dfr_pope['regime'])
+plt.rc('font'  , size=12)
+plt.rc('legend', fontsize=12)
 
-da_pope = xr.DataArray(dse)
-pope_years = da_pope.sel({'timestring': slice('2009-11-30', '2017-03-31')})
-pope_years.coords['time'] = ('timestring', pd.to_datetime(pope_years.timestring))
-pope = pope_years.swap_dims({'timestring': 'time'})
-del pope['timestring']
+def into_pope_regimes(series, l_upsample=True, l_percentile=False):
+    """Mask radar/metric time series according to the 5 possible Pope regimes."""
 
-# get the metric
+    # get the Pope regimes per day
+    dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
+    dse = pd.Series(dfr_pope['regime'])
+
+    da_pope = xr.DataArray(dse)
+    pope_years = da_pope.sel({'timestring': slice('2009-11-30', '2017-03-31')})
+    pope_years.coords['time'] = ('timestring', pd.to_datetime(pope_years.timestring))
+    pope = pope_years.swap_dims({'timestring': 'time'})
+    del pope['timestring']
+
+    if l_percentile:
+        var = series.percentile * 100
+    else:
+        var = series
+
+    if not l_upsample:
+        daily = var.resample(time='1D', skipna=True).mean()
+        var = daily.sel({'time': pope.time})
+    else:
+        pope = pope.resample(time='10T').interpolate('zero')
+
+    # filter each Pope regime
+    pope = pope.where(var.notnull())
+    var_p1 = var.where(pope == 1)
+    var_p2 = var.where(pope == 2)
+    var_p3 = var.where(pope == 3)
+    var_p4 = var.where(pope == 4)
+    var_p5 = var.where(pope == 5)
+
+    return xr.Dataset({'var_p1': var_p1, 'var_p2': var_p2, 'var_p3': var_p3, 'var_p4': var_p4, 'var_p5': var_p5})
+
+
+# get the quantities
 var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
 var2 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_intensity.nc')
 
 for i, var in enumerate([var1, var2]):
 #for i, var in enumerate([var2]):
-    try:
-        var_perc = var.thisisnotanattribute# percentile * 100
-    except AttributeError:
-        var_perc = var
 
-    downsample = False
-    if downsample:
-        perc_day_max = var_perc.resample(time='1D', skipna=True).mean()
-        var_perc = perc_day_max.sel({'time': pope.time})
-
-    upsample = not downsample
-    if upsample:
-        pope = pope.resample(time='10T').interpolate('zero')
-
-    # filter each Pope regime
-    pope = pope.where(var_perc.notnull())
-
-    perc_pope_1 = var_perc.where(pope == 1)# , drop=True)
-    perc_pope_2 = var_perc.where(pope == 2)# , drop=True)
-    perc_pope_3 = var_perc.where(pope == 3)# , drop=True)
-    perc_pope_4 = var_perc.where(pope == 4)# , drop=True)
-    perc_pope_5 = var_perc.where(pope == 5)# , drop=True)
-
-    vars = [perc_pope_1, perc_pope_2, perc_pope_3, perc_pope_4, perc_pope_5]
+    ds_var_p = into_pope_regimes(var)
     var_actual = []
-    for var in vars:
+    for variable in ds_var_p:
+        var_p = ds_var_p[variable]
         try:
-            del var['percentile']
+            del var_p['percentile']
         except KeyError:
             pass
-        var_day = var.groupby('time.time').mean()
+        var_day = var_p.groupby('time.time').mean()
 
         dti = pd.date_range('2019-01-07T00:00:00', periods=144, freq='10T')
 
@@ -100,5 +107,5 @@ ax.legend(['ROM', 'Intensity'])
 
 ax.set_xlim('2019-01-07T00:00:00', '2019-01-07T23:50:00')
 ax.grid()
-plt.savefig(home+'/Desktop/pr1_daily.pdf', transparent=True, bbox_inches='tight')
+plt.savefig(home+'/Desktop/a.pdf', transparent=True, bbox_inches='tight')
 #plt.show()
