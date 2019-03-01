@@ -8,7 +8,7 @@ import xarray as xr
 import seaborn as sns
 import matplotlib.ticker as ticker
 import Plotscripts.colors_solarized as col
-import sub as FORTRAN
+#import sub as FORTRAN
 home = expanduser("~")
 
 plt.rc('font'  , size=12)
