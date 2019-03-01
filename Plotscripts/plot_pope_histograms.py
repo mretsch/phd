@@ -3,12 +3,8 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import date
 from Plotscripts.plot_hist import histogram_1d
 home = expanduser("~")
-
-a = date(2009, 10,  1)
-b = date(2017,  3, 31)
 
 # get the Pope regimes per day
 dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
