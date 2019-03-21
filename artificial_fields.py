@@ -5,12 +5,12 @@ import numpy as np
 try:
     ds = xr.open_dataset('~/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 except FileNotFoundError:
-    ds = xr.open_dataset('~/Google Drive File Stream/My Drive/Data/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
+    ds = xr.open_dataset('~/Google Drive File Stream/My Drive/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_threedays.nc')
 
 # artificial field the same size as the radar data
 # art[_,58,58] is the centre.
 #art = xr.DataArray(np.zeros(shape=(10, len(ds.lat), len(ds.lon))))  # 'time', 'y', 'x'
-art = xr.zeros_like(ds.steiner_echo_classification[:16, :, :])
+art = xr.zeros_like(ds.steiner_echo_classification[:12, :, :])
 
 # the centre: art[0, 58: 58, 58: 58] = 1
 
@@ -69,45 +69,61 @@ art[6, 78: 81, 78: 81] = 2
 art[7, 42: 75, 42: 75] = 2
 art[7, 78: 81, 57: 60] = 2
 
+#    # =========================
+#
+#    # vertical stick and square
+#    art[8, 29: 88, 30: 39] = 2
+#    art[8, 54: 63, 78: 87] = 2
+#
+#    # horizontal stick and square
+#    art[9, 54: 63,  5: 64] = 2
+#    art[9, 54: 63, 78: 87] = 2
+#
+#    # =========================
+#
+#    # large and small square
+#    art[10, 42: 75, 31: 64] = 2
+#    art[10, 54: 63, 78: 87] = 2
+#
+#    # same sized stick and small square
+#    art[11,  9:108, 53: 64] = 2
+#    art[11, 54: 63, 78: 87] = 2
+#
+#    # =========================
+#
+#    # small stick and small square
+#    art[12, 35: 82, 49: 58] = 2
+#    art[12, 54: 63, 78: 87] = 2
+#
+#    # large and small square
+#    art[13, 35: 82, 11: 58] = 2
+#    art[13, 54: 63, 78: 87] = 2
+
 # =========================
-
-# vertical stick and square
-art[8, 29: 88, 30: 39] = 2
-art[8, 54: 63, 78: 87] = 2
-
-# horizontal stick and square
-art[9, 54: 63,  5: 64] = 2
-art[9, 54: 63, 78: 87] = 2
-
-# =========================
-
-# large and small square
-art[10, 42: 75, 31: 64] = 2
-art[10, 54: 63, 78: 87] = 2
-
-# same sized stick and small square
-art[11,  9:108, 53: 64] = 2
-art[11, 54: 63, 78: 87] = 2
-
-# =========================
-
-# small stick and small square
-art[12, 35: 82, 49: 58] = 2
-art[12, 54: 63, 78: 87] = 2
-
-# large and small square
-art[13, 35: 82, 11: 58] = 2
-art[13, 54: 63, 78: 87] = 2
-
-# =========================
-
-# stick
-art[14, 16:101, 53: 64] = 2
 
 # same area stick in pieces
-art[15, 10: 27, 53: 64] = 2
-art[15, 30: 47, 53: 64] = 2
-art[15, 50: 67, 53: 64] = 2
-art[15, 70: 87, 53: 64] = 2
-art[15, 90:107, 53: 64] = 2
+art[8, 10: 27, 53: 64] = 2
+art[8, 30: 47, 53: 64] = 2
+art[8, 50: 67, 53: 64] = 2
+art[8, 70: 87, 53: 64] = 2
+art[8, 90:107, 53: 64] = 2
 
+# stick
+art[9, 16:101, 53: 64] = 2
+
+# =========================
+
+# small cross
+art[10, 79: 82, 87: 90] = 2
+art[10, 87: 90, 79: 82] = 2
+art[10, 84: 93, 84: 93] = 2
+art[10, 87: 90, 95: 98] = 2
+art[10, 95: 98, 87: 90] = 2
+
+# big object and small cross
+art[11, 10:43, 10:43] = 2
+art[11, 79: 82, 87: 90] = 2
+art[11, 87: 90, 79: 82] = 2
+art[11, 84: 93, 84: 93] = 2
+art[11, 87: 90, 95: 98] = 2
+art[11, 95: 98, 87: 90] = 2
