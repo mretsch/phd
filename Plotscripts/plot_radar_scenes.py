@@ -58,12 +58,15 @@ for i in range(3):
     vals[100:200, i] = 0.95  # light grey
     vals[200:   , i] = 0.0  # black
 newcmp = ListedColormap(vals)
+
+alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
+
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 p = steiner_select.plot(col='time', col_wrap=4, add_colorbar=False, aspect=450./558, size=4,
                         cmap=newcmp)
 p.axes.flat[0].axes.set_ylabel('Latitude [$^\circ$S]')
 p.axes.flat[0].axes.set_yticklabels(labels=['14.0', '13.5', '13.0', '12.5', '12.0', '11.5', '11.0', '10.5'])
-for ax in p.axes.flat:
+for i, ax in enumerate(p.axes.flat):
     ax.set_title('')
     ax.axes.set_xlabel('Longitude [$^\circ$E]')
 
@@ -75,6 +78,8 @@ for ax in p.axes.flat:
     height = ymax - ymin
     patch = patches.Rectangle(xy, width, height, hatch='xxxx', color='lightgrey', fill=None, zorder=-10)
     ax.add_patch(patch)
+
+    ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top')
 
 # Print some information on plots
 percentiles = True
@@ -99,8 +104,8 @@ print2 = metric2_select
 #                     'SIC: {:3.0f}%'.format(perct1[i].item(),
 #                                            perct2[i].item()), (131.78, -13.5), color='blue')
 
-#plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
-plt.show()
+plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
+#plt.show()
 
 # Have all scenes separately as a pdf to create a gif
 # for i, scene in enumerate(steiner_select):
