@@ -8,7 +8,7 @@ import xarray as xr
 import seaborn as sns
 import matplotlib.ticker as ticker
 import Plotscripts.colors_solarized as col
-#import sub as FORTRAN
+import sub as FORTRAN
 home = expanduser("~")
 
 plt.rc('font'  , size=12)
@@ -176,10 +176,12 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc').sel({'time': slice('2009-10-01', '2012-03-31')})
+        #var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
+        ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
+        var2 = ds2.iorg
 
         # don't take scenes where convection is 1 pixel large only
         # area_max = ds.o_area_max.where(ds.o_area_max != 1)
@@ -187,13 +189,13 @@ if __name__ == '__main__':
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
                                       x_label='ROM [1]',
-                                      y_label='ROME [1]',
+                                      y_label='Ior[1]',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
         var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')

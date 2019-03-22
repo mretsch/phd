@@ -459,7 +459,7 @@ if __name__ == '__main__':
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             #file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
-                            file=home+"/Data/Steiner/*season1112*")
+                            file=home+"/Data/Steiner/*season1314*")
 
     # save metrics as netcdf-files
     save = True
