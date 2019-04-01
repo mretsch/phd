@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import ListedColormap
+from datetime import datetime
 import timeit
 
 start = timeit.default_timer()
@@ -33,6 +34,7 @@ if timeselect:
         times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
 
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
+    time_select    = ds_steiner.time.sel(time=times)
     metric1_select = metric_1.sel(time=times)
     metric2_select = metric_2.sel(time=times)
 
@@ -55,6 +57,7 @@ else:
     metric1_select = m_sort[idx_my_select]  #[idx_99percent-10:idx_99percent+10]  #[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[-60:-40] #
 
     steiner_select = steiner.loc[metric1_select.time]
+    time_select    = ds_steiner.time.loc[metric1_select.time]
     metric2_select = metric_2.loc[metric1_select.time]
 
 # ########
@@ -108,7 +111,8 @@ for i, ax in enumerate(p.axes.flat):
     if not timeselect:
         ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top')
     else:
-        ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
+        #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
+        ax.text(x=129.8, y=-11.0, s=str(time_select[i].values)[11:16], verticalalignment='top')
 
 # all the bottom plots
 for ax in p.axes.flat[-n_per_row:]:
@@ -148,7 +152,7 @@ if print_numbers:
                         'SIC: {:3.0f}%'.format(perct1[i].item(),
                                                perct2[i].item()), (131.78, -13.5), color='blue')
 
-save = True
+save = False
 if save:
     plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
 else:
