@@ -8,7 +8,8 @@ import artificial_fields as af
 import org_metrics as om
 
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': True})
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True,
+                                   'iorg': True, 'cop': True, 'scai': True})
 
 m1 = ds_metric.rom
 m2 = ds_metric.rome

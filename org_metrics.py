@@ -42,6 +42,14 @@ class Pairs:
         return np.array([self.pairlist[i][0].distance(self.pairlist[i][1]) for i in range(len(self.pairlist))])
 
 
+def quadratic_eq_solver(a=1., b=0., c=0.):
+    """Returns tuple (x_1, x_2) for ax**2 + xb + c = 0, given a, b, c."""
+    x_1 = (-b + m.sqrt(b**2 - 4 * a * c)) / (2 * a)
+    x_2 = (-b - m.sqrt(b**2 - 4 * a * c)) / (2 * a)
+    return x_1, x_2
+
+
+
 def gen_shortlist(start, inlist):
     """Iterator items starting at 'start', not 0."""
     for j in range(start, len(inlist)):
@@ -151,7 +159,7 @@ def conv_org_pot(pairs):
         return np.nan
     if len(pairs) == 1:
         if pairs.partner1 == pairs.partner2:
-            return 0.5 * pairs.partner1[0].equivalent_diameter
+            return np.nan
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -164,7 +172,7 @@ def cop_mod(pairs):
         return np.nan
     if len(pairs) == 1:
         if pairs.partner1 == pairs.partner2:
-            return 0.5 * pairs.partner1[0].equivalent_diameter
+            return np.nan
     diameter_1 = np.array([c.equivalent_diameter for c in pairs.partner1])
     diameter_2 = np.array([c.equivalent_diameter for c in pairs.partner2])
     v = np.array(0.5 * (diameter_1 + diameter_2) / pairs.distance_regionprops())
@@ -270,10 +278,27 @@ def elliptic_shape_organisation(r_pairs):
     return ma_mi_1, ma_mi_2
 
 
+def simple_convective_aggregation_metric(pairs):
+    """SCAI according to [Tobin et al. 2013]"""
+    if not pairs.pairlist:
+        return np.nan
+    if len(pairs) == 1:
+        if pairs.partner1 == pairs.partner2:
+            return np.nan
+    n1, n2 = quadratic_eq_solver(a=0.5, b=-0.5, c=-len(pairs))
+    n_max = 6844  # 117**2 / 2
+    d_0 = np.exp(np.log(pairs.distance_regionprops()).sum() / len(pairs))
+    l = 117
+    return max(n1, n2) / n_max * d_0 / l * 1000
+
+
 def i_org(pairs, objects):
     """I_org according to [Tompkins et al. 2017]"""
     if not pairs.pairlist:
         return np.nan
+    if len(pairs) == 1:
+        if pairs.partner1 == pairs.partner2:
+            return np.nan
 
     distances = np.array(pairs.distance_regionprops())
     dist_min = []
@@ -372,20 +397,20 @@ def run_metrics(file="", switch={}):
             conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['basics'] or switch['rome']:
+    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics'] or switch['rome']:
         if switch['boundary']:
-            props = list(gen_regionprops_objects_all(conv_0))
+            props_r = list(gen_regionprops_objects_all(conv_0))
         else:
-            props = list(gen_regionprops_objects    (conv_0))
-        all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+            props_r = list(gen_regionprops_objects    (conv_0))
+        all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_r]
 
     # find objects via skm.find_contours, to use shapely
     if switch['sic'] or switch['rome'] or switch['rom']:
         if switch['boundary']:
-            props = list(gen_shapely_objects_all(conv_0))
+            props_s = list(gen_shapely_objects_all(conv_0))
         else:
-            props = list(gen_shapely_objects    (conv_0))
-        all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props]
+            props_s = list(gen_shapely_objects    (conv_0))
+        all_s_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_s]
 
     # --------------------
     # compute the metrics
@@ -398,7 +423,7 @@ def run_metrics(file="", switch={}):
 
     sic = xr.DataArray([shape_independent_cop(s_pairs=p) for p in all_s_pairs]) if switch['sic'] else np.nan
 
-    iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props[i])
+    iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props_r[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
     rom = xr.DataArray([radar_organisation_metric(s_pairs=p) for p in all_s_pairs]) if switch['rom'] else np.nan
@@ -406,9 +431,11 @@ def run_metrics(file="", switch={}):
     rome = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
                          for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rome'] else np.nan
 
+    scai = xr.DataArray([simple_convective_aggregation_metric(pairs=p) for p in all_r_pairs]) if switch['scai'] else np.nan
+
     m1, o_number, o_area, o_area_max = [], [], [], []
     if switch['basics']:
-        for cloudlist in props:
+        for cloudlist in props_r:
             m1.append        (metric_1 (clouds=cloudlist))
             o_number.append  (n_objects(clouds=cloudlist))
             o_area.append    (avg_area (clouds=cloudlist))
@@ -436,6 +463,7 @@ def run_metrics(file="", switch={}):
                        'rom': rom,
                        'm1': m1,
                        'iorg': iorg,
+                       'scai': scai,
                        'o_number': o_number,
                        'o_area': o_area,
                        'o_area_max': o_area_max,
@@ -452,17 +480,19 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
+    # TODO: SCAI for all time, might need it for paper plots, some nice time series
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False, 'iorg': True, 'rom': False, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
+              'iorg': False, 'scai': False, 'rom': True, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             #file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
-                            file=home+"/Data/Steiner/*season1314*")
+                            file=home+"/Data/Steiner/*season*")
 
     # save metrics as netcdf-files
-    save = True
+    save = False
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')
