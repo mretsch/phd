@@ -480,10 +480,9 @@ if __name__ == '__main__':
     # c = Client()
     start = timeit.default_timer()
 
-    # TODO: SCAI for all time, might need it for paper plots, some nice time series
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
-              'iorg': False, 'scai': False, 'rom': True, 'basics': False,
+              'iorg': False, 'scai': True, 'rom': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics

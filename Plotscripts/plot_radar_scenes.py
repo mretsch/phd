@@ -14,8 +14,10 @@ plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
 
 try:
-    metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_addmin.nc')
-    metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+    metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+    metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
+    metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+    metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
     ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 except FileNotFoundError:
     metric_1 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom.nc')#\
@@ -26,17 +28,20 @@ except FileNotFoundError:
 timeselect = True
 contiguous = True
 if timeselect:
-    start_date = '2009-12-07T09:10:00'
-    end_date   = '2009-12-07T12:20:00'
+    start_date = '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
+    end_date   = '2017-03-30T18:00:00'  # '2009-12-07T12:20:00'
     if contiguous:
         times = slice(start_date, end_date)
     else:
-        times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
+        # times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
+        times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2015-11-10T05:10:00'])
 
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
     time_select    = ds_steiner.time.sel(time=times)
     metric1_select = metric_1.sel(time=times)
     metric2_select = metric_2.sel(time=times)
+    metric3_select = metric_3.sel(time=times)
+    metric4_select = metric_4.sel(time=times)
 
 else:
     steiner = ds_steiner.steiner_echo_classification
@@ -78,11 +83,14 @@ newcmp = ListedColormap(vals)
 # letters to print on plots
 alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
 numerics = np.arange(1, 20+1)
+darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 5
+n_per_row = 5#2
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
-#p = steiner_select.plot(col='time', col_wrap=5, add_colorbar=False, aspect=450./558, size=4, cmap=newcmp)
-p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=688./754, size=4, cmap=newcmp)
+if n_per_row == 2:
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=450./558, size=4, cmap=newcmp)
+if n_per_row == 5:
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=688./754, size=4, cmap=newcmp)
 
 for i, ax in enumerate(p.axes.flat):
     plt.sca(ax)  # sets the current axis ('plot') to draw to
@@ -110,9 +118,10 @@ for i, ax in enumerate(p.axes.flat):
 
     if not timeselect:
         ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top')
-    else:
+    if contiguous:
         #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
-        ax.text(x=129.8, y=-11.0, s=str(time_select[i].values)[11:16], verticalalignment='top')
+        ax.text(x=129.85, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+'h', verticalalignment='top')
+        #ax.set_title(str((time_select[i] + darwin_time).values)[11:16]+'h')
 
 # all the bottom plots
 for ax in p.axes.flat[-n_per_row:]:

@@ -56,6 +56,7 @@ def diurnal_cycle(series, group='time', frequency='10T', period=144, time_shift=
         pass
     day = series.groupby('time.'+group).mean()
 
+    # create time objects for one (arbitrary) day
     dti = pd.date_range('2019-01-07T00:00:00', periods=period, freq=frequency)
 
     day.coords['new_time'] = ('time', dti)
@@ -63,7 +64,6 @@ def diurnal_cycle(series, group='time', frequency='10T', period=144, time_shift=
     del day['time']
     day = day.rename({'new_time': 'time'})
     return day.roll(shifts={'time': time_shift}, roll_coords=False)
-
 
 
 def covariance(x, y):
