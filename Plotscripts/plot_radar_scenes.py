@@ -13,6 +13,8 @@ start = timeit.default_timer()
 plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
 
+path1 = '/Data/Analysis/No_Boundary/'
+path2 = '/Google Drive File Stream/My Drive/'
 try:
     metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
     metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
@@ -20,10 +22,11 @@ try:
     metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
     ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 except FileNotFoundError:
-    metric_1 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom.nc')#\
-    #sel({'time': slice('2009-10-01', '2010-03-31')})
-    metric_2 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/sic.nc')
-    ds_steiner = xr.open_mfdataset(home+'/Google Drive File Stream/My Drive/Data/Steiner/*season*')
+    metric_1   = xr.open_dataarray(home+path2+'/Data_Analysis/rom.nc')
+    metric_2   = xr.open_dataarray(home+path2+'/Data_Analysis/iorg.nc')
+    metric_3   = xr.open_dataarray(home+path2+'/Data_Analysis/cop.nc')
+    metric_4   = xr.open_dataarray(home+path2+'/Data_Analysis/scai.nc')
+    ds_steiner = xr.open_mfdataset(home+path2+'/Data/Steiner/*season*', chunks=40)
 
 timeselect = True
 contiguous = True
@@ -121,7 +124,7 @@ for i, ax in enumerate(p.axes.flat):
     if contiguous:
         #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
         ax.text(x=129.85, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+'h', verticalalignment='top')
-        #ax.set_title(str((time_select[i] + darwin_time).values)[11:16]+'h')
+        #ax.set_title(str((time_select[i]).values)[11:16]+'h')
 
 # all the bottom plots
 for ax in p.axes.flat[-n_per_row:]:
@@ -161,7 +164,7 @@ if print_numbers:
                         'SIC: {:3.0f}%'.format(perct1[i].item(),
                                                perct2[i].item()), (131.78, -13.5), color='blue')
 
-save = False
+save = True
 if save:
     plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
 else:

@@ -482,13 +482,13 @@ if __name__ == '__main__':
 
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
-              'iorg': False, 'scai': True, 'rom': False, 'basics': False,
+              'iorg': False, 'scai': False, 'rom': True, 'basics': True,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            #file=home+"/Google Drive File Stream/My Drive/Data/steiner*2013*")
-                            file=home+"/Data/Steiner/*season*")
+                            file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*afternoon*")
+                            #file=home+"/Data/Steiner/*season*")
 
     # save metrics as netcdf-files
     save = False
