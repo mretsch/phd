@@ -213,14 +213,13 @@ def _radar_organisation_metric(in_func):
     """Decorator for metric ROM."""
 
     @functools.wraps(in_func)
-    def wrapper(s_pairs, r_pairs=None):
+    def wrapper(s_pairs, r_pairs, elliptic=False):
         if not s_pairs.pairlist:
             return np.nan
 
-        # + 0.5 because shapely contours 'skip' edges of pixels
-        area_1 = np.array([c.area for c in s_pairs.partner1]) + 0.5
-        area_2 = np.array([c.area for c in s_pairs.partner2]) + 0.5
-        if r_pairs:
+        area_1 = np.float64(np.array([c.area for c in r_pairs.partner1]))
+        area_2 = np.float64(np.array([c.area for c in r_pairs.partner2]))
+        if elliptic:
             ma_mi_1, ma_mi_2 = in_func(r_pairs)
             area_1 *= ma_mi_1
             area_2 *= ma_mi_2
@@ -397,7 +396,8 @@ def run_metrics(file="", switch={}):
             conv_0 = conv_0.where(conv_0 != 1, other=0)
 
     # find objects via skm.label, to use skm.regionprops
-    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics'] or switch['rome']:
+    if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics']\
+            or switch['rome'] or switch['rom']:
         if switch['boundary']:
             props_r = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -426,9 +426,10 @@ def run_metrics(file="", switch={}):
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props_r[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
-    rom = xr.DataArray([radar_organisation_metric(s_pairs=p) for p in all_s_pairs]) if switch['rom'] else np.nan
+    rom = xr.DataArray([radar_organisation_metric(s_pairs=s_p, r_pairs=r_p)
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] else np.nan
 
-    rome = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p)
+    rome = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p, elliptic=True)
                          for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rome'] else np.nan
 
     scai = xr.DataArray([simple_convective_aggregation_metric(pairs=p) for p in all_r_pairs]) if switch['scai'] else np.nan
@@ -481,7 +482,7 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rome': True,
               'iorg': False, 'scai': False, 'rom': True, 'basics': True,
               'boundary': False}
 
