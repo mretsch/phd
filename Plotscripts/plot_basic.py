@@ -23,7 +23,7 @@ try:
     ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 except FileNotFoundError:
     #var_1   = xr.open_dataarray(home+path2+'/Data_Analysis/rom.nc').percentile.sel({'time':slice(start_date, end_date)})
-    var_2   = xr.open_dataarray(home+path2+'/Data_Analysis/iorg.nc').percentile.sel({'time':slice(start_date, end_date)})
+    #var_2   = xr.open_dataarray(home+path2+'/Data_Analysis/iorg.nc').percentile.sel({'time':slice(start_date, end_date)})
     var_3   = xr.open_dataarray(home+path2+'/Data_Analysis/cop.nc').percentile.sel({'time':slice(start_date, end_date)})
     #var_4   = xr.open_dataarray(home+path2+'/Data_Analysis/scai.nc').percentile.sel({'time':slice(start_date, end_date)})
 
@@ -31,13 +31,14 @@ except FileNotFoundError:
     var_42  = xr.open_dataarray(home+path2+'/Data_Analysis/o_number.nc').sel({'time':slice(start_date, end_date)})
     var_4 = 2 * var_41.where(var_42 != 1., np.nan)
 
-    var_1   = xr.open_dataarray(home+path2+'/Data_Analysis/rom.nc').sel({'time':slice(start_date, end_date)})
+    var_1   = xr.open_dataarray(home+'/Desktop/rom_30032017.nc').sel({'time':slice(start_date, end_date)})
+    var_2   = xr.open_dataarray(home+'/Desktop/lrl_30032017.nc').sel({'time':slice(start_date, end_date)})
 
     #ds_steiner = xr.open_mfdataset(home+path2+'/Data/Steiner/*season*', chunks=40)
 
 try:
-    del var_1['percentile']
-    del var_2['percentile']
+    #del var_1['percentile']
+    #del var_2['percentile']
     del var_3['percentile']
     del var_4['percentile']
 except KeyError:
@@ -50,8 +51,8 @@ fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
 
 for v in ds:
     var = ds[v]
-    ax.plot(var)
+    ax.plot(var.time, var)
 
-ax.legend(['ROM', 'Iorg', 'COP', 'area'])
+ax.legend(['ROM', 'LowLimit', 'COP', 'UppLimit'])
 
 plt.show()

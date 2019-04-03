@@ -277,6 +277,19 @@ def elliptic_shape_organisation(r_pairs):
     return ma_mi_1, ma_mi_2
 
 
+def lower_rom_limit(clouds):
+    """The theoretical lower limit which metric ROM could attain. Not defined for only 1 object so far."""
+    n = len(clouds)
+    if n <= 1:
+        return np.nan
+    number_count = np.arange(0, len(clouds))
+    object_sort = sorted([c.area for c in clouds])
+    # take the scalar product of the objects area with their appropriate number of connections they 'own'
+    connection_sum = sum(object_sort * number_count)
+    # divide by number of unique connection for n objects
+    return connection_sum / (0.5 * n * (n-1))
+
+
 def simple_convective_aggregation_metric(pairs):
     """SCAI according to [Tobin et al. 2013]"""
     if not pairs.pairlist:
@@ -434,7 +447,7 @@ def run_metrics(file="", switch={}):
 
     scai = xr.DataArray([simple_convective_aggregation_metric(pairs=p) for p in all_r_pairs]) if switch['scai'] else np.nan
 
-    m1, o_number, o_area, o_area_max = [], [], [], []
+    m1, o_number, o_area, o_area_max, lrl = [], [], [], [], []
     if switch['basics']:
         for cloudlist in props_r:
             m1.append        (metric_1 (clouds=cloudlist))
@@ -447,6 +460,12 @@ def run_metrics(file="", switch={}):
         o_area = np.nan
         o_area_max = np.nan
 
+    if switch['rom']:
+        for cloudlist in props_r:
+            lrl.append(lower_rom_limit(clouds=cloudlist))
+    else:
+        lrl = np.nan
+
     # ---------------
     # create dataset
     # ---------------
@@ -455,6 +474,7 @@ def run_metrics(file="", switch={}):
     o_number = xr.DataArray(o_number)
     o_area = xr.DataArray(o_area)
     o_area_max = xr.DataArray(o_area_max)
+    lrl = xr.DataArray(lrl)
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
@@ -462,6 +482,7 @@ def run_metrics(file="", switch={}):
                        'sic': sic,
                        'rome': rome,
                        'rom': rom,
+                       'low_rom_limit': lrl,
                        'm1': m1,
                        'iorg': iorg,
                        'scai': scai,
@@ -482,13 +503,13 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': True,
-              'iorg': False, 'scai': False, 'rom': True, 'basics': True,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
+              'iorg': False, 'scai': False, 'rom': True, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*afternoon*")
+                            file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
                             #file=home+"/Data/Steiner/*season*")
 
     # save metrics as netcdf-files
