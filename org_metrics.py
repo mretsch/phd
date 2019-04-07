@@ -410,7 +410,7 @@ def run_metrics(file="", switch={}):
 
     # find objects via skm.label, to use skm.regionprops
     if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics']\
-            or switch['rome'] or switch['rom']:
+            or switch['rom_el'] or switch['rome'] or switch['rom']:
         if switch['boundary']:
             props_r = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -418,7 +418,7 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_r]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic'] or switch['rome'] or switch['rom']:
+    if switch['sic'] or switch['rom_el'] or switch['rom'] or switch['rome']:
         if switch['boundary']:
             props_s = list(gen_shapely_objects_all(conv_0))
         else:
@@ -440,10 +440,10 @@ def run_metrics(file="", switch={}):
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
     rom = xr.DataArray([radar_organisation_metric(s_pairs=s_p, r_pairs=r_p)
-                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] else np.nan
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] or switch['rome'] else np.nan
 
-    rome = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p, elliptic=True)
-                         for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rome'] else np.nan
+    rom_el = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p, elliptic=True)
+                         for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom_el'] else np.nan
 
     scai = xr.DataArray([simple_convective_aggregation_metric(pairs=p) for p in all_r_pairs]) if switch['scai'] else np.nan
 
@@ -452,23 +452,19 @@ def run_metrics(file="", switch={}):
         for cloudlist in props_r:
             m1.append        (metric_1 (clouds=cloudlist))
             o_number.append  (n_objects(clouds=cloudlist))
-            o_area.append    (avg_area (clouds=cloudlist))
             o_area_max.append(max_area (clouds=cloudlist))
     else:
         m1 = np.nan
         o_number = np.nan
-        o_area = np.nan
         o_area_max = np.nan
 
-    if switch['rom']:
+    if switch['rome'] or switch['basics']:
         for cloudlist in props_r:
-            lrl.append(lower_rom_limit(clouds=cloudlist))
+            o_area.append(avg_area       (clouds=cloudlist))
+            lrl.append   (lower_rom_limit(clouds=cloudlist))
     else:
+        o_area = np.nan
         lrl = np.nan
-
-    # ---------------
-    # create dataset
-    # ---------------
 
     m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
@@ -476,12 +472,16 @@ def run_metrics(file="", switch={}):
     o_area_max = xr.DataArray(o_area_max)
     lrl = xr.DataArray(lrl)
 
+    # compute rome by modifying rom based on the theoretical limits
+    rome = (2 * (rom - o_area)).where(lrl.notnull(), rom) if switch['rome'] else np.nan
+
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
                        'cop_mod': cop_m,
                        'sic': sic,
-                       'rome': rome,
+                       'rom_el': rom_el,
                        'rom': rom,
+                       'rome': rome,
                        'low_rom_limit': lrl,
                        'm1': m1,
                        'iorg': iorg,
@@ -503,14 +503,14 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rome': True, 'rome_el': False,
               'iorg': False, 'scai': False, 'rom': True, 'basics': False,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
-                            #file=home+"/Data/Steiner/*season*")
+                            #file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
+                            file=home+"/Data/Steiner/*oneday*")
 
     # save metrics as netcdf-files
     save = False

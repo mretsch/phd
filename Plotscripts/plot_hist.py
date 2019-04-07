@@ -178,18 +178,18 @@ if __name__ == '__main__':
 
     hist_2d = True
     if hist_2d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc').sel({'time': slice('2009-10-01', '2012-03-31')})
-        #var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
-        ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
-        var2 = ds2.iorg
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_old_shapelyarea.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
+        #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
+        #var2 = ds2.iorg
 
         # don't take scenes where convection is 1 pixel large only
         # area_max = ds.o_area_max.where(ds.o_area_max != 1)
         # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
-                                      x_label='ROM [1]',
-                                      y_label='Ior[1]',
+                                      x_label='ROM [pixel]',
+                                      y_label='Object mean area [pixel]',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
