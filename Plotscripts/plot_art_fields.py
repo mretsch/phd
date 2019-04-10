@@ -8,7 +8,7 @@ import artificial_fields as af
 import org_metrics as om
 
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True,
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': True,
                                    'iorg': True, 'cop': True, 'scai': True})
 
 m1 = ds_metric.rom
@@ -42,13 +42,13 @@ for i, _ in enumerate(grid):
     #                                    + '\nROME = ' + str(m2[i].round(decimals=2).values),
     #                  verticalalignment='top', color='r')
     #    else:
-    #        axis.text(x=129.8, y=-13, s='ROM ='
-    #                                    + '\nROME =',
-    #                  verticalalignment='top')
-    #        axis.text(x=131.5, y=-13, s=str(m1[i].round(decimals=2).values)
-    #                                    + '\n' + str(m2[i].round(decimals=2).values),
-    #                  verticalalignment='top')
-    #        # axis.tick_params(labelbottom=True, labelleft=True)
+    axis.text(x=129.8, y=-13, s='ROM ='
+                                + '\nROME =',
+              verticalalignment='top')
+    axis.text(x=131.5, y=-13, s=str(m1[i].round(decimals=2).values)
+                                + '\n' + str(m2[i].round(decimals=2).values),
+              verticalalignment='top')
+    # axis.tick_params(labelbottom=True, labelleft=True)
 
-plt.savefig(home+'/Desktop/artificial.pdf')
+#plt.savefig(home+'/Desktop/artificial.pdf')
 plt.show()

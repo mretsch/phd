@@ -1,6 +1,7 @@
 from os.path import expanduser
 import pandas as pd
 import xarray as xr
+import numpy as np
 # from dask.distributed import Client
 import bottleneck as bn
 import timeit
@@ -41,7 +42,7 @@ def into_pope_regimes(series, l_upsample=True, l_percentile=False, l_all=False):
     var_p4 = var.where(pope == 4)
     var_p5 = var.where(pope == 5)
     if l_all:
-        ds = xr.Dataset({'all': var.where(pope), 'var_p1': var_p1, 'var_p2': var_p2, 'var_p3': var_p3, 'var_p4': var_p4, 'var_p5': var_p5})
+        ds = xr.Dataset({'var_all': var.where(pope), 'var_p1': var_p1, 'var_p2': var_p2, 'var_p3': var_p3, 'var_p4': var_p4, 'var_p5': var_p5})
     else:
         ds = xr.Dataset({'var_p1': var_p1, 'var_p2': var_p2, 'var_p3': var_p3, 'var_p4': var_p4, 'var_p5': var_p5})
     return ds
@@ -83,6 +84,43 @@ def spearman_correlation(x, y):
     x_ranks = bn.rankdata(x, axis=-1)
     y_ranks = bn.rankdata(y, axis=-1)
     return pearson_correlation(x_ranks, y_ranks)
+
+
+def interpolate_repeating_values(dataset, l_sort_it=False):
+    """Takes a dataset (must have time dimension) and linearly interpolates all NaNs in its variables.
+    Optionally sorts variable data first."""
+    ds = dataset.copy(deep=True)
+    for variable in ds:
+        var = ds[variable]
+        # get rid of nans
+        v = var.where(var.notnull(), drop=True)
+        if l_sort_it:
+            # sort ascending
+            v_sort = v.sortby(v)
+        else:
+            v_sort = v
+        # xarray itself does not capture the small differences between elements. But numpy does.
+        first  = np.array(v_sort[:-1])
+        second = np.array(v_sort[1:])
+        # the last n-1 elements (need to be larger than previous element)
+        greater = xr.DataArray(second > first)
+        # the first n-1 elements (need to be smaller than following element)
+        smaller = xr.DataArray(first < second)
+        # both conditions
+        both = (smaller[:-1]) & (greater[1:])
+        # put original data onto nans where no nans shall be
+        inner    = np.zeros(shape=len(v_sort))
+        inner[:] = np.nan
+        np.putmask(inner[1:-1], both, v_sort[1:-1])
+        inner[ 0] = v_sort[ 0]
+        inner[-1] = v_sort[-1]
+        # linearly interpolate remaining nans and put into original data
+        v_sort[:] = xr.DataArray(inner).interpolate_na(dim='dim_0')
+        # put original order back into place
+        v = v_sort.sortby('time')
+        # put data back into long series
+        ds[variable].loc[v.time] = v
+    return ds
 
 
 def notnull_area(array):

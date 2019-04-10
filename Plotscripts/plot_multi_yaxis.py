@@ -12,9 +12,9 @@ start = timeit.default_timer()
 plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
 
-var1 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom.nc')# .percentile * 100 # .sel({'time':slice('2009-11-30','2009-12-02')})
-var2 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/conv_intensity.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})
-var3 = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/conv_rr_mean.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})  # * 100
+var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')# .percentile * 100 # .sel({'time':slice('2009-11-30','2009-12-02')})
+var2 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_intensity.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})
+var3 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_rr_mean.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})  # * 100
 
 var_day = []
 for var in [var1, var2, var3]:
@@ -38,20 +38,20 @@ ax_r3 = ax_host.twinx() # this one draws the line from ax_host again (visible)
 ax_r2.spines["right"].set_position(("axes", 1.11))
 
 # one-element unpacking
-p0, = ax_host.plot(var_day[0].time, var_day[0], "k",           lw=2, label="ROM", alpha=0.)
+p0, = ax_host.plot(var_day[0].time, var_day[0], "k",           lw=2, label="ROME", alpha=0.)
 p1, =   ax_r1.plot(var_day[1].time, var_day[1], col['orange'], lw=1, label="Conv. rain intensity")
 p2, =   ax_r2.plot(var_day[2].time, var_day[2], col['violet'], lw=1, label="Conv. mean rain")
-p3, =   ax_r3.plot(var_day[0].time, var_day[0], "k",           lw=2, label="ROM")
+p3, =   ax_r3.plot(var_day[0].time, var_day[0], "k",           lw=2, label="ROME")
 
 ax_host.set_xlim('2019-01-07T00:00:00', '2019-01-07T23:50:00')
 ax_r3.  set_xlim('2019-01-07T00:00:00', '2019-01-07T23:50:00')
-ax_host.set_ylim(bottom=8)
-ax_r3.  set_ylim(bottom=8)
+#ax_host.set_ylim(bottom=8)
+#ax_r3.  set_ylim(bottom=8)
 ax_r1.  set_ylim(bottom=11.5)
 ax_r2.  set_ylim(bottom=0.08)
 
 ax_host.set_xlabel("Time of day [hour]")
-ax_host.set_ylabel("ROM [1]")
+ax_host.set_ylabel("ROME [1]")
 ax_r1.  set_ylabel("Conv. rain intensity [mm/hour]")
 ax_r2.  set_ylabel("Conv. mean rain [mm/hour]")
 
