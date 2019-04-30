@@ -23,7 +23,8 @@ grid = AxesGrid(fig, 111,
                 # cbar_pad=0.1
                 )
 
-alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
+alphabet = ['a$_1$', 'a$_2$', 'b$_1$', 'b$_2$', 'c$_1$', 'c$_2$', 'd$_1$', 'd$_2$',
+            'e$_1$', 'e$_2$', 'f$_1$', 'f$_2$', 'g$_1$', 'g$_2$', 'h$_1$', 'h$_2$']
 for i, _ in enumerate(grid):
     # order of plots when numbered row through row
     h = int(2*6/2 - 1)  # half the plots are in one of two rows
@@ -42,13 +43,13 @@ for i, _ in enumerate(grid):
     #                                    + '\nROME = ' + str(m2[i].round(decimals=2).values),
     #                  verticalalignment='top', color='r')
     #    else:
-    axis.text(x=129.8, y=-13, s='ROM ='
-                                + '\nROME =',
-              verticalalignment='top')
-    axis.text(x=131.5, y=-13, s=str(m1[i].round(decimals=2).values)
-                                + '\n' + str(m2[i].round(decimals=2).values),
-              verticalalignment='top')
+    #        axis.text(x=129.8, y=-13, s='ROM ='
+    #                                    + '\nROME =',
+    #                  verticalalignment='top')
+    #        axis.text(x=131.5, y=-13, s=str(m1[i].round(decimals=2).values)
+    #                                    + '\n' + str(m2[i].round(decimals=2).values),
+    #                  verticalalignment='top')
     # axis.tick_params(labelbottom=True, labelleft=True)
 
-#plt.savefig(home+'/Desktop/artificial.pdf')
+#plt.savefig(home+'/Desktop/artificial.pdf', bbox_inches='tight', transparent=True)
 plt.show()
