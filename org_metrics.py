@@ -410,7 +410,7 @@ def run_metrics(file="", switch={}):
 
     # find objects via skm.label, to use skm.regionprops
     if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics']\
-            or switch['rom_el'] or switch['rome'] or switch['rom']:
+            or switch['rom_el'] or switch['rom_li'] or switch['rom']:
         if switch['boundary']:
             props_r = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -418,7 +418,7 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_r]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic'] or switch['rom_el'] or switch['rom'] or switch['rome']:
+    if switch['sic'] or switch['rom_el'] or switch['rom'] or switch['rom_li']:
         if switch['boundary']:
             props_s = list(gen_shapely_objects_all(conv_0))
         else:
@@ -440,7 +440,7 @@ def run_metrics(file="", switch={}):
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
     rom = xr.DataArray([radar_organisation_metric(s_pairs=s_p, r_pairs=r_p)
-                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] or switch['rome'] else np.nan
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] or switch['rom_li'] else np.nan
 
     rom_el = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p, elliptic=True)
                          for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom_el'] else np.nan
@@ -458,7 +458,7 @@ def run_metrics(file="", switch={}):
         o_number = np.nan
         o_area_max = np.nan
 
-    if switch['rome'] or switch['basics']:
+    if switch['rom_li'] or switch['basics']:
         for cloudlist in props_r:
             o_area.append(avg_area       (clouds=cloudlist))
             lrl.append   (lower_rom_limit(clouds=cloudlist))
@@ -472,8 +472,10 @@ def run_metrics(file="", switch={}):
     o_area_max = xr.DataArray(o_area_max)
     lrl = xr.DataArray(lrl)
 
-    # compute rome by modifying rom based on the theoretical limits
-    rome = (2 * (rom - o_area)).where(lrl.notnull(), rom) if switch['rome'] else np.nan
+    # compute rom_li by modifying rom based on the theoretical limits
+    # IMPORTANT: not the ROME as in the paper. This is the proposed modification of the paper's ROME,
+    # incorporating the upper and lower limits into the metric itself.
+    rom_li = (2 * (rom - o_area)).where(lrl.notnull(), rom) if switch['rom_li'] else np.nan
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
@@ -481,7 +483,7 @@ def run_metrics(file="", switch={}):
                        'sic': sic,
                        'rom_el': rom_el,
                        'rom': rom,
-                       'rome': rome,
+                       'rom_li': rom_li,
                        'low_rom_limit': lrl,
                        'm1': m1,
                        'iorg': iorg,
@@ -503,14 +505,14 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rome': True, 'rome_el': False,
-              'iorg': False, 'scai': False, 'rom': True, 'basics': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': True, 'rome_el': False,
+              'iorg': False, 'scai': False, 'rom': True, 'basics': True,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             #file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
-                            file=home+"/Data/Steiner/*oneday*")
+                            file=home+"/Data/Steiner/*28012011*")
 
     # save metrics as netcdf-files
     save = False

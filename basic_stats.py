@@ -87,7 +87,7 @@ def spearman_correlation(x, y):
 
 
 def interpolate_repeating_values(dataset, l_sort_it=False):
-    """Takes a dataset (must have time dimension) and linearly interpolates all NaNs in its variables.
+    """Takes a dataset (must have time dimension) and linearly interpolates all recurring values in its variables.
     Optionally sorts variable data first."""
     ds = dataset.copy(deep=True)
     for variable in ds:

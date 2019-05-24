@@ -21,7 +21,7 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
 
     fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
     linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
-    color = [col.sol['blue'], col.sol['red'], col.sol['green'], col.sol['cyan'], col.sol['magenta'], col.sol['yellow']]
+    color = [col.sol['blue'], col.sol['red'], col.sol['green'], col.sol['yellow'], col.sol['magenta'], col.sol['cyan']]
     lw = [1., 2., 2., 2., 2., 2.]
 
     for i, variable in enumerate(dataset):
@@ -57,7 +57,11 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
                 h_normed = h / dx / total * 100  # equals density=True in percent
 
         if l_color:
-            plt.plot(bin_centre, h_normed, color=color[i], linewidth=lw[i])
+            plt.plot(bin_centre, h_normed,
+                     linestyle='-',
+                     marker='o',
+                     color=color[i],
+                     linewidth=lw[0])
         else:
             plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
 
@@ -69,6 +73,11 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
     lg = plt.legend(legend_label)
     # this sets only the legend background color to transparent (not the surrounding box)
     lg.get_frame().set_facecolor('none')
+
+    l_grid = True  # for the Pope pdfs
+    if l_grid:
+        ax.set_xticks([10, 30, 50, 70, 90], minor=True)
+        ax.grid(b=True, which='both', axis='x')
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -178,8 +187,8 @@ if __name__ == '__main__':
 
     hist_2d = True
     if hist_2d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_old_shapelyarea.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
         #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
         #var2 = ds2.iorg
 
@@ -188,8 +197,8 @@ if __name__ == '__main__':
         # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
-                                      x_label='ROM [pixel]',
-                                      y_label='Object mean area [pixel]',
+                                      x_label='Object mean area [pixel]',
+                                      y_label='ROME [pixel]',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
