@@ -2,17 +2,19 @@ from os.path import expanduser
 home = expanduser("~")
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
-import numpy as np
 import artificial_fields as af
 # import random_fields as rf
 import org_metrics as om
+from Plotscripts.colors_solarized import sol
 
+plt.rc('font'  , size=12)
+plt.rc('legend', fontsize=12)
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': True,
-                                   'iorg': True, 'cop': True, 'scai': True})
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': False,
+                                   'iorg': True, 'cop': True, 'scai': True, 'basics': False})
 
 m1 = ds_metric.rom
-m2 = ds_metric.rome
+m2 = ds_metric.cop
 
 fig = plt.figure(figsize=(12, 9))  # width 9, height 10 (2 per row)
 grid = AxesGrid(fig, 111,
@@ -39,9 +41,9 @@ for i, _ in enumerate(grid):
 
     axis.text(x=129.8, y=-11.05, s=alphabet[i] + ')', verticalalignment='top')
     #    if i != 5:
-    #        axis.text(x=129.8, y=-13, s='ROM = ' + str(m1[i].round(decimals=2).values)
-    #                                    + '\nROME = ' + str(m2[i].round(decimals=2).values),
-    #                  verticalalignment='top', color='r')
+    #        axis.text(x=129.8, y=-11.1, s='ROME = ' + str(m1[i].astype('int').values)
+    #                                    + '\nCOP  = ' + str(m2[i].round(decimals=2).values),
+    #                  verticalalignment='top', color=sol['red'], fontdict={'family' : 'monospace'})
     #    else:
     #        axis.text(x=129.8, y=-13, s='ROM ='
     #                                    + '\nROME =',
@@ -51,5 +53,5 @@ for i, _ in enumerate(grid):
     #                  verticalalignment='top')
     # axis.tick_params(labelbottom=True, labelleft=True)
 
-#plt.savefig(home+'/Desktop/artificial.pdf', bbox_inches='tight', transparent=True)
+plt.savefig(home+'/Desktop/artificial.pdf', bbox_inches='tight', transparent=True)
 plt.show()

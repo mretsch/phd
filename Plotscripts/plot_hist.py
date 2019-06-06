@@ -193,8 +193,12 @@ if __name__ == '__main__':
         #var2 = ds2.iorg
 
         # don't take scenes where convection is 1 pixel large only
-        # area_max = ds.o_area_max.where(ds.o_area_max != 1)
-        # h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
+        # var1 = var1[var1 != 1.]
+        # #area_max = ds.o_area_max.where(ds.o_area_max != 1)
+        # #h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
+        # Zoom in via subsetting data
+        # var1 = var1[var1 <= 15.]
+        # var2 = var2.where(var1)
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
                                       x_label='Object mean area [pixel]',

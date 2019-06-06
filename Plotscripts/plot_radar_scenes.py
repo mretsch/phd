@@ -31,13 +31,13 @@ except FileNotFoundError:
 timeselect = True
 contiguous = True
 if timeselect:
-    start_date = '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
-    end_date   = '2017-03-30T18:00:00'  # '2009-12-07T12:20:00'
+    start_date = '2017-03-30T14:50:00' # '2015-11-10T03:00:00' # '2009-12-07T09:10:00'
+    end_date   = '2017-03-30T18:00:00' # '2015-11-10T06:10:00' # '2009-12-07T12:20:00'
     if contiguous:
         times = slice(start_date, end_date)
     else:
-        # times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
-        times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2015-11-10T05:10:00'])
+        times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
+        #times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2015-11-10T05:10:00'])
 
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
     time_select    = ds_steiner.time.sel(time=times)
@@ -91,7 +91,7 @@ darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 n_per_row = 5#2
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
-    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=450./558, size=4, cmap=newcmp)
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=692./880., size=4, cmap=newcmp)
 if n_per_row == 5:
     p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=688./754, size=4, cmap=newcmp)
 
@@ -123,7 +123,8 @@ for i, ax in enumerate(p.axes.flat):
         ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top')
     if contiguous:
         #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
-        ax.text(x=129.85, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+'h', verticalalignment='top')
+        ax.text(x=129.85, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+'', verticalalignment='top',
+                fontdict={'fontsize': 12})
         #ax.set_title(str((time_select[i]).values)[11:16]+'h')
 
 # all the bottom plots
