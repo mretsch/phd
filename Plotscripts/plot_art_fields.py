@@ -10,7 +10,7 @@ from Plotscripts.colors_solarized import sol
 plt.rc('font'  , size=12)
 plt.rc('legend', fontsize=12)
 
-ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rome': False,
+ds_metric = om.run_metrics(switch={'artificial': True, 'boundary': True, 'rom': True, 'rom_li': True,
                                    'iorg': True, 'cop': True, 'scai': True, 'basics': False})
 
 m1 = ds_metric.rom

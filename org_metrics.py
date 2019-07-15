@@ -505,7 +505,7 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': True, 'rome_el': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': True, 'rom_el': False,
               'iorg': False, 'scai': False, 'rom': True, 'basics': True,
               'boundary': False}
 
