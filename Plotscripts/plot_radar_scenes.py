@@ -10,29 +10,20 @@ import timeit
 
 start = timeit.default_timer()
 
-plt.rc('font'  , size=12)
-plt.rc('legend', fontsize=12)
+plt.rc('font'  , size=16)     # 22 # 18
+plt.rc('legend', fontsize=16) # 22 # 18
 
-path1 = '/Data/Analysis/No_Boundary/'
-path2 = '/Google Drive File Stream/My Drive/'
-try:
-    metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
-    metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
-    metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
-    metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
-    ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
-except FileNotFoundError:
-    metric_1   = xr.open_dataarray(home+path2+'/Data_Analysis/rom.nc')
-    metric_2   = xr.open_dataarray(home+path2+'/Data_Analysis/iorg.nc')
-    metric_3   = xr.open_dataarray(home+path2+'/Data_Analysis/cop.nc')
-    metric_4   = xr.open_dataarray(home+path2+'/Data_Analysis/scai.nc')
-    ds_steiner = xr.open_mfdataset(home+path2+'/Data/Steiner/*season*', chunks=40)
+metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
+metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
+ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 
-timeselect = True
-contiguous = True
+timeselect = False
+contiguous = False
 if timeselect:
-    start_date = '2017-03-30T14:50:00' # '2015-11-10T03:00:00' # '2009-12-07T09:10:00'
-    end_date   = '2017-03-30T18:00:00' # '2015-11-10T06:10:00' # '2009-12-07T12:20:00'
+    start_date = '2015-11-10T03:00:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
+    end_date   = '2015-11-10T06:10:00' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
     if contiguous:
         times = slice(start_date, end_date)
     else:
@@ -61,12 +52,13 @@ else:
     idx_90percent = round(0.9 * len(m_sort))
     idx_99percent = round(0.99 * len(m_sort))
     idx_value     = abs(m_sort - 10.8).argmin().item()
-    idx_my_select = [2, idx_25percent+1, idx_median-1, idx_75percent, -2]
+    #idx_my_select = [2, idx_25percent+1, idx_median-1, idx_75percent, -2]
+    idx_my_select = [2, idx_25percent+1, idx_median, idx_75percent+2, -2]
     metric1_select = m_sort[idx_my_select]  #[idx_99percent-10:idx_99percent+10]  #[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[-60:-40] #
 
-    steiner_select = steiner.loc[metric1_select.time]
+    steiner_select = steiner.loc        [metric1_select.time]
     time_select    = ds_steiner.time.loc[metric1_select.time]
-    metric2_select = metric_2.loc[metric1_select.time]
+    metric2_select = metric_2.loc       [metric1_select.time]
 
 # ########
 # plotting
@@ -88,17 +80,23 @@ alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'
 numerics = np.arange(1, 20+1)
 darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 5#2
+n_per_row = 5
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
-    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=692./880., size=4, cmap=newcmp)
+    fontsize = 19
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=700./880., size=4, cmap=newcmp)
+    #p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=692./880., size=4, cmap=newcmp)
 if n_per_row == 5:
-    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=688./754, size=4, cmap=newcmp)
+    fontsize = 19
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=614./754, size=4, cmap=newcmp)
+    #fontsize = 22
+    #p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=684./754, size=4, cmap=newcmp)
 
 for i, ax in enumerate(p.axes.flat):
     plt.sca(ax)  # sets the current axis ('plot') to draw to
     radar_mask.plot.contour(colors='k', linewidths=0.5, levels=1)
 
+    #ax.set_axis_off()
     ax.set_title('')
     ax.axes.set_xlabel('')
     ax.axes.set_ylabel('')
@@ -120,25 +118,29 @@ for i, ax in enumerate(p.axes.flat):
     #    ax.add_patch(patch)
 
     if not timeselect:
-        ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top')
+        ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
     if contiguous:
         #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
-        ax.text(x=129.85, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+'', verticalalignment='top',
-                fontdict={'fontsize': 12})
+        #if i == 0:
+        #    ax.text(x=129.8, y=-11.0, s='a)', verticalalignment='top', fontdict={'fontsize': 18})
+        ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
+                , fontdict={'fontsize': 16})
         #ax.set_title(str((time_select[i]).values)[11:16]+'h')
 
 # all the bottom plots
 for ax in p.axes.flat[-n_per_row:]:
     ax.spines['bottom'].set_visible(True)
     ax.xaxis.set_ticks_position('bottom')
-    ax.axes.set_xlabel('Longitude [$^\circ$E]')
+    ax.axes.set_xlabel('Longitude [$^\circ$E]', fontdict={'fontsize': fontsize})
+    ax.axes.set_xticks([130, 130.5, 131, 131.5, 132])
+    ax.axes.set_xticklabels(labels=['130', '', '131', '', '132'], fontdict={'fontsize': fontsize})
 
 # all the left plots
 for i in np.arange(0, len(p.axes.flat), n_per_row):
     p.axes.flat[i].spines['left'].set_visible(True)
     p.axes.flat[i].yaxis.set_ticks_position('left')
-    p.axes.flat[i].axes.set_ylabel('Latitude [$^\circ$S]')
-    p.axes.flat[i].axes.set_yticklabels(labels=['14.0', '13.5', '13.0', '12.5', '12.0', '11.5', '11.0', '10.5'])
+    p.axes.flat[i].axes.set_ylabel('Latitude [$^\circ$S]', fontdict={'fontsize': fontsize})
+    p.axes.flat[i].axes.set_yticklabels(labels=['xxx', '', '13', '', '12', '', '11'], fontdict={'fontsize': fontsize})
 
 # Print some information on plots
 percentiles = True

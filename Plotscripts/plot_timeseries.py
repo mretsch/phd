@@ -9,13 +9,13 @@ import Plotscripts.colors_solarized as col
 
 start = timeit.default_timer()
 
-plt.rc('font'  , size=12)
-plt.rc('legend', fontsize=12)
+plt.rc('font'  , size=20)
+plt.rc('legend', fontsize=20)
 
 hourFmt = mdates.DateFormatter('%H:%M')
 
-start_date = '2017-03-30T14:50:00' # '2015-11-10T03:00:00' # '2009-12-07T09:10:00'
-end_date   = '2017-03-30T18:00:00' # '2015-11-10T06:10:00' # '2009-12-07T12:20:00'
+start_date = '2015-11-10T03:00:00' # '2009-12-07T09:10:00' # '2017-03-30T14:50:00' #
+end_date   = '2015-11-10T06:10:00' # '2009-12-07T12:20:00' # '2017-03-30T18:00:00' #
 
 path1 = '/Data/Analysis/No_Boundary/'
 path2 = '/Google Drive File Stream/My Drive/'
@@ -58,9 +58,14 @@ ax.xaxis.set_major_formatter(hourFmt)
 #xtl[0].get_text()
 #ax.set_xticklabels(['a','b','c'])
 
-ax.set_xlabel('Darwin time')
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.tick_params(axis='x',direction='in')
+ax.yaxis.set_ticks_position('none')
+
+ax.set_xlabel('Darwin time [h]')
 ax.set_ylabel('Percentile of organisation [%]')
-lg = ax.legend(['ROME', 'COP', 'I$_{org}$', 'SCAI'], framealpha=1.)
+lg = ax.legend(['ROME', 'COP', 'I$_\mathrm{org}$', 'SCAI'], framealpha=1.)
 lg.get_frame().set_facecolor('none')
 
 #plt.show()

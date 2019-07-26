@@ -10,8 +10,8 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 home = expanduser("~")
 start = timeit.default_timer()
 
-plt.rc('font'  , size=12)
-plt.rc('legend', fontsize=12)
+plt.rc('font'  , size=21)
+plt.rc('legend', fontsize=21)
 
 ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season0910*', chunks=40)
 steiner = ds_steiner.steiner_echo_classification
@@ -47,9 +47,12 @@ for record, geometry in zip(shp.records(), shp.geometries()):
 ax.contour(lons, lats, radar_mask, colors='k', linewidths=2, levels=1, transform=ccrs.PlateCarree())
 
 ax.set_yticks(- np.arange(11,14,0.5))
-ax.set_yticklabels(labels=np.arange(11,14,0.5))
+#ax.set_yticklabels(labels=np.arange(11,14,0.5))
+ax.set_yticklabels(labels=['11', '', '12', '', '13', ''])
 ax.set_ylabel('Latitude [$^\circ$S]')
-ax.set_xticks([130., 131., 132.])
+#ax.set_xticks([130., 131., 132.])
+ax.axes.set_xticks([130, 130.5, 131, 131.5, 132])
+ax.axes.set_xticklabels(labels=['130', '', '131', '', '132'])
 ax.axes.set_xlabel('Longitude [$^\circ$E]')
 
 fig.savefig(home+'/Desktop/land_sea_CPOL.pdf', transparent=True, bbox_inches='tight')

@@ -11,8 +11,8 @@ import Plotscripts.colors_solarized as col
 import sub as FORTRAN
 home = expanduser("~")
 
-plt.rc('font'  , size=12)
-plt.rc('legend', fontsize=12)
+plt.rc('font'  , size=18)
+plt.rc('legend', fontsize=18)
 #sns.set()
 
 def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label='', y_label='', legend_label=[],
@@ -49,21 +49,25 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
         dlogx      = dx / (bin_centre * m.log(10, m.e))
 
         if l_xlog:
-            h_normed = h / dlogx / total * 100  # equals density=True in percent
+            h_normed = h / dlogx / total # equals density=True
         else:
             if l_percentage:
                 h_normed = h / total * 100
             else:
-                h_normed = h / dx / total * 100  # equals density=True in percent
+                h_normed = h / dx / total # equals density=True
 
         if l_color:
             plt.plot(bin_centre, h_normed,
                      linestyle='-',
                      marker='o',
                      color=color[i],
-                     linewidth=lw[0])
+                     linewidth=lw[i])
         else:
-            plt.plot(bin_centre, h_normed, color='k', linewidth=2., linestyle=linestyle[i])
+            h_normed_ext = np.zeros(shape=len(h_normed)+1)
+            h_normed_ext[ 0] = h_normed[0]
+            h_normed_ext[1:] = h_normed
+            # plot a step function instead of a continuous line
+            plt.step(edges, h_normed_ext, color='k', linewidth=2., linestyle=linestyle[i])
 
     if l_xlog:
         plt.xscale('log')
@@ -84,13 +88,13 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
 
     #ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
     #ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
-    #ax.tick_params(axis='x', length=5)
+    #ax.tick_params(axis='x', length=8)
     #ax.spines['bottom'].set_position('zero')
-    ax.tick_params(axis='x', direction='in')
+    #ax.tick_params(axis='x', direction='out')
     ax.xaxis.set_ticks_position('none')  # 'left', 'right'
-    ax.set_xlim(0,100)
+    #ax.set_xlim(0,400)
 
-    ax.tick_params(axis='y', direction='in')
+    ax.tick_params(axis='y', direction='out')
     ax.yaxis.set_ticks_position('none')  # 'left', 'right'
 
     return fig
@@ -105,8 +109,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     y_series = y_series.fillna(-1.)
 
     if type(nbins) == int:
-        bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
-                     np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
+        #bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
+        #             np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
+        bin_edges = [np.linspace(start=0., stop=40, num=nbins+1),
+                     np.linspace(start=0., stop=40, num=nbins+1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -170,7 +176,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked)  # , cmap='tab20c')
+    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='inferno')  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -192,39 +198,42 @@ if __name__ == '__main__':
         #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
         #var2 = ds2.iorg
 
-        # don't take scenes where convection is 1 pixel large only
-        # var1 = var1[var1 != 1.]
-        # #area_max = ds.o_area_max.where(ds.o_area_max != 1)
-        # #h_2d = histogram_2d(area_max, ds.o_number, bins=60, x_label='Max object area', y_label='Number of objects')
-        # Zoom in via subsetting data
-        # var1 = var1[var1 <= 15.]
-        # var2 = var2.where(var1)
+        l_no_singlepixel = True
+        if l_no_singlepixel:
+            # don't take scenes where convection is 1 pixel large only
+            var1 = var1[var1 != 1.]
+            # Zoom in via subsetting data
+            var2 = var2[var2 <= 40.]
+            var1 = var1.where(var2)
+            var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=40,
                                       x_label='Object mean area [pixel]',
                                       y_label='ROME [pixel]',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
-        h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
+        #h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
     hist_1d = False
     if hist_1d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+        #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
-        var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
-        del var1['percentile']
-        del var2['percentile']
-        ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
+        #var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+        #del var1['percentile']
+        #del var2['percentile']
+        ds = xr.Dataset({'rom': var2})
+        #ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
         #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
 
         fig_h_1d = histogram_1d(ds, l_xlog=True, l_adjust_bins=True,
-                                x_label='Metric $\mathcal{M}$  [1]',
-                                y_label='d$\mathcal{P}$ / dlog($\mathcal{M}$)  [% $\cdot$ 1$^{-1}$]',
-                                legend_label=['SIC', 'ROM', 'COP'],
+                                x_label='ROME [pixel]',
+                                y_label='d$\mathcal{P}$ / dlog(ROME)  [1 / pixel]',
+                                legend_label=['ROME'],
                                 l_color=False)
 
         fig_h_1d.show()
+        fig_h_1d.savefig(home + '/Desktop/1d_hist.pdf', transparent=True, bbox_inches='tight')
 
 
 
