@@ -397,12 +397,14 @@ def run_metrics(file="", switch={}):
     elif switch['random']:
         conv_0 = rf.rand_objects
     else:
-        ds_st = xr.open_mfdataset(file, chunks={'time': 40})
-        stein = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
+        ds_st = xr.open_mfdataset(file, chunks={'hour': 40})
+        #stein = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
+        conv_0 = ds_st.clusters  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
 
         if switch['boundary']:
-            conv   = stein.where(stein == 2)
-            conv_0 = conv.fillna(0.)
+            #conv   = stein.where(stein == 2)
+            #conv_0 = conv.fillna(0.)
+            conv_0 = conv_0.where(conv_0 == 0, other=2)
         else:
             # fill surrounding with convective pixels
             conv_0 = stein.fillna(2.)
@@ -494,8 +496,8 @@ def run_metrics(file="", switch={}):
                        })
 
     # get metrics a time dimension.
-    ds_m.coords['time'] = ('dim_0', conv_0.time)
-    ds_m = ds_m.rename({'dim_0': 'time'})
+    #ds_m.coords['time'] = ('dim_0', conv_0.time)
+    #ds_m = ds_m.rename({'dim_0': 'time'})
 
     return ds_m
 
@@ -505,14 +507,15 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': True, 'rom_el': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': False, 'rom_el': False,
               'iorg': False, 'scai': False, 'rom': True, 'basics': True,
-              'boundary': False}
+              'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
                             #file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
-                            file=home+"/Data/Steiner/*28012011*")
+                            #file=home+"/Data/Steiner/*28012011*")
+                            file=home+"/Desktop/GERB_SEVIRI_clustered_OLR_1-NONMAX-TWOPASSCULL__arraymin_150_arraymin2_175.nc")
 
     # save metrics as netcdf-files
     save = False
