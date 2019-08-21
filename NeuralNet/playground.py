@@ -143,7 +143,7 @@ if testing:
                 layer_to_maxnode = iput[i] * weight_list[2*i][:, max_nodes[-1]]
                 max_nodes.append(layer_to_maxnode.argmax())
 
-            return max_nodes[::-1]
+            return np.array(max_nodes[::-1])
 
 
         model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
@@ -179,7 +179,14 @@ if testing:
         r = x * weight_list[-6][:, s_maxind]
         print(r.argmax())
 
-        print(mlp_insight(model=model, data_in=x))
+        maximum_nodes = np.zeros(shape=(3, 50**3))
+        index = 0
+        for k in range(1,51):
+            for l in range(1,51):
+                for m in range(1,51):
+                    x = [k, l, m]
+                    maximum_nodes[:, index] = mlp_insight(model=model, data_in=x)
+                    index += 1
 
     plotting_model = False
     if plotting_model:
