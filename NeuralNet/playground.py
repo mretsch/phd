@@ -89,7 +89,7 @@ if testing:
         model.compile(optimizer='adam', loss='mean_absolute_error')
         model.fit(x, y, batch_size=1, epochs=2000)
 
-    l_model3 = True
+    l_model3 = False
     if l_model3:
         x = np.random.randint(1, 50, size=(500, 3))
         y = x[:, 0] * 10
@@ -107,6 +107,79 @@ if testing:
         # array([[99.86937]], dtype=float32)
         # model.predict(np.array([[66, 4, 5]]))
         # array([[660.58734]], dtype=float32)
+        # model.predict(np.array([[3, 60, 5]]))
+        # array([[29.50545]], dtype=float32)
+        # model.predict(np.array([[3, 60, 50]]))
+        # array([[31.282375]], dtype=float32)
+
+    model_insight = True
+    if model_insight:
+
+        def mlp_insight(model, data_in):
+            output = np.array(data_in)
+            weight_list = model.get_weights()
+            # each layer has weights and biases
+            n_layers = int(len(weight_list) / 2)
+
+            # cycle through the layers, a forward pass
+            results = []
+            for i in range(n_layers):
+                # get appropriate trained parameters, first are weights, second are biases
+                weights = weight_list[i*2]
+                bias = weight_list[i*2 + 1]
+                # the @ is a matrix multiplication, first output is actually the mlp's input
+                output = weights.transpose() @ output + bias
+                output[output < 0] = 0
+                # append output, so it can be overwritten in next iteration
+                results.append(output)
+
+            # after forward pass, recursively find chain of nodes with maximum value in each layer
+            last_layer = results[-2] * weight_list[-2].transpose()
+            max_nodes = [last_layer.argmax()]
+            # concatenate the original NN input, data_in, and the output from the remaining layers
+            iput = [np.array(data_in)] + results[:-2]
+            for i in range(n_layers - 1)[::-1]:
+                # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)
+                layer_to_maxnode = iput[i] * weight_list[2*i][:, max_nodes[-1]]
+                max_nodes.append(layer_to_maxnode.argmax())
+
+            return max_nodes[::-1]
+
+
+        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
+        # some arbitrary input
+        x = [1, 49, 49]
+        output = np.array(x)
+        weight_list = model.get_weights()
+        # each layer has weights and biases
+        n_layers = int(len(weight_list) / 2)
+
+        # cycle through the layers, a forward pass
+        results = []
+        for i in range(n_layers):
+            # get appropriate trained parameters, first are weights, second are biases
+            weights = weight_list[i*2]
+            bias = weight_list[i*2 + 1]
+            # the @ is a matrix multiplication, first output is actually the mlp's input
+            output = weights.transpose() @ output + bias
+            output[output < 0] = 0
+            # append output, so it can be overwritten in next iteration
+            results.append(output)
+
+        t = results[-2] * weight_list[-2].transpose()
+        # the correct predicition
+        print(model.predict(np.array([x])))
+        print(t.sum() + bias)
+        print(t.argmax())
+        t_maxind = t.argmax()
+        # weights stored in array of shape (# nodes in layer n, # nodes in layer n+1)
+        s = results[-3] * weight_list[-4][:, t_maxind]
+        print(s.argmax())
+        s_maxind = s.argmax()
+        r = x * weight_list[-6][:, s_maxind]
+        print(r.argmax())
+
+        print(mlp_insight(model=model, data_in=x))
 
     plotting_model = False
     if plotting_model:
