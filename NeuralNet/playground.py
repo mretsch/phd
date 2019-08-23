@@ -6,15 +6,19 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 
-real_data = False
+real_data = True
 if real_data:
     ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
     var1 = ds_predictors.omega
     var2 = ds_predictors.T
     var3 = ds_predictors.div
-    var = xr.concat([var1, var2, var3], dim='lev')
+    var4 = ds_predictors.r
+    var5 = ds_predictors.u
+    var6 = ds_predictors.v
+    var7 = ds_predictors.r_adv_h
+    var = xr.concat([var1, var2, var3, var4, var5, var6, var7], dim='lev')
     var_itp = var.resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom.nc')
+    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
 
     # same sample size for both data sets
     var_itp_sub = var_itp.where(metric[metric.notnull()])
@@ -25,17 +29,17 @@ if real_data:
 
     # building the model
     model = kmodels.Sequential()
-    model.add(klayers.Dense(100, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense(100, activation='relu'))
+    model.add(klayers.Dense(20, activation='relu', input_shape=(n_lev,)))
+    model.add(klayers.Dense(20, activation='relu'))
     model.add(klayers.Dense(1))
 
     # compiling the model
-    model.compile(optimizer='adam', loss='mean_squared_error')#, metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mean_absolute_error')#, metrics=['accuracy'])
 
     # fit the model
     model.fit(x=predictor, y=target, validation_split=0.3, epochs=1, batch_size=1)
 
-testing = True
+testing = False
 if testing:
     if real_data:
         c = target[2:4]
@@ -112,6 +116,17 @@ if testing:
         # model.predict(np.array([[3, 60, 50]]))
         # array([[31.282375]], dtype=float32)
 
+    l_model4 = False
+    if l_model4:
+        x = np.random.randint(10, 30, size=(500, 6))
+        y = x[:, 3] * 10
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(150, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(150, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=1, epochs=20, validation_split=0.3)
+
     model_insight = True
     if model_insight:
 
@@ -146,9 +161,9 @@ if testing:
             return np.array(max_nodes[::-1])
 
 
-        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
+        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel_large.h5')
         # some arbitrary input
-        x = [1, 49, 49]
+        x = [10, 11, 12, 23, 14, 15]
         output = np.array(x)
         weight_list = model.get_weights()
         # each layer has weights and biases
@@ -179,14 +194,17 @@ if testing:
         r = x * weight_list[-6][:, s_maxind]
         print(r.argmax())
 
-        maximum_nodes = np.zeros(shape=(3, 50**3))
+        maximum_nodes = np.zeros(shape=(n_layers, 20**6))
         index = 0
-        for k in range(1,51):
-            for l in range(1,51):
-                for m in range(1,51):
-                    x = [k, l, m]
-                    maximum_nodes[:, index] = mlp_insight(model=model, data_in=x)
-                    index += 1
+        for k in range(10,30):
+            for l in range(10,30):
+                for m in range(10,30):
+                    for n in range(10,30):
+                        for o in range(10,30):
+                            for p in range(10,30):
+                                x = [k, l, m, n, o, p]
+                                maximum_nodes[:, index] = mlp_insight(model=model, data_in=x)
+                                index += 1
 
     plotting_model = False
     if plotting_model:
