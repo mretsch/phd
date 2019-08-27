@@ -6,7 +6,7 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 
-real_data = True
+real_data = False
 if real_data:
     ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
     var1 = ds_predictors.omega
@@ -18,7 +18,8 @@ if real_data:
     var7 = ds_predictors.r_adv_h
     var = xr.concat([var1, var2, var3, var4, var5, var6, var7], dim='lev')
     var_itp = var.resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
+    #metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
+    metric = xr.open_dataarray('/Users/mret0001/Desktop/rom_sample_nn.nc')
 
     # same sample size for both data sets
     var_itp_sub = var_itp.where(metric[metric.notnull()])
@@ -37,9 +38,13 @@ if real_data:
     model.compile(optimizer='adam', loss='mean_absolute_error')#, metrics=['accuracy'])
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.3, epochs=1, batch_size=1)
+    model.fit(x=predictor, y=target, validation_split=0.3, epochs=5, batch_size=100)
 
-testing = False
+    pred = []
+    for i, entry in enumerate(predictor):
+        pred.append( model.predict(np.array([entry])) )
+
+testing = True
 if testing:
     if real_data:
         c = target[2:4]
@@ -103,18 +108,6 @@ if testing:
         model.add(klayers.Dense(1, activation='linear'))
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=1, epochs=20, validation_split=0.3)
-        # model.predict(np.array([[3, 4, 5]]))
-        # array([[30.2555]], dtype=float32)
-        # model.predict(np.array([[7, 4, 5]]))
-        # array([[69.987595]], dtype=float32)
-        # model.predict(np.array([[10, 4, 5]]))
-        # array([[99.86937]], dtype=float32)
-        # model.predict(np.array([[66, 4, 5]]))
-        # array([[660.58734]], dtype=float32)
-        # model.predict(np.array([[3, 60, 5]]))
-        # array([[29.50545]], dtype=float32)
-        # model.predict(np.array([[3, 60, 50]]))
-        # array([[31.282375]], dtype=float32)
 
     l_model4 = False
     if l_model4:
@@ -126,6 +119,27 @@ if testing:
         model.add(klayers.Dense(1, activation='linear'))
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=1, epochs=20, validation_split=0.3)
+
+    l_model5 = False
+    if l_model5:
+        x = np.random.randint(1, 50, size=(500, 3))
+        y = x.mean(axis=1)
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(150, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(150, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=1, epochs=20, validation_split=0.3)
+        # model.predict(np.array([[10, 20, 30]]))
+        # array([[19.90018]], dtype=float32)
+        # model.predict(np.array([[10, 20, 60]]))
+        # array([[30.204426]], dtype=float32)
+        # model.predict(np.array([[5, 5, 5]]))
+        # array([[4.967877]], dtype=float32)
+        # model.predict(np.array([[5, 7, 9]]))
+        # array([[6.959164]], dtype=float32)
+        # model.predict(np.array([[5, 7, 18]]))
+        # array([[10.033775]], dtype=float32)
 
     model_insight = True
     if model_insight:
@@ -161,9 +175,9 @@ if testing:
             return np.array(max_nodes[::-1])
 
 
-        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel_large.h5')
+        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
         # some arbitrary input
-        x = [10, 11, 12, 23, 14, 15]
+        x = [40, 40, 20]
         output = np.array(x)
         weight_list = model.get_weights()
         # each layer has weights and biases
@@ -194,15 +208,16 @@ if testing:
         r = x * weight_list[-6][:, s_maxind]
         print(r.argmax())
 
-        maximum_nodes = np.zeros(shape=(n_layers, 20**6))
+        # maximum_nodes = np.zeros(shape=(n_layers, 20**6))
+        maximum_nodes = np.zeros(shape=(n_layers, 50**3))
         index = 0
-        for k in range(10,30):
-            for l in range(10,30):
-                for m in range(10,30):
-                    for n in range(10,30):
-                        for o in range(10,30):
-                            for p in range(10,30):
-                                x = [k, l, m, n, o, p]
+        for k in range(1,51):
+            for l in range(1,51):
+                for m in range(1,51):
+                    # for n in range(10,30):
+                    #     for o in range(10,30):
+                    #         for p in range(10,30):
+                                x = [k, l, m]#, n, o, p]
                                 maximum_nodes[:, index] = mlp_insight(model=model, data_in=x)
                                 index += 1
 
