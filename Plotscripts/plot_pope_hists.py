@@ -24,12 +24,13 @@ ds_inter.var_all[0:155521] = np.linspace(0, 100., 155521.)
 
 bins = np.linspace(0., 100., num=10+1)
 fig_h_1d = histogram_1d(ds_inter, l_xlog=False, nbins=bins,
-                        x_label='ROME percentile $P$  [%]',
-                        y_label='d$\mathcal{P}$ / d$P$  [1 / %]',
+                        x_label='ROME percentile $X$  [%]',
+                        y_label='d$\mathcal{P}$ / d$X$  [%$^{-1}$]',
                         legend_label=['All', 'DW', 'SW', 'ME'],
                         l_color=True,
                         l_percentage=False,
-                        l_rel_mode=False)
+                        l_rel_mode=False,
+                        l_pope=True)
 save = True
 if save:
     plt.savefig(home+'/Desktop/pope.pdf', bbox_inches='tight', transparent=True)

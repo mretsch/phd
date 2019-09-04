@@ -19,7 +19,7 @@ metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
 metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
 ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 
-timeselect = False
+timeselect = True
 contiguous = False
 if timeselect:
     start_date = '2015-11-10T03:00:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
@@ -27,8 +27,11 @@ if timeselect:
     if contiguous:
         times = slice(start_date, end_date)
     else:
-        times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2009-12-07T11:00:00'])
-        #times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00','2015-11-10T05:10:00'])
+        # the order in next lines is not relevant, steiner_select is sorted along time coordinate
+        #times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00', '2009-12-07T11:00:00'])
+        #times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00', '2015-11-10T05:10:00'])
+        times = ds_steiner.indexes['time'].intersection(['2013-02-24T08:40:00', '2016-11-19T14:50:00',
+                                                         '2011-03-15T06:10:00', '2017-02-27T13:00:00'])
 
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
     time_select    = ds_steiner.time.sel(time=times)
@@ -36,6 +39,14 @@ if timeselect:
     metric2_select = metric_2.sel(time=times)
     metric3_select = metric_3.sel(time=times)
     metric4_select = metric_4.sel(time=times)
+
+    # for the 2x2 plots of radar scenes to describe limits
+    limit_plots = False
+    if limit_plots:
+        steiner_select.load()
+        dummy = steiner_select.copy(deep=True)
+        steiner_select[0], steiner_select[1], steiner_select[2], steiner_select[3] = \
+                 dummy[1],          dummy[2],          dummy[0],          dummy[3]
 
 else:
     steiner = ds_steiner.steiner_echo_classification
@@ -77,15 +88,15 @@ newcmp = ListedColormap(vals)
 
 # letters to print on plots
 alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']
-numerics = np.arange(1, 20+1)
+alphabet_numbered = ['a$_1$', 'b$_1$', 'a$_2$', 'b$_2$', 'c$_1$', 'c$_2$']
 darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 5
+n_per_row = 2
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
     fontsize = 19
-    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=700./880., size=4, cmap=newcmp)
-    #p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=692./880., size=4, cmap=newcmp)
+    #p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=700./880., size=4, cmap=newcmp)
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=260./300., size=4, cmap=newcmp)
 if n_per_row == 5:
     fontsize = 19
     p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=614./754, size=4, cmap=newcmp)
@@ -119,12 +130,12 @@ for i, ax in enumerate(p.axes.flat):
 
     if not timeselect:
         ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
-    if contiguous:
-        #ax.text(x=129.8, y=-11.0, s=str(numerics[i]) + ')', verticalalignment='top')
+    if not contiguous:
+        ax.text(x=129.8, y=-11.0, s=str(alphabet_numbered[i]) + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         #if i == 0:
         #    ax.text(x=129.8, y=-11.0, s='a)', verticalalignment='top', fontdict={'fontsize': 18})
-        ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
-                , fontdict={'fontsize': 16})
+        # ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
+        #         , fontdict={'fontsize': 16})
         #ax.set_title(str((time_select[i]).values)[11:16]+'h')
 
 # all the bottom plots

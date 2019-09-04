@@ -397,14 +397,12 @@ def run_metrics(file="", switch={}):
     elif switch['random']:
         conv_0 = rf.rand_objects
     else:
-        ds_st = xr.open_mfdataset(file, chunks={'hour': 40})
-        #stein = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
-        conv_0 = ds_st.clusters  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
+        ds_st = xr.open_mfdataset(file, chunks={'time': 40})
+        stein = ds_st.steiner_echo_classification  # .sel(time=slice('2015-11-11T09:10:00', '2015-11-11T09:20:00'))
 
         if switch['boundary']:
-            #conv   = stein.where(stein == 2)
-            #conv_0 = conv.fillna(0.)
-            conv_0 = conv_0.where(conv_0 == 0, other=2)
+            conv   = stein.where(stein == 2)
+            conv_0 = conv.fillna(0.)
         else:
             # fill surrounding with convective pixels
             conv_0 = stein.fillna(2.)
@@ -412,7 +410,7 @@ def run_metrics(file="", switch={}):
 
     # find objects via skm.label, to use skm.regionprops
     if switch['cop'] or switch['cop_mod'] or switch['iorg'] or switch['scai'] or switch['basics']\
-            or switch['rom_el'] or switch['rom_li'] or switch['rom']:
+            or switch['rom_el'] or switch['rom_limod'] or switch['rom']:
         if switch['boundary']:
             props_r = list(gen_regionprops_objects_all(conv_0))
         else:
@@ -420,7 +418,7 @@ def run_metrics(file="", switch={}):
         all_r_pairs = [Pairs(pairlist=list(gen_tuplelist(cloudlist))) for cloudlist in props_r]
 
     # find objects via skm.find_contours, to use shapely
-    if switch['sic'] or switch['rom_el'] or switch['rom'] or switch['rom_li']:
+    if switch['sic'] or switch['rom_el'] or switch['rom'] or switch['rom_limod']:
         if switch['boundary']:
             props_s = list(gen_shapely_objects_all(conv_0))
         else:
@@ -441,11 +439,13 @@ def run_metrics(file="", switch={}):
     iorg = xr.DataArray([i_org(pairs=all_r_pairs[i], objects=props_r[i])
                          for i in range(len(all_r_pairs))]) if switch['iorg'] else np.nan
 
-    rom = xr.DataArray([radar_organisation_metric(s_pairs=s_p, r_pairs=r_p)
-                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] or switch['rom_li'] else np.nan
+    # 6.25 accounts for the area of one C-POL pixel in km^2
+    rom = 6.25 * \
+          xr.DataArray([radar_organisation_metric(s_pairs=s_p, r_pairs=r_p)
+                        for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom'] or switch['rom_limod'] else np.nan
 
     rom_el = xr.DataArray([elliptic_shape_organisation(s_pairs=s_p, r_pairs=r_p, elliptic=True)
-                         for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom_el'] else np.nan
+                           for s_p, r_p in list(zip(all_s_pairs, all_r_pairs))]) if switch['rom_el'] else np.nan
 
     scai = xr.DataArray([simple_convective_aggregation_metric(pairs=p) for p in all_r_pairs]) if switch['scai'] else np.nan
 
@@ -460,7 +460,7 @@ def run_metrics(file="", switch={}):
         o_number = np.nan
         o_area_max = np.nan
 
-    if switch['rom_li'] or switch['basics']:
+    if switch['rom_limod'] or switch['basics']:
         for cloudlist in props_r:
             o_area.append(avg_area       (clouds=cloudlist))
             lrl.append   (lower_rom_limit(clouds=cloudlist))
@@ -474,10 +474,10 @@ def run_metrics(file="", switch={}):
     o_area_max = xr.DataArray(o_area_max)
     lrl = xr.DataArray(lrl)
 
-    # compute rom_li by modifying rom based on the theoretical limits
+    # compute rom_limod by modifying rom based on the theoretical limits
     # IMPORTANT: not the ROME as in the paper. This is the proposed modification of the paper's ROME,
     # incorporating the upper and lower limits into the metric itself.
-    rom_li = (2 * (rom - o_area)).where(lrl.notnull(), rom) if switch['rom_li'] else np.nan
+    rom_limod = (2 * (rom - o_area)).where(lrl.notnull(), rom) if switch['rom_limod'] else np.nan
 
     # put together a dataset from the different metrices
     ds_m = xr.Dataset({'cop': cop,
@@ -485,7 +485,7 @@ def run_metrics(file="", switch={}):
                        'sic': sic,
                        'rom_el': rom_el,
                        'rom': rom,
-                       'rom_li': rom_li,
+                       'rom_limod': rom_limod,
                        'low_rom_limit': lrl,
                        'm1': m1,
                        'iorg': iorg,
@@ -496,8 +496,8 @@ def run_metrics(file="", switch={}):
                        })
 
     # get metrics a time dimension.
-    #ds_m.coords['time'] = ('dim_0', conv_0.time)
-    #ds_m = ds_m.rename({'dim_0': 'time'})
+    ds_m.coords['time'] = ('dim_0', conv_0.time)
+    ds_m = ds_m.rename({'dim_0': 'time'})
 
     return ds_m
 
@@ -507,15 +507,13 @@ if __name__ == '__main__':
     start = timeit.default_timer()
 
     switch = {'artificial': False, 'random': False,
-              'cop': False, 'cop_mod': False, 'sic': False, 'rom_li': False, 'rom_el': False,
+              'cop': False, 'cop_mod': False, 'sic': False, 'rom_limod': False, 'rom_el': False,
               'iorg': False, 'scai': False, 'rom': True, 'basics': True,
-              'boundary': True}
+              'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            #file=home+"/Google Drive File Stream/My Drive/Data/Steiner/*_30032017*")
-                            #file=home+"/Data/Steiner/*28012011*")
-                            file=home+"/Desktop/GERB_SEVIRI_clustered_OLR_1-NONMAX-TWOPASSCULL__arraymin_150_arraymin2_175.nc")
+                            file=home+"/Data/Steiner/*0802*")
 
     # save metrics as netcdf-files
     save = False

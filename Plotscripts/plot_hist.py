@@ -16,7 +16,7 @@ plt.rc('legend', fontsize=18)
 #sns.set()
 
 def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label='', y_label='', legend_label=[],
-                 l_color=True, l_percentage=True, l_rel_mode=False):
+                 l_color=True, l_percentage=True, l_rel_mode=False, l_pope=False):
     """Probability distributions for multiple variables in a xarray-dataset."""
 
     fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
@@ -74,25 +74,26 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
 
     plt.ylabel(y_label)
     plt.xlabel(x_label)#, **font)
-    lg = plt.legend(legend_label)
-    # this sets only the legend background color to transparent (not the surrounding box)
-    lg.get_frame().set_facecolor('none')
+    if l_pope:
+        lg = plt.legend(legend_label, fontsize=14)
+        # this sets only the legend background color to transparent (not the surrounding box)
+        lg.get_frame().set_facecolor('none')
 
-    l_grid = True  # for the Pope pdfs
-    if l_grid:
+    if l_pope:
         ax.set_xticks([10, 30, 50, 70, 90], minor=True)
         ax.grid(b=True, which='both', axis='x')
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    #ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
-    #ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
-    #ax.tick_params(axis='x', length=8)
-    #ax.spines['bottom'].set_position('zero')
-    #ax.tick_params(axis='x', direction='out')
-    ax.xaxis.set_ticks_position('none')  # 'left', 'right'
-    #ax.set_xlim(0,400)
+    if not l_pope:
+        ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: '{:g}'.format(y)))
+        ax.tick_params(axis='x', length=8)
+        ax.spines['bottom'].set_position('zero')
+        ax.tick_params(axis='x', direction='out')
+        # ax.xaxis.set_ticks_position('none')  # 'left', 'right'
+        ax.set_xlim(6)
 
     ax.tick_params(axis='y', direction='out')
     ax.yaxis.set_ticks_position('none')  # 'left', 'right'
@@ -109,10 +110,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     y_series = y_series.fillna(-1.)
 
     if type(nbins) == int:
-        #bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
-        #             np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
-        bin_edges = [np.linspace(start=0., stop=40, num=nbins+1),
-                     np.linspace(start=0., stop=40, num=nbins+1)]
+        bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
+                     np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
+        # bin_edges = [np.linspace(start=0., stop=250, num=nbins+1),
+        #              np.linspace(start=0., stop=250, num=nbins+1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -176,7 +177,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='inferno')  # , cmap='tab20c')
+    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='plasma')  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -191,34 +192,34 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = True
+    hist_2d = False
     if hist_2d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
         #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
         #var2 = ds2.iorg
 
-        l_no_singlepixel = True
+        l_no_singlepixel = False
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
-            var1 = var1[var1 != 1.]
+            var1 = var1[var1 != 6.25]
             # Zoom in via subsetting data
-            var2 = var2[var2 <= 40.]
+            var2 = var2[var2 <= 250.]
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=40,
-                                      x_label='Object mean area [pixel]',
-                                      y_label='ROME [pixel]',
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
+                                      x_label='Object mean area [km$^2$]',
+                                      y_label='ROME [km$^2$]',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
         #h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = False
+    hist_1d = True
     if hist_1d:
         #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
         #var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
         #del var1['percentile']
         #del var2['percentile']
@@ -227,8 +228,8 @@ if __name__ == '__main__':
         #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
 
         fig_h_1d = histogram_1d(ds, l_xlog=True, l_adjust_bins=True,
-                                x_label='ROME [pixel]',
-                                y_label='d$\mathcal{P}$ / dlog(ROME)  [1 / pixel]',
+                                x_label='ROME [km$^2$]',
+                                y_label='d$\mathcal{P}$ / dlog(ROME)  [km$^{-2}$]',
                                 legend_label=['ROME'],
                                 l_color=False)
 

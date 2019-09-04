@@ -9,10 +9,10 @@ from basic_stats import diurnal_cycle
 
 start = timeit.default_timer()
 
-plt.rc('font'  , size=12)
-plt.rc('legend', fontsize=12)
+plt.rc('font'  , size=14)
+plt.rc('legend', fontsize=14)
 
-var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')# .percentile * 100 # .sel({'time':slice('2009-11-30','2009-12-02')})
+var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')# .percentile * 100 # .sel({'time':slice('2009-11-30','2009-12-02')})
 var2 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_intensity.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})
 var3 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_rr_mean.nc')#.sel({'time':slice('2009-11-30','2009-12-02')})  # * 100
 
@@ -51,7 +51,7 @@ ax_r1.  set_ylim(bottom=11.5)
 ax_r2.  set_ylim(bottom=0.08)
 
 ax_host.set_xlabel("Time of day [hour]")
-ax_host.set_ylabel("ROME [pixel]")
+ax_host.set_ylabel("ROME [km$^2$]")
 ax_r1.  set_ylabel("Conv. rain intensity [mm/hour]")
 ax_r2.  set_ylabel("Conv. mean rain [mm/hour]")
 
@@ -74,6 +74,8 @@ for ax in [ax_host, ax_r1, ax_r2]:
 ax_host.tick_params(axis='y', direction='in', left=False)
 ax_r1.  tick_params(axis='y', direction='in', right=False)
 ax_r2.  tick_params(axis='y', direction='in', right=False)
+
+ax_r2.axes.set_yticks([0.10, 0.15, 0.20, 0.25])
 
 plots = [p3, p1, p2]
 lg = ax_host.legend(plots, [p.get_label() for p in plots], framealpha=1.)  # ,frameon=False)
