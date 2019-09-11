@@ -13,13 +13,13 @@ start = timeit.default_timer()
 plt.rc('font'  , size=16)     # 22 # 18
 plt.rc('legend', fontsize=16) # 22 # 18
 
-metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc')
+metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
 metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
 metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
 metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
 ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 
-timeselect = True
+timeselect = False
 contiguous = False
 if timeselect:
     start_date = '2015-11-10T03:00:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
@@ -61,11 +61,11 @@ else:
     idx_66percent = round(0.66 * len(m_sort))
     idx_75percent = round(0.75 * len(m_sort))
     idx_90percent = round(0.9 * len(m_sort))
+    idx_97percent = round(0.97 * len(m_sort))
     idx_99percent = round(0.99 * len(m_sort))
     idx_value     = abs(m_sort - 10.8).argmin().item()
-    #idx_my_select = [2, idx_25percent+1, idx_median-1, idx_75percent, -2]
     idx_my_select = [2, idx_25percent+1, idx_median, idx_75percent+2, -2]
-    metric1_select = m_sort[idx_my_select]  #[idx_99percent-10:idx_99percent+10]  #[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[-60:-40] #
+    metric1_select = m_sort[idx_99percent-10:idx_99percent+10]  #[idx_my_select]  #[idx_value-10:idx_value+10]  # [idx_median-10:idx_median+10]  #[:20]  #[idx_mean-10:idx_mean+10]  #[-20:]  #[-60:-40] #
 
     steiner_select = steiner.loc        [metric1_select.time]
     time_select    = ds_steiner.time.loc[metric1_select.time]
@@ -91,7 +91,7 @@ alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'
 alphabet_numbered = ['a$_1$', 'b$_1$', 'a$_2$', 'b$_2$', 'c$_1$', 'c$_2$']
 darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 2
+n_per_row = 5
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
     fontsize = 19
@@ -129,9 +129,9 @@ for i, ax in enumerate(p.axes.flat):
     #    ax.add_patch(patch)
 
     if not timeselect:
-        ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
+        ax.text(x=129.8, y=-11.0, s=alphabet[0] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
     if not contiguous:
-        ax.text(x=129.8, y=-11.0, s=str(alphabet_numbered[i]) + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
+        ax.text(x=129.8, y=-11.0, s=str(alphabet_numbered[0]) + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         #if i == 0:
         #    ax.text(x=129.8, y=-11.0, s='a)', verticalalignment='top', fontdict={'fontsize': 18})
         # ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
@@ -178,7 +178,7 @@ if print_numbers:
                         'SIC: {:3.0f}%'.format(perct1[i].item(),
                                                perct2[i].item()), (131.78, -13.5), color='blue')
 
-save = True
+save = False
 if save:
     plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
 else:

@@ -239,3 +239,26 @@ if testing:
         plt.plot(list(range(n)), true)
         plt.plot(list(range(n)), predictions, color='red')
         plt.show()
+
+
+manual_sampling = True
+if manual_sampling:
+    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom_kilometres.nc')
+
+    # ROME-value at 97 percentile
+    threshold = metric[abs((metric.percentile - 0.97)).argmin()]
+    n_above_thresh = (metric > threshold).sum().item()
+    sample_ind = xr.DataArray(np.zeros(shape=2*n_above_thresh))
+    sample_ind[:] = -1
+
+    # find arguments (meaning indizes) for the highest ROME-values
+    m_present = metric.where(metric.notnull(), drop=True)
+    sort_ind = m_present.argsort()
+    sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
+    # stride through ROME-values (not the percentiles or sorted indizes) linearly
+    rome_values = np.linspace(6.25, threshold, n_above_thresh)
+    for i, v in enumerate(rome_values):
+        ind = abs((m_present - v)).argmin()
+        sample_ind[i] = ind
+
+    metric_sample = m_present[sample_ind.astype(int)]

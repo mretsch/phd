@@ -49,7 +49,7 @@ for i, v in enumerate(ds):
     ax.plot(var.time, var*100, color=color[i], lw=2)
 
 plot_dates = mdates.date2num(var.time)
-k = 1
+k = 0
 ax.set_xticks([plot_dates[k   ], plot_dates[k+ 3], plot_dates[k+ 6], plot_dates[k+ 9],
                plot_dates[k+12], plot_dates[k+15], plot_dates[k+18]])
 ax.xaxis.set_major_formatter(hourFmt)
