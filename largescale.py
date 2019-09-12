@@ -6,7 +6,7 @@ import numpy as np
 ls = xr.open_dataset(home+'/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
 
 # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
-take_lower_level = False
+take_lower_level = True
 if take_lower_level:
     level_pres = ls.lev # [hPa] constant level heights
     temp       = ls.T   # [K]
@@ -52,7 +52,7 @@ def mixratio_to_spechum(mixing_ratio, pressure):
     p = pressure * 100
     r = mixing_ratio * 1e-3
 
-    vapour_pres = r * p / 0.622
+    vapour_pres = r * p / (0.622 + r)
     return 0.622 * vapour_pres / (p - 0.378 * vapour_pres)
 
 
@@ -108,10 +108,31 @@ def mixratio_to_dewpoint(mixing_ratio, pressure):
     p = pressure * 100
     r = mixing_ratio * 1e-3
 
-    vapour_pres = r * p / 0.622
+    vapour_pres = r * p / (0.622 + r)
     ln_term = np.log(vapour_pres / 610.78)
     # the inverted Magnus-formula e_s(T)
     return (235 * ln_term / (17.1 - ln_term)) + 273.15
+
+
+def temperature_to_satmixratio(temperature, pressure):
+    """Given temperature [K] and ambient pressure [hPa] return saturation mixing ratio [kg/kg]."""
+    # convert to SI units
+    p = pressure * 100
+
+    # get saturation vapour pressure for given temperature via Magnus formula
+    e_s = 610.78 * np.exp((17.1 * (temperature - 273.15)) / (235 + (temperature - 273.15)))
+    r_sat = 0.622 * e_s / (p - e_s)
+    return r_sat
+
+
+def d_satmixratio_d_height(satmixratio, layer_thickness):
+    # delta_rs    = xr.full_like(layer_thickness, np.nan)
+    delta_rs = satmixratio[1:].values - satmixratio[:-1].values
+    return delta_rs / layer_thickness.values
+
+
+def moistadiabat_temp_gradient(drs_dz):
+    return gamma_d - l_ent / c_p * drs_dz
 
 
 def d_dewpoint_d_height(dewpoint):
@@ -126,13 +147,44 @@ def lifting_condensation_level(temperature, dewpoint, ddew_dheight):
     # disregard negative LCLs. The pressure at 2m might be too high for the given vapour pressure, such that
     # dewpoint > temperature, which is actually not possible. Possibly an error due to model extrapolation and/or
     # averaging the bottom pressure.
-    return lcl_height.where(lcl_height > 0, other=0.)
+    lcl_height[lcl_height < 0] = 0
+    return lcl_height
 
 
 def find_lcl_level(lcl_height, level_height):
     negative_positive = level_height - lcl_height
-    n_level = xr.where(negative_positive < 0, True, False).sum(dim='lev')
+    nlev = xr.where(negative_positive < 0, True, False).sum(dim='lev')
+    return nlev.where(lcl_height.notnull(), other=np.nan)
 
+
+def parcel_ascent(temperature, level_thickness, nlevel_below_lcl, pressure, mixratio, lcl_height):
+    # -1 because of zero-based indexing.
+    level_to_switch = nlevel_below_lcl - 1
+    temp_ascent = xr.full_like(temperature, fill_value=np.nan)
+    # bottom (starting) temperature stays the same
+    temp_ascent[:, 0] = temperature[:, 0]
+    # switch to moist-adiabatic ascent is at a different level each time step, so loop through time
+    for i, _ in enumerate(temp_ascent[:, 0]):
+        # also loop through levels, from bottom to top
+        # for j, _ in enumerate(temp_ascent.lev):
+        j = 0
+        while j <= level_to_switch[i]:
+            # TODO dont restart at temp for every level again, take the newly coputed temp_ascent instead
+            temp_ascent[i, j+1] = temp[i, j] + level_thickness[i, j] * gamma_d
+            j += 1
+        # now moist-adiabatic ascent for the switching level
+        # the satmixratio for the upper level here is actually wrong, because in between the
+        # switch to moistadiabat takes place.
+        mixratio_sat = temperature_to_satmixratio(temp_ascent[i, j-1:j+1], pressure[i, j-1:j+1])
+        # make a switch from dry to moist-adiabatic according to height-ratio
+        # for moistadiabat gamma_w I have to get drs_dz. At the point where moist adiabat start it is still
+        # the dry one (could get it from the calculation above). But then it changes.
+        drs_dz = d_satmixratio_d_height(mixratio_sat, level_thickness[i, j-1])
+        gamma_w = moistadiabat_temp_gradient(drs_dz)
+        moist_ascent_temp = temp_ascent[i, j-1] + level_thickness[i, j-1] * gamma_w
+        k=2
+
+    return temp_ascent
 
 
 # preliminaries
@@ -145,7 +197,15 @@ delta_z = delta_height(lev_pres, temp_v)
 # first adiabatically to lifting condensation level, then moist-adiabatically
 temp_dew = mixratio_to_dewpoint(mix_ratio, lev_pres)
 dTd_dz = d_dewpoint_d_height(temp_dew)
+# the next lines are for the ascending parcel not for the measured ambient quantities
+# mix_ratio_sat = temperature_to_satmixratio(temp, lev_pres)
+# drs_dz = d_satmixratio_d_height(mix_ratio_sat, delta_z)
+# gamma_w = moistadiabat_temp_gradient(drs_dz)
 lcl = lifting_condensation_level(temp, temp_dew, dTd_dz)
 absolute_z = total_height(delta_z, srf_pres, srf_temp, srf_mix_ratio, lev_pres, temp_v)
 
 # dewpoint higher than actual temp at 2 meter eg here: 2001-11-02T18:00:00
+
+nlev_below_lcl = find_lcl_level(lcl, absolute_z)
+
+t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
