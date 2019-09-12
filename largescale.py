@@ -63,15 +63,27 @@ def temp_to_virtual(temperature, spec_hum):
 
 def delta_height(p_levels, virt_temp):
     # xarray first matches the coordinate/dimension values and then divides at each matching coordinate value
-    # pressure_ratio = p_levels[:-1] / p_levels[1:]
-    if take_lower_level:
-        pressure_ratio = p_levels[:, :-1].values / p_levels[:, 1:].values
-    else:
-        pressure_ratio = p_levels[:-1].values / p_levels[1:].values
+    # # pressure_ratio = p_levels[:-1] / p_levels[1:]
+    # if take_lower_level:
+    #     pressure_ratio = p_levels[:, :-1].values / p_levels[:, 1:].values
+    # else:
+    #     pressure_ratio = p_levels[:-1].values / p_levels[1:].values
 
-    mean_temp_v = 0.5 * (virt_temp[:, :-1].values + virt_temp[:, 1:].values)
+    # mean_temp_v = 0.5 * (virt_temp[:, :-1].values + virt_temp[:, 1:].values)
+    # dz    = xr.zeros_like(virt_temp[:, 1:])
+    # dz[:] = np.log(pressure_ratio) * (R_d / g) * mean_temp_v
+    # dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
+
+
+    if take_lower_level:
+        pressure_ratio = p_levels[:, 1:].values / p_levels[:, :-1].values
+    else:
+        pressure_ratio = p_levels[1:].values / p_levels[:-1].values
+
+    # the mean temperature gradient of the atmosphere [K/m]
+    gamma = -0.0065
     dz    = xr.zeros_like(virt_temp[:, 1:])
-    dz[:] = np.log(pressure_ratio) * (R_d / g) * mean_temp_v
+    dz[:] = (virt_temp[:, :-1].values / gamma) * (1 - pressure_ratio**(gamma * R_d / g))
     dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
     return dz
 
