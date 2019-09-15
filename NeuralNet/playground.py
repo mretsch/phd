@@ -18,13 +18,16 @@ if real_data:
     var7 = ds_predictors.r_adv_h
     var = xr.concat([var1, var2, var3, var4, var5, var6, var7], dim='lev')
     var_itp = var.resample(time='T9min').interpolate('linear')
-    #metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom.nc')
-    metric = xr.open_dataarray('/Users/mret0001/Desktop/rom_sample_nn.nc')
+    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/rome_50high50rest_sample.nc')
+    metric = metric.rename({'dim_0':'time'})
 
+    # metric has no unique times atm, so cannot be used as a dimension
+    m = metric.where(metric.time==np.unique(metric.time))
     # same sample size for both data sets
-    var_itp_sub = var_itp.where(metric[metric.notnull()])
+    times = metric.time[metric.time < var_itp.time[-1]]
+    var_itp_sub = var_itp.sel(time=times)
     predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
-    target = metric.where(predictor.time)
+    target = metric.sel(time=predictor.time)
 
     n_lev = predictor.shape[1]
 
@@ -44,7 +47,7 @@ if real_data:
     for i, entry in enumerate(predictor):
         pred.append( model.predict(np.array([entry])) )
 
-testing = True
+testing = False
 if testing:
     if real_data:
         c = target[2:4]
@@ -243,7 +246,7 @@ if testing:
 
 manual_sampling = True
 if manual_sampling:
-    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/rom_kilometres.nc')
+    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres.nc')
 
     # ROME-value at 97 percentile
     threshold = metric[abs((metric.percentile - 0.97)).argmin()]
@@ -255,10 +258,24 @@ if manual_sampling:
     m_present = metric.where(metric.notnull(), drop=True)
     sort_ind = m_present.argsort()
     sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
+
+    #until here only unique indizes in sample_ind, 0 is part of sample_ind
+
     # stride through ROME-values (not the percentiles or sorted indizes) linearly
-    rome_values = np.linspace(6.25, threshold, n_above_thresh)
-    for i, v in enumerate(rome_values):
+    # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
+    # We sort that out below.
+    check_values = np.linspace(6.25, threshold, n_above_thresh)
+    for i, v in enumerate(check_values):
         ind = abs((m_present - v)).argmin()
         sample_ind[i] = ind
 
-    metric_sample = m_present[sample_ind.astype(int)]
+    unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
+    # indizes[count == 2]
+    # sample_ind[3074]
+    # sample_ind[sample_ind == 12517]
+
+    # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
+    # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
+    sample_ind_unique = sample_ind[indizes]
+
+    metric_sample = m_present[sample_ind_unique.astype(int)]
