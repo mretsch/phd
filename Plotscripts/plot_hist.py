@@ -105,13 +105,17 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     """Computes and plots a 2D histogram."""
     start_h = timeit.default_timer()
 
+    x_series_min, x_series_max = x_series.min(), x_series.max()
+    y_series_min, y_series_max = y_series.min(), y_series.max()
     # Assign metric to plot and get rid of NaNs.
-    x_series = x_series.fillna(-1.)
-    y_series = y_series.fillna(-1.)
+    x_series = x_series.fillna(-10000.)
+    y_series = y_series.fillna(-10000.)
 
     if type(nbins) == int:
-        bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
-                     np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
+        bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
+                     np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
+        # bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
+        #              np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
         # bin_edges = [np.linspace(start=0., stop=250, num=nbins+1),
         #              np.linspace(start=0., stop=250, num=nbins+1)]
     else:
@@ -177,7 +181,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='plasma')  # , cmap='tab20c')
+    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='plasma')  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -192,10 +196,11 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
+        ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh.nc')
+        var2 = ls.cape#RH_srf#.sel(lev=515)  # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
+        var1 = ls.cin#omega.sel(lev=515)  #xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
         #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
         #var2 = ds2.iorg
 
@@ -208,15 +213,16 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=100,
-                                      x_label='Object mean area [km$^2$]',
-                                      y_label='ROME [km$^2$]',
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=15,
+                                      x_label=var1.long_name+' ['+var1.units+']',
+                                      y_label=var2.long_name+' ['+var2.units+']',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
-        #h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
+        fig_h_2d.savefig('/Users/mret0001/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
+        h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
         #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')

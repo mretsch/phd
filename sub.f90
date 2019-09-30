@@ -35,7 +35,7 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
         dy(n)    = yedges(n+1) - yedges(n)
     END DO
 
-    fillvalue  = -99.
+    fillvalue  = -999999999.
     xwhichbins = -1.
     ywhichbins = -1.
     hist_2d = 0.

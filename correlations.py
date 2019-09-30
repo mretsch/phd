@@ -8,11 +8,32 @@ import scipy as sp
 import bottleneck as bn
 import Plotscripts.plot_hist as h
 import basic_stats as stats
+from LargeScale.cape_matthias import mixratio_to_spechum, temp_to_virtual
 
 if __name__ == '__main__':
 
-    var_in_1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
-    var_in_2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rome.nc')
+    metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc') #.sel({'time': slice('2009-10-01', '2010-03-31')})
+    ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh.nc')
+
+    # get air density from Large Scale state variables
+    r = ls.r[:, 1:]
+    p = xr.zeros_like(r)
+    p[:, :]  = ls.lev[1:]
+    t = ls.T[:, 1:]
+    q = mixratio_to_spechum(r, p)
+    temp_v = temp_to_virtual(t, q)
+    density = p*100 / (287.1 * temp_v)
+
+    var = ls.T[:, 1:]
+    # arithmetic mean
+    ls_var2 = var.mean(dim='lev')
+    # density weighted mean
+    ls_var = ((density * var).sum(dim='lev') / density.sum(dim='lev'))
+    ls_var._copy_attrs_from(var)
+
+    m_where_ls = metric.where(ls_var[ls_var.notnull()])
+    var_in_1 = m_where_ls.where(m_where_ls.notnull(), drop=True)
+    var_in_2 = ls_var.where(var_in_1)
 
     if len(var_in_1) != len(var_in_2):
         var1 = var_in_1[var_in_1.notnull()]
@@ -30,7 +51,7 @@ if __name__ == '__main__':
     r   = stats.pearson_correlation (var1[var1.notnull()], var2[var2.notnull()])
     rho = stats.spearman_correlation(var1[var1.notnull()], var2[var2.notnull()])
 
-    percentiles = True
+    percentiles = False
     if percentiles:
         fig, h_2d = h.histogram_2d(var1.percentile.fillna(-1.) * 100., var2.percentile.fillna(-1) * 100., nbins=100,
                                    x_label='ROM percentiles [%]',
@@ -41,18 +62,19 @@ if __name__ == '__main__':
                  color='w', linewidth=0.5)
 
     else:
-        var1_rank = xr.DataArray(bn.nanrankdata(var1))
-        var2_rank = xr.DataArray(bn.nanrankdata(var2))
+        # var1_rank = xr.DataArray(bn.nanrankdata(var1))
+        # var2_rank = xr.DataArray(bn.nanrankdata(var2))
 
-        fig, h_2d = h.histogram_2d(var1_rank.fillna(-1.), var2_rank.fillna(-1.), nbins=100,
-                                   x_label='SIC rank',
-                                   y_label='ROM rank',
+        fig, h_2d = h.histogram_2d(var1, var2, nbins=100,
+                                   x_label='ROME at VA time steps [km$^2$]',
+                                   y_label=ls_var.long_name+', ['+ls_var.units+']',
                                    cbar_label='[%]')
         # plot identity
-        plt.plot(var1_rank.sortby(var1_rank), var1_rank.sortby(var1_rank),
-                 color='w', linewidth=0.5)
+        # plt.plot(var1_rank.sortby(var1_rank), var1_rank.sortby(var1_rank),
+        #          color='w', linewidth=0.5)
 
-    save = True
+    save = False
     if save:
         plt.savefig('/Users/mret0001/Desktop/corr_hist.pdf')
-
+    else:
+        plt.show()

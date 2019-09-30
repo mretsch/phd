@@ -199,25 +199,26 @@ def parcel_ascent(temperature, level_thickness, nlevel_below_lcl, pressure, mixr
     return temp_ascent
 
 
-# preliminaries
-spec_hum = mixratio_to_spechum(mix_ratio, lev_pres)
-temp_v = temp_to_virtual(temp, spec_hum)
-delta_z = delta_height(lev_pres, temp_v)
+if __name__ == '__main__':
 
+    # preliminaries
+    spec_hum = mixratio_to_spechum(mix_ratio, lev_pres)
+    temp_v = temp_to_virtual(temp, spec_hum)
+    delta_z = delta_height(lev_pres, temp_v)
 
-# let a parcel ascent (forced), starting at 990hPa,
-# first adiabatically to lifting condensation level, then moist-adiabatically
-temp_dew = mixratio_to_dewpoint(mix_ratio, lev_pres)
-dTd_dz = d_dewpoint_d_height(temp_dew)
-# the next lines are for the ascending parcel not for the measured ambient quantities
-# mix_ratio_sat = temperature_to_satmixratio(temp, lev_pres)
-# drs_dz = d_satmixratio_d_height(mix_ratio_sat, delta_z)
-# gamma_w = moistadiabat_temp_gradient(drs_dz)
-lcl = lifting_condensation_level(temp, temp_dew, dTd_dz)
-absolute_z = total_height(delta_z, srf_pres, srf_temp, srf_mix_ratio, lev_pres, temp_v)
+    # let a parcel ascent (forced), starting at 990hPa,
+    # first adiabatically to lifting condensation level, then moist-adiabatically
+    temp_dew = mixratio_to_dewpoint(mix_ratio, lev_pres)
+    dTd_dz = d_dewpoint_d_height(temp_dew)
+    # the next lines are for the ascending parcel not for the measured ambient quantities
+    # mix_ratio_sat = temperature_to_satmixratio(temp, lev_pres)
+    # drs_dz = d_satmixratio_d_height(mix_ratio_sat, delta_z)
+    # gamma_w = moistadiabat_temp_gradient(drs_dz)
+    lcl = lifting_condensation_level(temp, temp_dew, dTd_dz)
+    absolute_z = total_height(delta_z, srf_pres, srf_temp, srf_mix_ratio, lev_pres, temp_v)
 
-# dewpoint higher than actual temp at 2 meter eg here: 2001-11-02T18:00:00
+    # dewpoint higher than actual temp at 2 meter eg here: 2001-11-02T18:00:00
 
-nlev_below_lcl = find_lcl_level(lcl, absolute_z)
+    nlev_below_lcl = find_lcl_level(lcl, absolute_z)
 
-t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
+    t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)

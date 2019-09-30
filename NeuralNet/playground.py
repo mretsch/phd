@@ -1,3 +1,4 @@
+import timeit
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -6,7 +7,9 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 
-real_data = False
+start = timeit.default_timer()
+
+real_data = True
 if real_data:
     ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
     var1 = ds_predictors.omega
@@ -18,14 +21,15 @@ if real_data:
     var7 = ds_predictors.r_adv_h
     var = xr.concat([var1, var2, var3, var4, var5, var6, var7], dim='lev')
     var_itp = var.resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/rome_50high50rest_sample.nc')
-    metric = metric.rename({'dim_0':'time'})
+    metric = xr.open_dataarray('/Users/mret0001/Desktop/rome_sample_5050.nc')
+    # metric = metric.rename({'dim_0':'time'})
 
     # metric has no unique times atm, so cannot be used as a dimension
-    m = metric.where(metric.time==np.unique(metric.time))
+    # m = metric.where(metric.time==np.unique(metric.time))
     # same sample size for both data sets
-    times = metric.time[metric.time < var_itp.time[-1]]
-    var_itp_sub = var_itp.sel(time=times)
+    # times = metric.time[metric.time < var_itp.time[-1]]
+    # var_itp_sub = var_itp.sel(time=times)
+    var_itp_sub = var_itp.where(metric)
     predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
     target = metric.sel(time=predictor.time)
 
@@ -33,19 +37,21 @@ if real_data:
 
     # building the model
     model = kmodels.Sequential()
-    model.add(klayers.Dense(20, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense(20, activation='relu'))
+    model.add(klayers.Dense(1000, activation='relu', input_shape=(n_lev,)))
+    model.add(klayers.Dense(1000, activation='relu'))
+    model.add(klayers.Dense(1000, activation='relu'))
+    model.add(klayers.Dense(1000, activation='relu'))
     model.add(klayers.Dense(1))
 
     # compiling the model
     model.compile(optimizer='adam', loss='mean_absolute_error')#, metrics=['accuracy'])
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.3, epochs=5, batch_size=100)
+    model.fit(x=predictor, y=target, validation_split=0.3, epochs=10, batch_size=10)
 
     pred = []
     for i, entry in enumerate(predictor):
-        pred.append( model.predict(np.array([entry])) )
+        pred.append(model.predict(np.array([entry])) )
 
 testing = False
 if testing:
@@ -244,7 +250,7 @@ if testing:
         plt.show()
 
 
-manual_sampling = True
+manual_sampling = False
 if manual_sampling:
     metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres.nc')
 
@@ -259,8 +265,6 @@ if manual_sampling:
     sort_ind = m_present.argsort()
     sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
 
-    #until here only unique indizes in sample_ind, 0 is part of sample_ind
-
     # stride through ROME-values (not the percentiles or sorted indizes) linearly
     # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
     # We sort that out below.
@@ -270,12 +274,14 @@ if manual_sampling:
         sample_ind[i] = ind
 
     unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
-    # indizes[count == 2]
-    # sample_ind[3074]
-    # sample_ind[sample_ind == 12517]
 
     # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
     # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
     sample_ind_unique = sample_ind[indizes]
 
     metric_sample = m_present[sample_ind_unique.astype(int)]
+    sample = metric_sample.rename({'dim_0': 'time'})
+
+
+stop = timeit.default_timer()
+print('This script needed {} seconds.'.format(stop-start))
