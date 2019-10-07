@@ -10,18 +10,53 @@ import keras.callbacks as kcallbacks
 start = timeit.default_timer()
 
 real_data = True
+testing = False
+manual_sampling = False
 if real_data:
-    ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
-    var1 = ds_predictors.omega
-    var2 = ds_predictors.T
-    var3 = ds_predictors.div
-    var4 = ds_predictors.r
-    var5 = ds_predictors.u
-    var6 = ds_predictors.v
-    var7 = ds_predictors.r_adv_h
-    var = xr.concat([var1, var2, var3, var4, var5, var6, var7], dim='lev')
-    var_itp = var.resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Users/mret0001/Desktop/rome_sample_5050.nc')
+
+    l_resample = False
+    if l_resample:
+        metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres.nc')
+        # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
+        # the averaging period. Thus the labels are aligned to the large scale data set.
+        f = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+                            loffset='3H').mean()
+
+    ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh.nc')
+    c1 = xr.concat([
+         # ds_predictors.T
+         ds_predictors.r
+       , ds_predictors.s
+       # , ds_predictors.u
+       , ds_predictors.v
+       # , ds_predictors.omega
+       # , ds_predictors.div
+       , ds_predictors.T_adv_h
+       # , ds_predictors.T_adv_v
+       # , ds_predictors.r_adv_h
+       # , ds_predictors.r_adv_v
+       # , ds_predictors.s_adv_h
+       , ds_predictors.s_adv_v
+       , ds_predictors.dsdt
+       # , ds_predictors.drdt
+       # , ds_predictors.RH
+    ], dim='lev')
+    c2 = xr.concat([
+          ds_predictors.cin
+        , ds_predictors.cld_low
+        , ds_predictors.lw_dn_srf
+        , ds_predictors.wspd_srf
+        , ds_predictors.v_srf
+        , ds_predictors.r_srf
+        , ds_predictors.lw_net_toa
+        , ds_predictors.SH
+        , ds_predictors.LWP
+    ])
+    c2_r = c2.rename({'concat_dims': 'lev'})
+    c2_r.coords['lev'] = np.arange(len(c2))
+    var = xr.concat([c1, c2_r], dim='lev')
+    var_itp = var# .resample(time='T9min').interpolate('linear')
+    metric = xr.open_dataarray('/Users/matthiasretsch/Desktop/rom_avg_85pct_5050sample.nc')
     # metric = metric.rename({'dim_0':'time'})
 
     # metric has no unique times atm, so cannot be used as a dimension
@@ -37,23 +72,22 @@ if real_data:
 
     # building the model
     model = kmodels.Sequential()
-    model.add(klayers.Dense(1000, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense(1000, activation='relu'))
-    model.add(klayers.Dense(1000, activation='relu'))
-    model.add(klayers.Dense(1000, activation='relu'))
+    model.add(klayers.Dense(4000, activation='relu', input_shape=(n_lev,)))
+    model.add(klayers.Dense(4000, activation='relu'))
+    model.add(klayers.Dense(4000, activation='relu'))
+    model.add(klayers.Dense(4000, activation='relu'))
     model.add(klayers.Dense(1))
 
     # compiling the model
     model.compile(optimizer='adam', loss='mean_absolute_error')#, metrics=['accuracy'])
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.3, epochs=10, batch_size=10)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10)
 
     pred = []
     for i, entry in enumerate(predictor):
         pred.append(model.predict(np.array([entry])) )
 
-testing = False
 if testing:
     if real_data:
         c = target[2:4]
@@ -150,7 +184,18 @@ if testing:
         # model.predict(np.array([[5, 7, 18]]))
         # array([[10.033775]], dtype=float32)
 
-    model_insight = True
+    l_model6 = True
+    if l_model6:
+        x = np.random.randint(-50, 50, size=(500))
+        y = np.square(x)
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(150, activation='relu', input_shape=(1,)))
+        model.add(klayers.Dense(150, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=1, epochs=200, validation_split=0.3)
+
+    model_insight = False
     if model_insight:
 
         def mlp_insight(model, data_in):
@@ -250,12 +295,11 @@ if testing:
         plt.show()
 
 
-manual_sampling = False
 if manual_sampling:
-    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres.nc')
+    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
 
-    # ROME-value at 97 percentile
-    threshold = metric[abs((metric.percentile - 0.97)).argmin()]
+    # ROME-value at given percentile
+    threshold = metric[abs((metric.percentile - 0.85)).argmin()]
     n_above_thresh = (metric > threshold).sum().item()
     sample_ind = xr.DataArray(np.zeros(shape=2*n_above_thresh))
     sample_ind[:] = -1
@@ -281,6 +325,7 @@ if manual_sampling:
 
     metric_sample = m_present[sample_ind_unique.astype(int)]
     sample = metric_sample.rename({'dim_0': 'time'})
+    sample.to_netcdf('/Users/matthiasretsch/Desktop/rom_sample.nc')
 
 
 stop = timeit.default_timer()
