@@ -14,14 +14,6 @@ testing = False
 manual_sampling = False
 if real_data:
 
-    l_resample = False
-    if l_resample:
-        metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres.nc')
-        # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
-        # the averaging period. Thus the labels are aligned to the large scale data set.
-        f = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
-                            loffset='3H').mean()
-
     ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh.nc')
     c1 = xr.concat([
          # ds_predictors.T
@@ -56,7 +48,7 @@ if real_data:
     c2_r.coords['lev'] = np.arange(len(c2))
     var = xr.concat([c1, c2_r], dim='lev')
     var_itp = var# .resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Users/matthiasretsch/Desktop/rom_avg_85pct_5050sample.nc')
+    metric = xr.open_dataarray('/Users/mret0001/Desktop/ROME_Samples/rom_allseasons_avg_85pct_5050sample.nc')
     # metric = metric.rename({'dim_0':'time'})
 
     # metric has no unique times atm, so cannot be used as a dimension
@@ -65,17 +57,22 @@ if real_data:
     # times = metric.time[metric.time < var_itp.time[-1]]
     # var_itp_sub = var_itp.sel(time=times)
     var_itp_sub = var_itp.where(metric)
-    predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
+    # predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
+
+    lst = var_itp_sub.notnull().all(dim='lev')
+    predictor = var_itp_sub[lst]
+
     target = metric.sel(time=predictor.time)
 
     n_lev = predictor.shape[1]
 
     # building the model
     model = kmodels.Sequential()
-    model.add(klayers.Dense(4000, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense(4000, activation='relu'))
-    model.add(klayers.Dense(4000, activation='relu'))
-    model.add(klayers.Dense(4000, activation='relu'))
+    model.add(klayers.Dense(5000, activation='relu', input_shape=(n_lev,)))
+    model.add(klayers.Dense(5000, activation='relu'))
+    model.add(klayers.Dense(5000, activation='relu'))
+    model.add(klayers.Dense(5000, activation='relu'))
+    model.add(klayers.Dense(5000, activation='relu'))
     model.add(klayers.Dense(1))
 
     # compiling the model
@@ -84,9 +81,9 @@ if real_data:
     # fit the model
     model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10)
 
-    pred = []
-    for i, entry in enumerate(predictor):
-        pred.append(model.predict(np.array([entry])) )
+    # pred = []
+    # for i, entry in enumerate(predictor):
+    #     pred.append(model.predict(np.array([entry])) )
 
 if testing:
     if real_data:
@@ -296,7 +293,17 @@ if testing:
 
 
 if manual_sampling:
-    metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
+    l_resample = True
+    if l_resample:
+        metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+        # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
+        # the averaging period. Thus the labels are aligned to the large scale data set.
+        m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+                                loffset='3H').mean()
+        m_avg.coords['percentile'] = m_avg.rank(dim='time', pct=True)
+
+    # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
+    metric = m_avg
 
     # ROME-value at given percentile
     threshold = metric[abs((metric.percentile - 0.85)).argmin()]
@@ -325,7 +332,7 @@ if manual_sampling:
 
     metric_sample = m_present[sample_ind_unique.astype(int)]
     sample = metric_sample.rename({'dim_0': 'time'})
-    sample.to_netcdf('/Users/matthiasretsch/Desktop/rom_sample.nc')
+    sample.to_netcdf('/Users/mret0001/Desktop/rom_sample.nc')
 
 
 stop = timeit.default_timer()

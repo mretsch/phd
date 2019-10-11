@@ -6,11 +6,19 @@ import timeit
 start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
-ds_ps = xr.open_dataset('/Users/mret0001/Desktop/cape_cin_hist.nc')
-ds    = xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin.nc')
+# ds_ps = xr.open_dataset('/Users/mret0001/Desktop/LS_PhaseSpaces_2/cape_cin_hist.nc')
+ds_ps = xr.open_dataset('/Users/mret0001/Desktop/hist.nc')
+ds    = xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_RH.nc')
+
+subselect = False
+if subselect:
+    # subselect specific times during a day
+    ds.coords['hour'] = ds.indexes['time'].hour
+    ds_sub = ds.where(ds.hour.isin([6]), drop=True)
+    ds = ds_sub
 
 phase_space = ds_ps.hist_2D
-overlay = ds.RH_srf # .where(ds.cop_mod < 60.)
+overlay = ds.RH_srf # .sel(lev=515) # .where(ds.cop_mod < 60.)
 
 # give the overlay time series information about the placements of the bins for each time step
 overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins.values)

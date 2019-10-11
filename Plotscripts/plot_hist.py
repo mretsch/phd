@@ -199,6 +199,14 @@ if __name__ == '__main__':
     hist_2d = True
     if hist_2d:
         ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh.nc')
+
+        subselect = False
+        if subselect:
+            # subselect specific times during a day
+            ls.coords['hour'] = ls.indexes['time'].hour
+            ls_sub = ls.where(ls.hour.isin([6]), drop=True)
+            ls = ls_sub
+
         var2 = ls.cape#RH_srf#.sel(lev=515)  # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
         var1 = ls.cin#omega.sel(lev=515)  #xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
         #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
