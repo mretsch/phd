@@ -76,10 +76,10 @@ if real_data:
     model.add(klayers.Dense(1))
 
     # compiling the model
-    model.compile(optimizer='adam', loss='mean_absolute_error')#, metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mean_squared_error')#, metrics=['accuracy'])
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=1)
 
     # pred = []
     # for i, entry in enumerate(predictor):
