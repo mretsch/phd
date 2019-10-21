@@ -49,7 +49,7 @@ c2_r.coords['lev'] = np.arange(len(c2))
 var = xr.concat([c1, c2_r], dim='lev')
 # var_itp = var  # .resample(time='T9min').interpolate('linear')
 # var_itp = c1  # .resample(time='T9min').interpolate('linear')
-var_itp = ds_predictors.drdt[:, 1:]  # .resample(time='T9min').interpolate('linear')
+var_itp = ds_predictors.omega[:, 1:]  # .resample(time='T9min').interpolate('linear')
 
 metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
 
@@ -97,7 +97,7 @@ if plotting_model:
     plt.imshow(data)
     plt.show()
 
-l_predict = False
+l_predict = True
 if l_predict:
     pred = []
     for i, entry in enumerate(predictor):
@@ -109,26 +109,52 @@ if l_predict:
     certainty_predicted = pp.max(dim='dim_2')
 
     # got class right
-    certainty_gcr   = certainty_predicted.where( class_predicted == classes.astype(int).values, other=np.nan)
-    certainty_gcr_1 = certainty_gcr.where((class_predicted == 1), other=np.nan)
-    certainty_gcr_2 = certainty_gcr.where((class_predicted == 2), other=np.nan)
-    certainty_gcr_3 = certainty_gcr.where((class_predicted == 3), other=np.nan)
+    certainty_gcr    = certainty_predicted.where( class_predicted == classes.astype(int).values, other=np.nan)
+    certainty_gcr_1  = certainty_gcr.where((class_predicted ==  1), other=np.nan)
+    certainty_gcr_2  = certainty_gcr.where((class_predicted ==  2), other=np.nan)
+    certainty_gcr_3  = certainty_gcr.where((class_predicted ==  3), other=np.nan)
+    certainty_gcr_4  = certainty_gcr.where((class_predicted ==  4), other=np.nan)
+    certainty_gcr_5  = certainty_gcr.where((class_predicted ==  5), other=np.nan)
+    certainty_gcr_6  = certainty_gcr.where((class_predicted ==  6), other=np.nan)
+    certainty_gcr_7  = certainty_gcr.where((class_predicted ==  7), other=np.nan)
+    certainty_gcr_8  = certainty_gcr.where((class_predicted ==  8), other=np.nan)
+    certainty_gcr_9  = certainty_gcr.where((class_predicted ==  9), other=np.nan)
+    certainty_gcr_10 = certainty_gcr.where((class_predicted == 10), other=np.nan)
 
     # got class wrong
-    got_class_wrong = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan) * 0. + 0.33
+    got_class_wrong = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan) * 0. + 0.1
     certainty_gcw   = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan)
-    certainty_gcw_1 = certainty_gcw.where(class_predicted == 1, other=np.nan)
-    certainty_gcw_2 = certainty_gcw.where(class_predicted == 2, other=np.nan)
-    certainty_gcw_3 = certainty_gcw.where(class_predicted == 3, other=np.nan)
+    # certainty_gcw_1  = certainty_gcw.where((class_predicted ==  1), other=np.nan)
+    # certainty_gcw_2  = certainty_gcw.where((class_predicted ==  2), other=np.nan)
+    # certainty_gcw_3  = certainty_gcw.where((class_predicted ==  3), other=np.nan)
+    # certainty_gcw_4  = certainty_gcw.where((class_predicted ==  4), other=np.nan)
+    # certainty_gcw_5  = certainty_gcw.where((class_predicted ==  5), other=np.nan)
+    # certainty_gcw_6  = certainty_gcw.where((class_predicted ==  6), other=np.nan)
+    # certainty_gcw_7  = certainty_gcw.where((class_predicted ==  7), other=np.nan)
+    # certainty_gcw_8  = certainty_gcw.where((class_predicted ==  8), other=np.nan)
+    # certainty_gcw_9  = certainty_gcw.where((class_predicted ==  9), other=np.nan)
+    # certainty_gcw_10 = certainty_gcw.where((class_predicted == 10), other=np.nan)
 
-    fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
+    fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(18, 4))
     ax_r1 = ax_host.twinx()
 
-    ax_host.step(np.arange(100) + 0.5, classes[:100], color='grey')
-    ax_r1.plot(np.arange(100), certainty_gcr_3[:100], linestyle=' ', marker='p', color=sol['magenta'])
-    ax_r1.plot(np.arange(100), certainty_gcr_2[:100], linestyle=' ', marker='p', color=sol['green'])
-    ax_r1.plot(np.arange(100), certainty_gcr_1[:100], linestyle=' ', marker='p', color=sol['blue'])
-    ax_r1.plot(np.arange(100), got_class_wrong[:100], linestyle=' ', marker='x', color=sol['orange'])
+    # colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+    colours = ['yellow', 'magenta', 'base03']
+
+    n_length = 6387
+    ax_host.step(np.arange(n_length) + 0.5,   classes[:n_length], color='grey')
+    ax_r1.plot  (np.arange(n_length), certainty_gcr_1 [:n_length], linestyle=' ', marker='p', color=sol[colours[0]])
+    ax_r1.plot  (np.arange(n_length), certainty_gcr_2 [:n_length], linestyle=' ', marker='p', color=sol[colours[1]])
+    ax_r1.plot  (np.arange(n_length), certainty_gcr_3 [:n_length], linestyle=' ', marker='p', color=sol[colours[2]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_4 [:n_length], linestyle=' ', marker='p', color=sol[colours[3]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_5 [:n_length], linestyle=' ', marker='p', color=sol[colours[4]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_6 [:n_length], linestyle=' ', marker='p', color=sol[colours[5]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_7 [:n_length], linestyle=' ', marker='p', color=sol[colours[6]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_8 [:n_length], linestyle=' ', marker='p', color=sol[colours[7]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_9 [:n_length], linestyle=' ', marker='p', color=sol[colours[8]])
+    # ax_r1.plot  (np.arange(n_length), certainty_gcr_10[:n_length], linestyle=' ', marker='p', color=sol[colours[9]])
+    ax_r1.plot  (np.arange(n_length), got_class_wrong [:n_length], linestyle=' ', marker='x', color=sol['orange'])
+    plt.savefig('/Users/mret0001/Desktop/class_hitmiss.pdf', transparent=True, bbox_inches='tight')
 
 
 stop = timeit.default_timer()
