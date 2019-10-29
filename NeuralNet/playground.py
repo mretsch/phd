@@ -12,25 +12,25 @@ start = timeit.default_timer()
 real_data = True
 testing = False
 manual_sampling = False
-if real_data:
 
+if real_data:
     ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh.nc')
     c1 = xr.concat([
          # ds_predictors.T
-         ds_predictors.r
-       , ds_predictors.s
+         # ds_predictors.r
+       # , ds_predictors.s
        # , ds_predictors.u
-       , ds_predictors.v
-       # , ds_predictors.omega
+       # , ds_predictors.v
+         ds_predictors.omega
        # , ds_predictors.div
        , ds_predictors.T_adv_h
-       # , ds_predictors.T_adv_v
-       # , ds_predictors.r_adv_h
-       # , ds_predictors.r_adv_v
-       # , ds_predictors.s_adv_h
+       , ds_predictors.T_adv_v
+       , ds_predictors.r_adv_h
+       , ds_predictors.r_adv_v
+       , ds_predictors.s_adv_h
        , ds_predictors.s_adv_v
        , ds_predictors.dsdt
-       # , ds_predictors.drdt
+       , ds_predictors.drdt
        # , ds_predictors.RH
     ], dim='lev')
     c2 = xr.concat([
@@ -46,44 +46,58 @@ if real_data:
     ])
     c2_r = c2.rename({'concat_dims': 'lev'})
     c2_r.coords['lev'] = np.arange(len(c2))
-    var = xr.concat([c1, c2_r], dim='lev')
-    var_itp = var# .resample(time='T9min').interpolate('linear')
-    metric = xr.open_dataarray('/Users/mret0001/Desktop/ROME_Samples/rom_allseasons_avg_85pct_5050sample.nc')
-    # metric = metric.rename({'dim_0':'time'})
+
+    # var = xr.concat([c1, c2_r], dim='lev')
+    var = c1
+    # var_itp = var# .resample(time='T9min').interpolate('linear')
+    # var = ds_predictors.omega[:, 1:]  # .resample(time='T9min').interpolate('linear')
+
+    # metric = xr.open_dataarray('/Users/mret0001/Desktop/ROME_Samples/rom_avg6h_afterLS_85pct_5050sample.nc')
+    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
     # metric has no unique times atm, so cannot be used as a dimension
     # m = metric.where(metric.time==np.unique(metric.time))
     # same sample size for both data sets
-    # times = metric.time[metric.time < var_itp.time[-1]]
-    # var_itp_sub = var_itp.sel(time=times)
-    var_itp_sub = var_itp.where(metric)
-    # predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
+    var_sub = var.where(metric.notnull())
 
-    lst = var_itp_sub.notnull().all(dim='lev')
-    predictor = var_itp_sub[lst]
+    lst = var_sub.notnull().all(dim='lev')
+    predictor = var_sub[{'time': lst}]
+    n_lev = len(predictor['lev'])
 
     target = metric.sel(time=predictor.time)
 
-    n_lev = predictor.shape[1]
-
     # building the model
     model = kmodels.Sequential()
-    model.add(klayers.Dense(5000, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense(5000, activation='relu'))
-    model.add(klayers.Dense(5000, activation='relu'))
-    model.add(klayers.Dense(5000, activation='relu'))
-    model.add(klayers.Dense(5000, activation='relu'))
+    model.add(klayers.Dense( 300, activation='relu', input_shape=(n_lev,)))
+    model.add(klayers.Dense( 300, activation='relu'))
+    model.add(klayers.Dense( 300, activation='relu'))
+    # model.add(klayers.Dense( 300, activation='relu'))
+    # model.add(klayers.Dense( 300, activation='relu'))
     model.add(klayers.Dense(1))
 
     # compiling the model
     model.compile(optimizer='adam', loss='mean_squared_error')#, metrics=['accuracy'])
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=1)
+    # predictor = predictor.transpose()
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10)
 
-    # pred = []
-    # for i, entry in enumerate(predictor):
-    #     pred.append(model.predict(np.array([entry])) )
+    l_predict = True
+    if l_predict:
+        print('Predicting...')
+        pred = []
+        for i, entry in enumerate(predictor):
+            pred.append(model.predict(np.array([entry])) )
+        p = xr.DataArray(pred)
+        pp = p.squeeze()
+        pp.coords['time'] = ('dim_0', target.time)
+        predicted = pp.swap_dims({'dim_0': 'time'})
+
+        fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
+        ax_host.plot(target[-1200:])
+        ax_host.plot(predicted[-1200:])
+        plt.legend(['target', 'predicted'])
+        plt.savefig('/Users/mret0001/Desktop/last1200.pdf', bbox_inches='tight')
 
 if testing:
     if real_data:
