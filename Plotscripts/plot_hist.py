@@ -101,7 +101,7 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
     return fig
 
 
-def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_label=''):
+def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_label='', l_same_axis_length=False):
     """Computes and plots a 2D histogram."""
     start_h = timeit.default_timer()
 
@@ -112,10 +112,12 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     y_series = y_series.fillna(-10000.)
 
     if type(nbins) == int:
-        bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
-                     np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
-        # bin_edges = [np.linspace(start=0., stop=x_series.max(), num=nbins+1),
-        #              np.linspace(start=0., stop=y_series.max(), num=nbins+1)]
+        if l_same_axis_length:
+            bin_edges = [np.linspace(start=0., stop=max(x_series_max, y_series_max), num=nbins+1),
+                         np.linspace(start=0., stop=max(x_series_max, y_series_max), num=nbins+1)]
+        else:
+            bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
+                         np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
         # bin_edges = [np.linspace(start=0., stop=250, num=nbins+1),
         #              np.linspace(start=0., stop=250, num=nbins+1)]
     else:

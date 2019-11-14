@@ -2,10 +2,13 @@ import timeit
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
+from Plotscripts.plot_hist import histogram_2d
+import pandas as pd
 
 start = timeit.default_timer()
 
@@ -14,24 +17,27 @@ testing = False
 manual_sampling = False
 
 if real_data:
-    ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh.nc')
+    ds_predictors =\
+        xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
+
     c1 = xr.concat([
-         # ds_predictors.T
-         # ds_predictors.r
-       # , ds_predictors.s
-       # , ds_predictors.u
-       # , ds_predictors.v
-         ds_predictors.omega
-       # , ds_predictors.div
-       , ds_predictors.T_adv_h
-       , ds_predictors.T_adv_v
-       , ds_predictors.r_adv_h
-       , ds_predictors.r_adv_v
-       , ds_predictors.s_adv_h
-       , ds_predictors.s_adv_v
-       , ds_predictors.dsdt
-       , ds_predictors.drdt
-       # , ds_predictors.RH
+          # ds_predictors.T
+        # , ds_predictors.r
+        # , ds_predictors.s
+        # , ds_predictors.u
+        # , ds_predictors.v
+         ds_predictors.omega[:, 1:] #!
+        , ds_predictors.div[:, 1:] #!
+        , ds_predictors.T_adv_h[:, 1:] #!
+        , ds_predictors.T_adv_v[:, 1:] #
+        , ds_predictors.r_adv_h[:, 1:] #!
+        , ds_predictors.r_adv_v[:, 1:] #
+        , ds_predictors.s_adv_h[:, 1:] #!
+        , ds_predictors.s_adv_v[:, 1:] #!
+        , ds_predictors.dsdt[:, 1:] #!
+        , ds_predictors.drdt[:, 1:] #!
+        , ds_predictors.dwind_dz[:, :-2] #!
+        , ds_predictors.RH[:, 1:] #!
     ], dim='lev')
     c2 = xr.concat([
           ds_predictors.cin
@@ -50,9 +56,8 @@ if real_data:
     # var = xr.concat([c1, c2_r], dim='lev')
     var = c1
     # var_itp = var# .resample(time='T9min').interpolate('linear')
-    # var = ds_predictors.omega[:, 1:]  # .resample(time='T9min').interpolate('linear')
 
-    # metric = xr.open_dataarray('/Users/mret0001/Desktop/ROME_Samples/rom_avg6h_afterLS_85pct_5050sample.nc')
+    # metric = xr.open_dataarray('/Users/mret0001/Data/ROME_Samples/rom_avg6h_afterLS_85pct_5050sample.nc')
     metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
     # metric has no unique times atm, so cannot be used as a dimension
@@ -97,6 +102,9 @@ if real_data:
         ax_host.plot(target[-1200:])
         ax_host.plot(predicted[-1200:])
         plt.legend(['target', 'predicted'])
+        # ax_host.xaxis.set_major_locator(ticker.MultipleLocator(1))
+        # ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+        # plt.grid(which='both')
         plt.savefig('/Users/mret0001/Desktop/last1200.pdf', bbox_inches='tight')
 
 if testing:
@@ -313,7 +321,7 @@ if manual_sampling:
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
         # the averaging period. Thus the labels are aligned to the large scale data set.
         m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
-                                loffset='3H').mean()
+                                loffset='3H').max()
         m_avg.coords['percentile'] = m_avg.rank(dim='time', pct=True)
 
     # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')

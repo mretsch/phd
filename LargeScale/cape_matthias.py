@@ -2,40 +2,7 @@ from os.path import expanduser
 home = expanduser("~")
 import xarray as xr
 import numpy as np
-
-ls = xr.open_dataset(home+'/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
-
-# level 0 is not important because quantities at level 0 have repeated value from level 1 there.
-take_lower_level = True
-if take_lower_level:
-    level_pres = ls.lev # [hPa] constant level heights
-    temp       = ls.T   # [K]
-    mix_ratio  = ls.r   # [g/kg] water vapour mixing ratio
-else:
-    lev_pres  = ls.lev[1:]    # [hPa] constant level heights
-    temp      = ls.T[:, 1:]   # [K]
-    mix_ratio = ls.r[:, 1:]   # [g/kg] water vapour mixing ratio
-
-srf_pres      = ls.p_srf_aver  # [hPa]
-srf_mix_ratio = ls.r_srf  # [g/kg]
-srf_temp      = ls.T_srf + 273.15 # [K]
-
-if take_lower_level:
-    temp[:, 0]       = srf_temp
-    mix_ratio[:, 0]  = srf_mix_ratio
-    lev_pres         = xr.zeros_like(temp)
-    lev_pres[:, 0]   = srf_pres
-    lev_pres[:, 1:]  = level_pres[1:]
-
-
-
-# a date where surface pressure is below the pressure of the bottommost level (below 1015 hPa)
-# srf_pres[srf_pres == srf_pres.min()]
-# in that case the value for the actually non-existent bottommost level is copied from the level above
-# temp.sel(time='2014-02-11T06:00:00')
-# spec_hum.sel(time='2014-02-11T06:00:00')
-# and surface pressure is always below 1015, hence the bottommost level is always a redundant value...
-# no it should just be a unique value which then is valid for a different pressure than 1015...
+import metpy.calc as mpcalc
 
 # global R_d, g
 g = 9.81  # gravitational acceleration
@@ -63,28 +30,32 @@ def temp_to_virtual(temperature, spec_hum):
 
 def delta_height(p_levels, virt_temp):
     # xarray first matches the coordinate/dimension values and then divides at each matching coordinate value
-    # # pressure_ratio = p_levels[:-1] / p_levels[1:]
-    # if take_lower_level:
-    #     pressure_ratio = p_levels[:, :-1].values / p_levels[:, 1:].values
-    # else:
-    #     pressure_ratio = p_levels[:-1].values / p_levels[1:].values
+    # if only given: pressure_ratio = p_levels[:-1] / p_levels[1:]
 
-    # mean_temp_v = 0.5 * (virt_temp[:, :-1].values + virt_temp[:, 1:].values)
-    # dz    = xr.zeros_like(virt_temp[:, 1:])
-    # dz[:] = np.log(pressure_ratio) * (R_d / g) * mean_temp_v
-    # dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
+    l_isotherm = False
+    if l_isotherm:
+        if take_lower_level:
+            pressure_ratio = p_levels[:, :-1].values / p_levels[:, 1:].values
+        else:
+            pressure_ratio = p_levels[:-1].values / p_levels[1:].values
 
+        mean_temp_v = 0.5 * (virt_temp[:, :-1].values + virt_temp[:, 1:].values)
+        dz    = xr.zeros_like(virt_temp[:, 1:])
+        dz[:] = np.log(pressure_ratio) * (R_d / g) * mean_temp_v
+        dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
 
-    if take_lower_level:
-        pressure_ratio = p_levels[:, 1:].values / p_levels[:, :-1].values
-    else:
-        pressure_ratio = p_levels[1:].values / p_levels[:-1].values
+    l_lineargradient = not l_isotherm
+    if l_lineargradient:
+        if take_lower_level:
+            pressure_ratio = p_levels[:, 1:].values / p_levels[:, :-1].values
+        else:
+            pressure_ratio = p_levels[1:].values / p_levels[:-1].values
 
-    # the mean temperature gradient of the atmosphere [K/m]
-    gamma = -0.0065
-    dz    = xr.zeros_like(virt_temp[:, 1:])
-    dz[:] = (virt_temp[:, :-1].values / gamma) * (1 - pressure_ratio**(gamma * R_d / g))
-    dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
+        # the mean temperature gradient of the atmosphere [K/m]
+        gamma = -0.0065
+        dz    = xr.zeros_like(virt_temp[:, 1:])
+        dz[:] = (virt_temp[:, :-1].values / gamma) * (1 - pressure_ratio**(gamma * R_d / g))
+        dz    = dz.assign_attrs({'units':'m', 'Bottom pressure': 'above/at 990 hPa'})
     return dz
 
 
@@ -199,26 +170,88 @@ def parcel_ascent(temperature, level_thickness, nlevel_below_lcl, pressure, mixr
     return temp_ascent
 
 
+def vertical_wind_shear(u, v):
+    diff_u = xr.zeros_like(u[:, 1:])
+    diff_u.attrs['long_name'] = 'Horizontal wind U component delta to level below'
+    diff_v = xr.zeros_like(v[:, 1:])
+    diff_v.attrs['long_name'] = 'Horizontal wind V component delta to level below'
+
+    diff_u[:, :] = u[:, 1:].values - u[:, :-1].values
+    diff_v[:, :] = v[:, 1:].values - v[:, :-1].values
+
+    shear = np.sqrt(diff_u ** 2 + diff_v ** 2)
+
+    # often shear is in [m/s], but I want it per meter, so [1/m]
+    thickness = delta_height(ls.lev[1:], ls.T[:, 1:])
+    thickness_my = thickness.copy(deep=True)
+    thickness_metpy = thickness.copy(deep=True)
+    thickness_metpy[:, :] = 0
+
+    for i in range(len(thickness.lev)):
+        thickness_metpy[0, i] = mpcalc.thickness_hydrostatic(ls.lev[i + 1:i + 3], ls.T[:1, i + 1:i + 3])[0]
+
+    shear_per_meter = shear / thickness
+    shear_per_meter.attrs['long_name'] = 'Vertical wind shear'
+    shear_per_meter.attrs['units'] = '1/m'
+
+    return xr.merge([ls, xr.Dataset({'dwind_dz': shear_per_meter})])
+
+
 if __name__ == '__main__':
+    ls = xr.open_dataset(home + '/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
 
-    # preliminaries
-    spec_hum = mixratio_to_spechum(mix_ratio, lev_pres)
-    temp_v = temp_to_virtual(temp, spec_hum)
-    delta_z = delta_height(lev_pres, temp_v)
+    # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
+    take_lower_level = False
+    if take_lower_level:
+        level_pres = ls.lev  # [hPa] constant level heights
+        temp = ls.T  # [K]
+        mix_ratio = ls.r  # [g/kg] water vapour mixing ratio
+    else:
+        lev_pres = ls.lev[1:]  # [hPa] constant level heights
+        temp = ls.T[:, 1:]  # [K]
+        mix_ratio = ls.r[:, 1:]  # [g/kg] water vapour mixing ratio
 
-    # let a parcel ascent (forced), starting at 990hPa,
-    # first adiabatically to lifting condensation level, then moist-adiabatically
-    temp_dew = mixratio_to_dewpoint(mix_ratio, lev_pres)
-    dTd_dz = d_dewpoint_d_height(temp_dew)
-    # the next lines are for the ascending parcel not for the measured ambient quantities
-    # mix_ratio_sat = temperature_to_satmixratio(temp, lev_pres)
-    # drs_dz = d_satmixratio_d_height(mix_ratio_sat, delta_z)
-    # gamma_w = moistadiabat_temp_gradient(drs_dz)
-    lcl = lifting_condensation_level(temp, temp_dew, dTd_dz)
-    absolute_z = total_height(delta_z, srf_pres, srf_temp, srf_mix_ratio, lev_pres, temp_v)
+    srf_pres = ls.p_srf_aver  # [hPa]
+    srf_mix_ratio = ls.r_srf  # [g/kg]
+    srf_temp = ls.T_srf + 273.15  # [K]
 
-    # dewpoint higher than actual temp at 2 meter eg here: 2001-11-02T18:00:00
+    if take_lower_level:
+        temp[:, 0] = srf_temp
+        mix_ratio[:, 0] = srf_mix_ratio
+        lev_pres = xr.zeros_like(temp)
+        lev_pres[:, 0] = srf_pres
+        lev_pres[:, 1:] = level_pres[1:]
 
-    nlev_below_lcl = find_lcl_level(lcl, absolute_z)
+    # a date where surface pressure is below the pressure of the bottommost level (below 1015 hPa)
+    # srf_pres[srf_pres == srf_pres.min()]
+    # in that case the value for the actually non-existent bottommost level is copied from the level above
+    # temp.sel(time='2014-02-11T06:00:00')
+    # spec_hum.sel(time='2014-02-11T06:00:00')
+    # and surface pressure is always below 1015, hence the bottommost level is always a redundant value...
+    # no it should just be a unique value which then is valid for a different pressure than 1015...
 
-    t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
+    l_cape = False
+    if l_cape:
+        # preliminaries
+        spec_hum = mixratio_to_spechum(mix_ratio, lev_pres)
+        temp_v = temp_to_virtual(temp, spec_hum)
+        delta_z = delta_height(lev_pres, temp_v)
+
+        # let a parcel ascent (forced), starting at 990hPa,
+        # first adiabatically to lifting condensation level, then moist-adiabatically
+        temp_dew = mixratio_to_dewpoint(mix_ratio, lev_pres)
+        dTd_dz = d_dewpoint_d_height(temp_dew)
+        # the next lines are for the ascending parcel not for the measured ambient quantities
+        # mix_ratio_sat = temperature_to_satmixratio(temp, lev_pres)
+        # drs_dz = d_satmixratio_d_height(mix_ratio_sat, delta_z)
+        # gamma_w = moistadiabat_temp_gradient(drs_dz)
+        lcl = lifting_condensation_level(temp, temp_dew, dTd_dz)
+        absolute_z = total_height(delta_z, srf_pres, srf_temp, srf_mix_ratio, lev_pres, temp_v)
+
+        # dewpoint higher than actual temp at 2 meter eg here: 2001-11-02T18:00:00
+
+        nlev_below_lcl = find_lcl_level(lcl, absolute_z)
+
+        t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
+
+    ls_new = vertical_wind_shear(ls.u, ls.v)
