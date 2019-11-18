@@ -26,18 +26,18 @@ if real_data:
         # , ds_predictors.s
         # , ds_predictors.u
         # , ds_predictors.v
-         ds_predictors.omega[:, 1:] #!
-        , ds_predictors.div[:, 1:] #!
-        , ds_predictors.T_adv_h[:, 1:] #!
-        , ds_predictors.T_adv_v[:, 1:] #
-        , ds_predictors.r_adv_h[:, 1:] #!
-        , ds_predictors.r_adv_v[:, 1:] #
-        , ds_predictors.s_adv_h[:, 1:] #!
-        , ds_predictors.s_adv_v[:, 1:] #!
-        , ds_predictors.dsdt[:, 1:] #!
-        , ds_predictors.drdt[:, 1:] #!
-        , ds_predictors.dwind_dz[:, :-2] #!
-        , ds_predictors.RH[:, 1:] #!
+         ds_predictors.omega    [:, :-1] #!
+        , ds_predictors.div     [:, :-1] #!
+        , ds_predictors.T_adv_h [:, :-1] #!
+        , ds_predictors.T_adv_v [:, :-1] #
+        , ds_predictors.r_adv_h [:, :-1] #!
+        , ds_predictors.r_adv_v [:, :-1] #
+        , ds_predictors.s_adv_h [:, :-1] #!
+        , ds_predictors.s_adv_v [:, :-1] #!
+        , ds_predictors.dsdt    [:, :-1] #!
+        , ds_predictors.drdt    [:, :-1] #!
+        , ds_predictors.dwind_dz[:, :-2] #! bottom levels filled with NaN
+        , ds_predictors.RH      [:, :-1] #!
     ], dim='lev')
     c2 = xr.concat([
           ds_predictors.cin
@@ -62,14 +62,79 @@ if real_data:
 
     # metric has no unique times atm, so cannot be used as a dimension
     # m = metric.where(metric.time==np.unique(metric.time))
-    # same sample size for both data sets
-    var_sub = var.where(metric.notnull())
 
-    lst = var_sub.notnull().all(dim='lev')
-    predictor = var_sub[{'time': lst}]
+    # large scale variables only where metric is defined
+    var_metric = var.where(metric.notnull(), drop=True)
+
+    # boolean for the large scale variables without any NaN anywhere
+    l_var_nonull = var_metric.notnull().all(dim='lev')
+
+    take_same_time = False
+    if take_same_time:
+        predictor = var_metric[{'time': l_var_nonull}]
+        target = metric.sel(time=predictor.time)
+
+    if not take_same_time:
+        take_only_predecessor_time = False
+
+        if take_only_predecessor_time:
+            var_nonull = var_metric[l_var_nonull]
+            var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
+            times = []
+            for t in var_nonull_6earlier:
+                try:
+                    _ = var_metric.sel(time=t)
+                    times.append(t.values)
+                except KeyError:
+                    continue
+            # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
+            var_6earlier = var_metric.sel(time=times)
+            var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
+
+            # m_later = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
+            # metric six hour later not necessarily a value. Actually it is necessarily a value, because now we are back at
+            # times of var_metric, where metric is a number.
+            # m_nonull = m_later.where(m_later.notnull(), drop=True)
+            # target = metric.sel(time=m_nonull.time)
+            target = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
+
+            predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
+
+        else:
+            # the timesteps have to be consecutive, not the indizes (time between indices can jump)
+
+            var_nonull = var_metric[l_var_nonull]
+            var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
+            times = []
+            for t in var_nonull_6earlier:
+                try:
+                    _ = var_metric.sel(time=t)
+                    times.append(t.values)
+                except KeyError:
+                    continue
+            # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
+            var_6earlier = var_metric.sel(time=times)
+            var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
+
+            var_6later_nonull = var_nonull.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')))
+            # first 'create' the right array with the correct 'late' time steps
+            xr.concat([var_6later_nonull, var_6later_nonull], dim='lev')
+
+            # m_later = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
+            # metric six hour later not necessarily a value. Actually it is necessarily a value, because now we are back at
+            # times of var_metric, where metric is a number.
+            # m_nonull = m_later.where(m_later.notnull(), drop=True)
+            # target = metric.sel(time=m_nonull.time)
+            target = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
+
+
+            predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
+
+
+
+
+
     n_lev = len(predictor['lev'])
-
-    target = metric.sel(time=predictor.time)
 
     # building the model
     model = kmodels.Sequential()
