@@ -26,7 +26,7 @@ if real_data:
         # , ds_predictors.s
         # , ds_predictors.u
         # , ds_predictors.v
-         ds_predictors.omega    [:, :-1] #!
+          ds_predictors.omega   [:, :-1] #!
         , ds_predictors.div     [:, :-1] #!
         , ds_predictors.T_adv_h [:, :-1] #!
         , ds_predictors.T_adv_v [:, :-1] #
@@ -50,6 +50,21 @@ if real_data:
         , ds_predictors.SH
         , ds_predictors.LWP
     ])
+    # give c1 another coordinate to get back easily which values in concatenated array correspond to which variables
+    names_list =      [ds_predictors.omega   .long_name for _ in range(len(ds_predictors.omega   [:, :-1].lev))]
+    names_list.extend([ds_predictors.div     .long_name for _ in range(len(ds_predictors.div     [:, :-1].lev))])
+    names_list.extend([ds_predictors.T_adv_h .long_name for _ in range(len(ds_predictors.T_adv_h [:, :-1].lev))])
+    names_list.extend([ds_predictors.T_adv_v .long_name for _ in range(len(ds_predictors.T_adv_v [:, :-1].lev))])
+    names_list.extend([ds_predictors.r_adv_h .long_name for _ in range(len(ds_predictors.r_adv_h [:, :-1].lev))])
+    names_list.extend([ds_predictors.r_adv_v .long_name for _ in range(len(ds_predictors.r_adv_v [:, :-1].lev))])
+    names_list.extend([ds_predictors.s_adv_h .long_name for _ in range(len(ds_predictors.s_adv_h [:, :-1].lev))])
+    names_list.extend([ds_predictors.s_adv_v .long_name for _ in range(len(ds_predictors.s_adv_v [:, :-1].lev))])
+    names_list.extend([ds_predictors.dsdt    .long_name for _ in range(len(ds_predictors.dsdt    [:, :-1].lev))])
+    names_list.extend([ds_predictors.drdt    .long_name for _ in range(len(ds_predictors.drdt    [:, :-1].lev))])
+    names_list.extend([ds_predictors.dwind_dz.long_name for _ in range(len(ds_predictors.dwind_dz[:, :-2].lev))])
+    names_list.extend([ds_predictors.RH      .long_name for _ in range(len(ds_predictors.RH      [:, :-1].lev))])
+    c1.coords['long_name'] = ('lev', names_list)
+
     c2_r = c2.rename({'concat_dims': 'lev'})
     c2_r.coords['lev'] = np.arange(len(c2))
 
@@ -77,62 +92,34 @@ if real_data:
     if not take_same_time:
         take_only_predecessor_time = False
 
+        var_nonull = var_metric[l_var_nonull]
+        var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
+        times = []
+        for t in var_nonull_6earlier:
+            try:
+                _ = var_metric.sel(time=t)
+                times.append(t.values)
+            except KeyError:
+                continue
+        # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
+        var_6earlier = var_metric.sel(time=times)
+        var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
+
         if take_only_predecessor_time:
-            var_nonull = var_metric[l_var_nonull]
-            var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
-            times = []
-            for t in var_nonull_6earlier:
-                try:
-                    _ = var_metric.sel(time=t)
-                    times.append(t.values)
-                except KeyError:
-                    continue
-            # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
-            var_6earlier = var_metric.sel(time=times)
-            var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
-
-            # m_later = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
-            # metric six hour later not necessarily a value. Actually it is necessarily a value, because now we are back at
-            # times of var_metric, where metric is a number.
-            # m_nonull = m_later.where(m_later.notnull(), drop=True)
-            # target = metric.sel(time=m_nonull.time)
+            # metric 6h later is necessarily a value, because back at times of var_metric, where metric is a number.
             target = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
-
             predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
-
         else:
-            # the timesteps have to be consecutive, not the indizes (time between indices can jump)
-
-            var_nonull = var_metric[l_var_nonull]
-            var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
-            times = []
-            for t in var_nonull_6earlier:
-                try:
-                    _ = var_metric.sel(time=t)
-                    times.append(t.values)
-                except KeyError:
-                    continue
-            # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
-            var_6earlier = var_metric.sel(time=times)
-            var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
-
             var_6later_nonull = var_nonull.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')))
             # first 'create' the right array with the correct 'late' time steps
-            xr.concat([var_6later_nonull, var_6later_nonull], dim='lev')
+            var_both_times = xr.concat([var_6later_nonull, var_6later_nonull], dim='lev')
+            half = int(len(var_both_times.lev) / 2)
+            var_both_times[:, half:] = var_6earlier_nonull.values
+            var_both_times['long_name'][half:] = \
+                [name.item() + ', 6h earlier' for name in var_both_times['long_name'][half:]]
 
-            # m_later = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
-            # metric six hour later not necessarily a value. Actually it is necessarily a value, because now we are back at
-            # times of var_metric, where metric is a number.
-            # m_nonull = m_later.where(m_later.notnull(), drop=True)
-            # target = metric.sel(time=m_nonull.time)
-            target = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
-
-
-            predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
-
-
-
-
+            target = metric.sel(time=var_both_times.time.values)
+            predictor = var_both_times
 
     n_lev = len(predictor['lev'])
 
