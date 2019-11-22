@@ -13,17 +13,17 @@ start = timeit.default_timer()
 plt.rc('font'  , size=16)     # 22 # 18
 plt.rc('legend', fontsize=16) # 22 # 18
 
-metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
-metric_2   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
-metric_3   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
-metric_4   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
-ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
+metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+metric_2   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
+metric_3   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+metric_4   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
+ds_steiner = xr.open_mfdataset(home+'/Data/Steiner_Earlier/*season*', chunks=40)
 
-timeselect = False
-contiguous = False
+timeselect = True
+contiguous = True
 if timeselect:
-    start_date = '2015-11-10T03:00:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
-    end_date   = '2015-11-10T06:10:00' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
+    start_date = '2006-01-09T09:00' # '2015-11-10T03:00:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
+    end_date   = '2006-01-09T14:50' # '2015-11-10T06:10:00' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
     if contiguous:
         times = slice(start_date, end_date)
     else:
@@ -154,7 +154,7 @@ for i in np.arange(0, len(p.axes.flat), n_per_row):
     p.axes.flat[i].axes.set_yticklabels(labels=['xxx', '', '13', '', '12', '', '11'], fontdict={'fontsize': fontsize})
 
 # Print some information on plots
-percentiles = True
+percentiles = False
 as_coordinate = True
 if percentiles:
     if as_coordinate:
@@ -167,18 +167,16 @@ if percentiles:
 print1 = metric1_select
 print2 = metric2_select
 
-print_numbers = False
+print_numbers = True
 if print_numbers:
     for i, ax in enumerate(p.axes.flat):
-        ax.annotate('ROM: {:5.1f}\n'
-                    'SIC: {:5.1f}'.format(print1[i].item(),
-                                          print2[i].item()), (131.78, -11.2), color='blue')
+        ax.annotate('ROME: {:5.1f}'.format(print1[i].item()), (131.78, -11.2), color='blue')
         if percentiles:
             ax.annotate('ROM: {:3.0f}%\n'
                         'SIC: {:3.0f}%'.format(perct1[i].item(),
                                                perct2[i].item()), (131.78, -13.5), color='blue')
 
-save = False
+save = True
 if save:
     plt.savefig(home+'/Desktop/radar_scenes1.pdf', transparent=True, bbox_inches='tight')
 else:

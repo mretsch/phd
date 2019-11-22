@@ -12,164 +12,41 @@ import pandas as pd
 
 start = timeit.default_timer()
 
-real_data = True
 testing = False
 manual_sampling = False
 
-if real_data:
-    ds_predictors =\
-        xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
+def mlp_insight(model, data_in):
+    output = np.array(data_in)
+    weight_list = model.get_weights()
+    # each layer has weights and biases
+    n_layers = int(len(weight_list) / 2)
 
-    c1 = xr.concat([
-          # ds_predictors.T
-        # , ds_predictors.r
-        # , ds_predictors.s
-        # , ds_predictors.u
-        # , ds_predictors.v
-          ds_predictors.omega   [:, :-1] #!
-        , ds_predictors.div     [:, :-1] #!
-        , ds_predictors.T_adv_h [:, :-1] #!
-        , ds_predictors.T_adv_v [:, :-1] #
-        , ds_predictors.r_adv_h [:, :-1] #!
-        , ds_predictors.r_adv_v [:, :-1] #
-        , ds_predictors.s_adv_h [:, :-1] #!
-        , ds_predictors.s_adv_v [:, :-1] #!
-        , ds_predictors.dsdt    [:, :-1] #!
-        , ds_predictors.drdt    [:, :-1] #!
-        , ds_predictors.dwind_dz[:, :-2] #! bottom levels filled with NaN
-        , ds_predictors.RH      [:, :-1] #!
-    ], dim='lev')
-    c2 = xr.concat([
-          ds_predictors.cin
-        , ds_predictors.cld_low
-        , ds_predictors.lw_dn_srf
-        , ds_predictors.wspd_srf
-        , ds_predictors.v_srf
-        , ds_predictors.r_srf
-        , ds_predictors.lw_net_toa
-        , ds_predictors.SH
-        , ds_predictors.LWP
-    ])
-    # give c1 another coordinate to get back easily which values in concatenated array correspond to which variables
-    names_list =      [ds_predictors.omega   .long_name for _ in range(len(ds_predictors.omega   [:, :-1].lev))]
-    names_list.extend([ds_predictors.div     .long_name for _ in range(len(ds_predictors.div     [:, :-1].lev))])
-    names_list.extend([ds_predictors.T_adv_h .long_name for _ in range(len(ds_predictors.T_adv_h [:, :-1].lev))])
-    names_list.extend([ds_predictors.T_adv_v .long_name for _ in range(len(ds_predictors.T_adv_v [:, :-1].lev))])
-    names_list.extend([ds_predictors.r_adv_h .long_name for _ in range(len(ds_predictors.r_adv_h [:, :-1].lev))])
-    names_list.extend([ds_predictors.r_adv_v .long_name for _ in range(len(ds_predictors.r_adv_v [:, :-1].lev))])
-    names_list.extend([ds_predictors.s_adv_h .long_name for _ in range(len(ds_predictors.s_adv_h [:, :-1].lev))])
-    names_list.extend([ds_predictors.s_adv_v .long_name for _ in range(len(ds_predictors.s_adv_v [:, :-1].lev))])
-    names_list.extend([ds_predictors.dsdt    .long_name for _ in range(len(ds_predictors.dsdt    [:, :-1].lev))])
-    names_list.extend([ds_predictors.drdt    .long_name for _ in range(len(ds_predictors.drdt    [:, :-1].lev))])
-    names_list.extend([ds_predictors.dwind_dz.long_name for _ in range(len(ds_predictors.dwind_dz[:, :-2].lev))])
-    names_list.extend([ds_predictors.RH      .long_name for _ in range(len(ds_predictors.RH      [:, :-1].lev))])
-    c1.coords['long_name'] = ('lev', names_list)
+    # cycle through the layers, a forward pass
+    results = []
+    for i in range(n_layers):
+        # get appropriate trained parameters, first are weights, second are biases
+        weights = weight_list[i * 2]
+        bias = weight_list[i * 2 + 1]
+        # the @ is a matrix multiplication, first output is actually the mlp's input
+        output = weights.transpose() @ output + bias
+        output[output < 0] = 0
+        # append output, so it can be overwritten in next iteration
+        results.append(output)
 
-    c2_r = c2.rename({'concat_dims': 'lev'})
-    c2_r.coords['lev'] = np.arange(len(c2))
+    # after forward pass, recursively find chain of nodes with maximum value in each layer
+    last_layer = results[-2] * weight_list[-2].transpose()
+    max_nodes = [last_layer.argmax()]
+    # concatenate the original NN input, data_in, and the output from the remaining layers
+    iput = [np.array(data_in)] + results[:-2]
+    for i in range(n_layers - 1)[::-1]:
+        # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)
+        layer_to_maxnode = iput[i] * weight_list[2 * i][:, max_nodes[-1]]
+        max_nodes.append(layer_to_maxnode.argmax())
 
-    # var = xr.concat([c1, c2_r], dim='lev')
-    var = c1
-    # var_itp = var# .resample(time='T9min').interpolate('linear')
+    return np.array(max_nodes[::-1])
 
-    # metric = xr.open_dataarray('/Users/mret0001/Data/ROME_Samples/rom_avg6h_afterLS_85pct_5050sample.nc')
-    metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
-
-    # metric has no unique times atm, so cannot be used as a dimension
-    # m = metric.where(metric.time==np.unique(metric.time))
-
-    # large scale variables only where metric is defined
-    var_metric = var.where(metric.notnull(), drop=True)
-
-    # boolean for the large scale variables without any NaN anywhere
-    l_var_nonull = var_metric.notnull().all(dim='lev')
-
-    take_same_time = False
-    if take_same_time:
-        predictor = var_metric[{'time': l_var_nonull}]
-        target = metric.sel(time=predictor.time)
-
-    if not take_same_time:
-        take_only_predecessor_time = False
-
-        var_nonull = var_metric[l_var_nonull]
-        var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
-        times = []
-        for t in var_nonull_6earlier:
-            try:
-                _ = var_metric.sel(time=t)
-                times.append(t.values)
-            except KeyError:
-                continue
-        # var_sub.sel(time=[np.datetime64('2002-08-10T18'), np.datetime64('2002-08-08T12')])
-        var_6earlier = var_metric.sel(time=times)
-        var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
-
-        if take_only_predecessor_time:
-            # metric 6h later is necessarily a value, because back at times of var_metric, where metric is a number.
-            target = metric.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
-            predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
-        else:
-            var_6later_nonull = var_nonull.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')))
-            # first 'create' the right array with the correct 'late' time steps
-            var_both_times = xr.concat([var_6later_nonull, var_6later_nonull], dim='lev')
-            half = int(len(var_both_times.lev) / 2)
-            var_both_times[:, half:] = var_6earlier_nonull.values
-            var_both_times['long_name'][half:] = \
-                [name.item() + ', 6h earlier' for name in var_both_times['long_name'][half:]]
-
-            target = metric.sel(time=var_both_times.time.values)
-            predictor = var_both_times
-
-    n_lev = len(predictor['lev'])
-
-    # building the model
-    model = kmodels.Sequential()
-    model.add(klayers.Dense( 300, activation='relu', input_shape=(n_lev,)))
-    model.add(klayers.Dense( 300, activation='relu'))
-    model.add(klayers.Dense( 300, activation='relu'))
-    # model.add(klayers.Dense( 300, activation='relu'))
-    # model.add(klayers.Dense( 300, activation='relu'))
-    model.add(klayers.Dense(1))
-
-    # compiling the model
-    model.compile(optimizer='adam', loss='mean_squared_error')#, metrics=['accuracy'])
-
-    # fit the model
-    # predictor = predictor.transpose()
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10)
-
-    l_predict = True
-    if l_predict:
-        print('Predicting...')
-        pred = []
-        for i, entry in enumerate(predictor):
-            pred.append(model.predict(np.array([entry])) )
-        p = xr.DataArray(pred)
-        pp = p.squeeze()
-        pp.coords['time'] = ('dim_0', target.time)
-        predicted = pp.swap_dims({'dim_0': 'time'})
-
-        fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax_host.plot(target[-1200:])
-        ax_host.plot(predicted[-1200:])
-        plt.legend(['target', 'predicted'])
-        # ax_host.xaxis.set_major_locator(ticker.MultipleLocator(1))
-        # ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-        # plt.grid(which='both')
-        plt.savefig('/Users/mret0001/Desktop/last1200.pdf', bbox_inches='tight')
 
 if testing:
-    if real_data:
-        c = target[2:4]
-        c[0:2] = [3., 5.]
-        cre = c.resample(time='T0min').interpolate('linear')
-        print(cre.time)
-        print(c.time)
-        # is it a bug? I want 10min frequency but have to say 10-1 = 9
-        a = predictor[:2]
-        b = a.resample(time='T9min').interpolate('linear')
-
     convolving = False
     if convolving:
         # https://datascience.stackexchange.com/questions/27506/back-propagation-in-cnn
@@ -269,37 +146,6 @@ if testing:
     model_insight = False
     if model_insight:
 
-        def mlp_insight(model, data_in):
-            output = np.array(data_in)
-            weight_list = model.get_weights()
-            # each layer has weights and biases
-            n_layers = int(len(weight_list) / 2)
-
-            # cycle through the layers, a forward pass
-            results = []
-            for i in range(n_layers):
-                # get appropriate trained parameters, first are weights, second are biases
-                weights = weight_list[i*2]
-                bias = weight_list[i*2 + 1]
-                # the @ is a matrix multiplication, first output is actually the mlp's input
-                output = weights.transpose() @ output + bias
-                output[output < 0] = 0
-                # append output, so it can be overwritten in next iteration
-                results.append(output)
-
-            # after forward pass, recursively find chain of nodes with maximum value in each layer
-            last_layer = results[-2] * weight_list[-2].transpose()
-            max_nodes = [last_layer.argmax()]
-            # concatenate the original NN input, data_in, and the output from the remaining layers
-            iput = [np.array(data_in)] + results[:-2]
-            for i in range(n_layers - 1)[::-1]:
-                # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)
-                layer_to_maxnode = iput[i] * weight_list[2*i][:, max_nodes[-1]]
-                max_nodes.append(layer_to_maxnode.argmax())
-
-            return np.array(max_nodes[::-1])
-
-
         model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
@@ -372,8 +218,20 @@ if manual_sampling:
         metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
         # the averaging period. Thus the labels are aligned to the large scale data set.
+        # For reasons unknown, averages crossing a day of no data, not even NaN, into a normal day have wrongly
+        # calculated averages. Overwrite manually with correct values.
         m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
                                 loffset='3H').max()
+        manual_overwrite = False
+        if manual_overwrite:
+            m_avg.loc[
+                [np.datetime64('2003-03-15T00:00'), np.datetime64('2003-03-17T00:00'), np.datetime64('2003-10-30T00:00'),
+                 np.datetime64('2003-11-25T00:00'), np.datetime64('2006-11-11T00:00')]] = \
+                [metric.sel(time=slice('2003-03-14T21', '2003-03-15T02:50')).mean(),
+                 metric.sel(time=slice('2003-03-16T21', '2003-03-17T02:50')).mean(),
+                 metric.sel(time=slice('2003-10-29T21', '2003-10-30T02:50')).mean(),
+                 metric.sel(time=slice('2003-11-24T21', '2003-11-25T02:50')).mean(),
+                 metric.sel(time=slice('2006-11-10T21', '2006-11-11T02:50')).mean()]
         m_avg.coords['percentile'] = m_avg.rank(dim='time', pct=True)
 
     # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
