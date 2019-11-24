@@ -8,43 +8,13 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from Plotscripts.plot_hist import histogram_2d
+from NeuralNet.backtracking import mlp_insight
 import pandas as pd
 
 start = timeit.default_timer()
 
-testing = False
+testing = True
 manual_sampling = False
-
-def mlp_insight(model, data_in):
-    output = np.array(data_in)
-    weight_list = model.get_weights()
-    # each layer has weights and biases
-    n_layers = int(len(weight_list) / 2)
-
-    # cycle through the layers, a forward pass
-    results = []
-    for i in range(n_layers):
-        # get appropriate trained parameters, first are weights, second are biases
-        weights = weight_list[i * 2]
-        bias = weight_list[i * 2 + 1]
-        # the @ is a matrix multiplication, first output is actually the mlp's input
-        output = weights.transpose() @ output + bias
-        output[output < 0] = 0
-        # append output, so it can be overwritten in next iteration
-        results.append(output)
-
-    # after forward pass, recursively find chain of nodes with maximum value in each layer
-    last_layer = results[-2] * weight_list[-2].transpose()
-    max_nodes = [last_layer.argmax()]
-    # concatenate the original NN input, data_in, and the output from the remaining layers
-    iput = [np.array(data_in)] + results[:-2]
-    for i in range(n_layers - 1)[::-1]:
-        # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)
-        layer_to_maxnode = iput[i] * weight_list[2 * i][:, max_nodes[-1]]
-        max_nodes.append(layer_to_maxnode.argmax())
-
-    return np.array(max_nodes[::-1])
-
 
 if testing:
     convolving = False
@@ -132,7 +102,7 @@ if testing:
         # model.predict(np.array([[5, 7, 18]]))
         # array([[10.033775]], dtype=float32)
 
-    l_model6 = True
+    l_model6 = False
     if l_model6:
         x = np.random.randint(-50, 50, size=(500))
         y = np.square(x)
@@ -143,10 +113,10 @@ if testing:
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=1, epochs=200, validation_split=0.3)
 
-    model_insight = False
+    model_insight = True
     if model_insight:
 
-        model = kmodels.load_model('/Users/mret0001/Desktop/correlationmodel.h5')
+        model = kmodels.load_model('/Users/mret0001/Data/NN_Models/correlationmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
