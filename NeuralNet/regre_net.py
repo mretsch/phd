@@ -13,6 +13,10 @@ import pandas as pd
 
 start = timeit.default_timer()
 
+take_same_time = False
+take_only_predecessor_time = False
+l_loading_model = False
+
 ds_predictors = xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
 
 c1 = xr.concat([
@@ -48,7 +52,7 @@ c2 = xr.concat([
 ])
 
 # give c1 another coordinate to get back easily which values in concatenated array correspond to which variables
-names_list = [ds_predictors.omega.long_name         for _ in range(len(ds_predictors.omega    [:, :-1].lev))]
+names_list =      [ds_predictors.omega.long_name    for _ in range(len(ds_predictors.omega   [:, :-1].lev))]
 names_list.extend([ds_predictors.div.long_name      for _ in range(len(ds_predictors.div     [:, :-1].lev))])
 names_list.extend([ds_predictors.T_adv_h.long_name  for _ in range(len(ds_predictors.T_adv_h [:, :-1].lev))])
 names_list.extend([ds_predictors.T_adv_v.long_name  for _ in range(len(ds_predictors.T_adv_v [:, :-1].lev))])
@@ -84,7 +88,7 @@ var = c1
 # maximum = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h.nc')
 # metric = maximum - average
 # metric = xr.open_dataarray('/Users/mret0001/Data/ROME_Samples/rom_avg6h_afterLS_85pct_5050sample.nc')
-metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h.nc')
 
 # large scale variables only where metric is defined
 var_metric = var.where(metric.notnull(), drop=True)
@@ -93,14 +97,11 @@ var_metric = var.where(metric.notnull(), drop=True)
 l_var_nonull = var_metric.notnull().all(dim='lev')
 
 # large-scale state variables at same time as metric, or not
-take_same_time = False
 if take_same_time:
     predictor = var_metric[{'time': l_var_nonull}]
     target = metric.sel(time=predictor.time)
 
-if not take_same_time:
-    take_only_predecessor_time = False
-
+else:
     var_nonull = var_metric[l_var_nonull]
     var_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
     times = []
@@ -133,7 +134,6 @@ if not take_same_time:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -179,22 +179,24 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    maximum_nodes = []
-    for input in predictor:
-        maximum_nodes.append(mlp_insight(model, input))
+    for n_node in range(12, 101):
+        maximum_nodes = []
+        for input in predictor:
+            maximum_nodes.append(mlp_insight(model, input, n_highest_node=n_node))
 
-    # =================================================
-    mn = xr.DataArray(maximum_nodes)
-    first_node = mn[:, 0]
+        # =================================================
+        mn = xr.DataArray(maximum_nodes)
+        first_node = mn[:, 0]
 
-    # plt.hist(first_node, bins=np.arange(0, input_length+1))
+        # plt.hist(first_node, bins=np.arange(0, input_length+1))
 
-    fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-    ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
-    ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(5))
-    # ax_host.set_xlim(1, None)
-    # ax_host.set_yscale('log')
+        fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(60, 4))
+        ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
+        ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
+        ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
+        # ax_host.set_xlim(1, None)
+        # ax_host.set_yscale('log')
+        plt.savefig('/Users/mret0001/Desktop/histos/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
