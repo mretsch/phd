@@ -87,9 +87,9 @@ for i in range(3):
 
     if i == 2:
         ax_host[i].set_xlabel("Time of day [hour]")
-    ax_host[i].set_ylabel(y_label_l1[i])
-    ax_r1.     set_ylabel(y_label_r1[i])
-    ax_r2.     set_ylabel(y_label_r2[i])
+    ax_host[i].set_ylabel(y_label_l1[i], color=clr1[i])
+    ax_r1.     set_ylabel(y_label_r1[i], color=clr2[i])
+    ax_r2.     set_ylabel(y_label_r2[i], color=clr3[i])
 
     # no spines, labels, ticks, ticklabels (at top, bottom, left, right) whatsoever
     ax_r3.set_axis_off()
@@ -110,9 +110,9 @@ for i in range(3):
                 xtick.label1.set_visible(False)
 
     # direction brings ticklabels closer, the boolean turns the ticks off
-    ax_host[i].tick_params(axis='y', direction='in', left=False)
-    ax_r1.  tick_params(axis='y', direction='in', right=False)
-    ax_r2.  tick_params(axis='y', direction='in', right=False)
+    ax_host[i].tick_params(axis='y', direction='in', left =False) #, colors=clr1[i])
+    ax_r1.     tick_params(axis='y', direction='in', right=False) #, colors=clr2[i])
+    ax_r2.     tick_params(axis='y', direction='in', right=False) #, colors=clr3[i])
     if i == 0:
         ax_r2.axes.set_yticks([0.10, 0.15, 0.20, 0.25])
 
