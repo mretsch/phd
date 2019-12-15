@@ -183,7 +183,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='plasma')  # , cmap='tab20c')
+    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='gist_ncar')  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -209,10 +209,24 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var2 = ls.cape#RH_srf#.sel(lev=515)  # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
-        var1 = ls.cin#omega.sel(lev=515)  #xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')#.sel({'time': slice('2009-10-01', '2012-03-31')})
-        #ds2 = xr.open_mfdataset(home+'/Data/Analysis/No_Boundary/iorg*.nc')
-        #var2 = ds2.iorg
+        # var2 = ls.cape#RH_srf#.sel(lev=515)
+        # var1 = ls.cin#omega.sel(lev=515)
+
+        # var2 =  xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_area.nc')
+        # var1 =  xr.open_dataarray(home+'/Data/Analysis/With_Boundary/stra_area.nc')
+        # var2 =  xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_max.nc')
+        # var2 =  xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
+        # var2 =  xr.open_dataarray(home+'/Desktop/conv_area.nc')
+        # var1 =  xr.open_dataarray(home+'/Desktop/stra_area.nc')
+        var1 = xr.open_dataarray(home + '/Data/Analysis/No_Boundary/o_area.nc')
+        var1[var1 == var1.max()] = np.nan
+        var2 = xr.open_dataarray(home + '/Data/Analysis/No_Boundary/o_number.nc')
+
+        # set zeros to nan
+        # var2 = var2.where(var2>100.)
+        # var1 = var1.where(var1>95.)
+        # var2 = var2.where(var2!=0.)
+        # var1 = var1.where(var1!=0.)
 
         l_no_singlepixel = False
         if l_no_singlepixel:
@@ -223,9 +237,9 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=15,
-                                      x_label=var1.long_name+' ['+var1.units+']',
-                                      y_label=var2.long_name+' ['+var2.units+']',
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=40,
+                                      x_label= 'mean area', #var1.long_name+' ['+var1.units+']',
+                                      y_label= 'number', #var2.long_name+' ['+var2.units+']',
                                       cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
         fig_h_2d.show()
 
