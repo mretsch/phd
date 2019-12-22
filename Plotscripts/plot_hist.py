@@ -209,24 +209,9 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        # var2 = ls.cape#RH_srf#.sel(lev=515)
-        # var1 = ls.cin#omega.sel(lev=515)
-
-        # var2 =  xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_area.nc')
-        # var1 =  xr.open_dataarray(home+'/Data/Analysis/With_Boundary/stra_area.nc')
-        # var2 =  xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_max.nc')
-        # var2 =  xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area.nc')
-        # var2 =  xr.open_dataarray(home+'/Desktop/conv_area.nc')
-        # var1 =  xr.open_dataarray(home+'/Desktop/stra_area.nc')
-        var1 = xr.open_dataarray(home + '/Data/Analysis/No_Boundary/o_area.nc')
-        var1[var1 == var1.max()] = np.nan
-        var2 = xr.open_dataarray(home + '/Data/Analysis/No_Boundary/o_number.nc')
-
-        # set zeros to nan
-        # var2 = var2.where(var2>100.)
-        # var1 = var1.where(var1>95.)
-        # var2 = var2.where(var2!=0.)
-        # var1 = var1.where(var1!=0.)
+        var1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+        var2 =  xr.open_dataarray(home+'/Desktop/Model_300x3_avg_wholeROME_RH_bothtimes_again/predicted.nc')
+        var1 = var1.where(var2)
 
         l_no_singlepixel = False
         if l_no_singlepixel:
@@ -238,9 +223,10 @@ if __name__ == '__main__':
             var2 = var2.where(var1)
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=40,
-                                      x_label= 'mean area', #var1.long_name+' ['+var1.units+']',
-                                      y_label= 'number', #var2.long_name+' ['+var2.units+']',
-                                      cbar_label='%')  # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
+                                      x_label= 'ROME [km2]', #var1.long_name+' ['+var1.units+']',
+                                      y_label= 'Predicted [km2]', #var2.long_name+' ['+var2.units+']',
+                                      cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
+                                      l_same_axis_length=True)
         fig_h_2d.show()
 
         fig_h_2d.savefig('/Users/mret0001/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
