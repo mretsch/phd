@@ -1,3 +1,4 @@
+from os.path import expanduser
 import timeit
 import numpy as np
 import pandas as pd
@@ -8,68 +9,27 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
+from LargeScale.ls_at_metric import large_scale_at_metric_times
 
+home = expanduser("~")
 start = timeit.default_timer()
 
-ds_predictors = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh.nc')
-
-c1 = xr.concat([
-    # ds_predictors.T
-    # ds_predictors.r
-    # , ds_predictors.s
-    #   ds_predictors.u[:, 1:]
-    # , ds_predictors.v[:, 1:]
-     ds_predictors.omega[:, 1:]
-    # , ds_predictors.div[:, 1:]
-    # , ds_predictors.T_adv_h[:, 1:]
-    # , ds_predictors.T_adv_v[:, 1:]
-    # , ds_predictors.r_adv_h[:, 1:]
-    # , ds_predictors.r_adv_v[:, 1:]
-    # , ds_predictors.s_adv_h[:, 1:]
-    # , ds_predictors.s_adv_v[:, 1:]
-    # , ds_predictors.dsdt[:, 1:]
-    # , ds_predictors.drdt[:, 1:]
-    # , ds_predictors.RH
-], dim='lev')
-c2 = xr.concat([
-      ds_predictors.cin
-    , ds_predictors.cld_low
-    , ds_predictors.lw_dn_srf
-    , ds_predictors.wspd_srf
-    , ds_predictors.v_srf
-    , ds_predictors.r_srf
-    , ds_predictors.lw_net_toa
-    , ds_predictors.SH
-    , ds_predictors.LWP
-    , ds_predictors.h2o_adv_col
-    , ds_predictors.s_adv_col
-])
-c2_r = c2.rename({'concat_dims': 'lev'})
-c2_r.coords['lev'] = np.arange(len(c2))
-var = xr.concat([c1, c2_r], dim='lev')
-# var_itp = var  # .resample(time='T9min').interpolate('linear')
-# var_itp = c1  # .resample(time='T9min').interpolate('linear')
-var_itp = ds_predictors.omega[:, 1:]  # .resample(time='T9min').interpolate('linear')
-
-metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
-
+metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_km_avg6h.nc')
+# cut metric into classes, based on percentiles
 mpp = metric.percentile.to_pandas()
-tercile_tuple = pd.cut(mpp, 10, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], retbins=True)
-# tercile_tuple = pd.cut(mpp, 3, labels=[1, 2, 3], retbins=True)
-
+# tercile_tuple = pd.cut(mpp, 10, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], retbins=True)
+tercile_tuple = pd.cut(mpp, 3, labels=[1, 2, 3], retbins=True)
 metric.coords['tercile'] = tercile_tuple[0]
-# metric = metric.rename({'dim_0':'time'})
 
-var_itp_sub = var_itp.where(metric[metric.notnull()])
-# predictor = var_itp_sub.where(var_itp_sub.notnull(), drop=True)
+# assemble large-scale state
+ds_ls = xr.open_dataset('/Volumes/GoogleDrive/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
+predictor, target = large_scale_at_metric_times(ds_largescale=ds_ls,
+                                                timeseries=metric,
+                                                l_take_same_time=True)
 
-lst = var_itp_sub.notnull().all(dim='lev')
-predictor = var_itp_sub[lst]
-
-classes = metric.tercile.sel(time=predictor.time)
-# keras wants classes 0-based, not 1-based, hence -1
-target = kutils.to_categorical(classes.astype(int)-1)
-
+# convert classes in class-net digestible categories
+classes = target.tercile
+target_cat = kutils.to_categorical(classes.astype(int)-1)
 n_lev = predictor.shape[1]
 
 # building the model
@@ -79,7 +39,7 @@ input_tensor  = klayers.Input(shape=(n_lev,))
 l1_tensor     = klayers.Dense(400, activation='relu'   )(input_tensor)
 # l2_tensor     = klayers.Dense(1200, activation='relu'   )(   l1_tensor)
 # l3_tensor     = klayers.Dense(100, activation='relu'   )(   l2_tensor)
-output_tensor = klayers.Dense( 10, activation='softmax')(   l1_tensor)
+output_tensor = klayers.Dense(  3, activation='softmax')(   l1_tensor)
 model = kmodels.Model(input_tensor, output_tensor)
 
 early_stopping_monitor = kcallbacks.EarlyStopping(patience=3)
@@ -88,7 +48,7 @@ early_stopping_monitor = kcallbacks.EarlyStopping(patience=3)
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # fit the model
-model.fit(x=predictor, y=target, batch_size=10, validation_split=0.2, epochs=7)#, callbacks=[early_stopping_monitor])
+model.fit(x=predictor, y=target_cat, batch_size=10, validation_split=0.2, epochs=7)#, callbacks=[early_stopping_monitor])
 
 plotting_model = False
 if plotting_model:
@@ -105,24 +65,24 @@ if l_predict:
 
     p = xr.DataArray(pred)
     pp = p.squeeze()
-    class_predicted = pp.argmax(dim='dim_2') + 1
-    certainty_predicted = pp.max(dim='dim_2')
+    class_predicted     = pp.argmax(dim='dim_2') + 1
+    certainty_predicted = pp.   max(dim='dim_2')
 
     # got class right
     certainty_gcr    = certainty_predicted.where( class_predicted == classes.astype(int).values, other=np.nan)
     certainty_gcr_1  = certainty_gcr.where((class_predicted ==  1), other=np.nan)
     certainty_gcr_2  = certainty_gcr.where((class_predicted ==  2), other=np.nan)
     certainty_gcr_3  = certainty_gcr.where((class_predicted ==  3), other=np.nan)
-    certainty_gcr_4  = certainty_gcr.where((class_predicted ==  4), other=np.nan)
-    certainty_gcr_5  = certainty_gcr.where((class_predicted ==  5), other=np.nan)
-    certainty_gcr_6  = certainty_gcr.where((class_predicted ==  6), other=np.nan)
-    certainty_gcr_7  = certainty_gcr.where((class_predicted ==  7), other=np.nan)
-    certainty_gcr_8  = certainty_gcr.where((class_predicted ==  8), other=np.nan)
-    certainty_gcr_9  = certainty_gcr.where((class_predicted ==  9), other=np.nan)
-    certainty_gcr_10 = certainty_gcr.where((class_predicted == 10), other=np.nan)
+    # certainty_gcr_4  = certainty_gcr.where((class_predicted ==  4), other=np.nan)
+    # certainty_gcr_5  = certainty_gcr.where((class_predicted ==  5), other=np.nan)
+    # certainty_gcr_6  = certainty_gcr.where((class_predicted ==  6), other=np.nan)
+    # certainty_gcr_7  = certainty_gcr.where((class_predicted ==  7), other=np.nan)
+    # certainty_gcr_8  = certainty_gcr.where((class_predicted ==  8), other=np.nan)
+    # certainty_gcr_9  = certainty_gcr.where((class_predicted ==  9), other=np.nan)
+    # certainty_gcr_10 = certainty_gcr.where((class_predicted == 10), other=np.nan)
 
     # got class wrong
-    got_class_wrong = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan) * 0. + 0.1
+    got_class_wrong = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan) * 0. + 0.3
     certainty_gcw   = certainty_predicted.where(class_predicted != classes.astype(int).values, other=np.nan)
     # certainty_gcw_1  = certainty_gcw.where((class_predicted ==  1), other=np.nan)
     # certainty_gcw_2  = certainty_gcw.where((class_predicted ==  2), other=np.nan)
@@ -141,7 +101,7 @@ if l_predict:
     # colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
     colours = ['yellow', 'magenta', 'base03']
 
-    n_length = 6387
+    n_length = 100 # 6387
     ax_host.step(np.arange(n_length) + 0.5,   classes[:n_length], color='grey')
     ax_r1.plot  (np.arange(n_length), certainty_gcr_1 [:n_length], linestyle=' ', marker='p', color=sol[colours[0]])
     ax_r1.plot  (np.arange(n_length), certainty_gcr_2 [:n_length], linestyle=' ', marker='p', color=sol[colours[1]])
@@ -154,7 +114,7 @@ if l_predict:
     # ax_r1.plot  (np.arange(n_length), certainty_gcr_9 [:n_length], linestyle=' ', marker='p', color=sol[colours[8]])
     # ax_r1.plot  (np.arange(n_length), certainty_gcr_10[:n_length], linestyle=' ', marker='p', color=sol[colours[9]])
     ax_r1.plot  (np.arange(n_length), got_class_wrong [:n_length], linestyle=' ', marker='x', color=sol['orange'])
-    plt.savefig('/Users/mret0001/Desktop/class_hitmiss.pdf', transparent=True, bbox_inches='tight')
+    plt.savefig(home+'/Desktop/class_hitmiss.pdf', transparent=True, bbox_inches='tight')
 
 
 stop = timeit.default_timer()

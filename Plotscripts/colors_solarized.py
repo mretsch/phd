@@ -12,7 +12,7 @@ sol = {
     'base02'  : '#073642',
     'base00'  : '#657b83',
     'base0'   : '#839496',
-    'base1 '  : '#93a1a1',
+    'base1'   : '#93a1a1',
     'base2'   : '#eee8d5',
-    'base3 '  : '#fdf6e3'
+    'base3'   : '#fdf6e3'
 }
