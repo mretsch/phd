@@ -39,8 +39,21 @@ idx = np.argsort(eigenvalues)[::-1]
 eigenvalues = eigenvalues[idx]
 eigenvectors = eigenvectors[:, idx]
 
+# at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
+norm_orig = np.linalg.norm(eigenvectors, axis=0)
+# now scale each vector such that its l2-norm equals sqrt(eigenvalue).
+eigenvalues[eigenvalues < 0.] = 0
+scale_factor = np.sqrt(eigenvalues) / norm_orig
+eigenvectors = scale_factor * eigenvectors
+
+# try some time series
+pc_1   = eigenvectors[:, 0] @ data_norm.T.values
+# compute the principal component time series for all eigenvectors
+pc_all = eigenvectors.T     @ data_norm.T.values
+
+
 # the plot, want colors in the background for each 'variable'
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 4))
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 4))
 ax.plot(eigenvectors[:, 0], color='k', linestyle='-', lw=2.5)
 ax.plot(eigenvectors[:, 1], color='k', linestyle=':', lw=1.5)
 plt.axhline(0, color='grey', lw=0.5)
@@ -60,5 +73,6 @@ ax.set_xticklabels(['omega', 'div',
                     's_adv_h', 's_adv_v',
                     'dsdt', 'drdt',
                     'RH', 'shear_v'])
+plt.legend(['Pattern 1 (22%)', 'Pattern 2 (12%)'])
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()
