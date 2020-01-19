@@ -198,7 +198,7 @@ def vertical_wind_shear(u, v):
 
 
 if __name__ == '__main__':
-    ls = xr.open_dataset(home + '/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing.nc')
+    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False
