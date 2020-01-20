@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     hist_2d = True
     if hist_2d:
-        ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh.nc')
+        ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
 
         subselect = False
         if subselect:
@@ -209,9 +209,11 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
-        var2 =  xr.open_dataarray(home+'/Desktop/Model_300x3_avg_wholeROME_RH_bothtimes_again/predicted.nc')
-        var1 = var1.where(var2)
+        var1 = ls.cin
+        var2 = ls.cape
+        # var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+        # var2 = xr.open_dataarray(home+'/Desktop/Model_300x3_avg_wholeROME_RH_bothtimes_again/predicted.nc')
+        # var1 = var1.where(var2)
 
         l_no_singlepixel = False
         if l_no_singlepixel:
@@ -222,14 +224,14 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=40,
-                                      x_label= 'ROME [km2]', #var1.long_name+' ['+var1.units+']',
-                                      y_label= 'Predicted [km2]', #var2.long_name+' ['+var2.units+']',
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=15,
+                                      x_label= var1.long_name+' ['+var1.units+']', #'ROME [km2]', #
+                                      y_label= var2.long_name+' ['+var2.units+']', #'Predicted [km2]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
-                                      l_same_axis_length=True)
+                                      l_same_axis_length=False)
         fig_h_2d.show()
 
-        fig_h_2d.savefig('/Users/mret0001/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
+        fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
     hist_1d = False

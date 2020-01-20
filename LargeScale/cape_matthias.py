@@ -179,9 +179,9 @@ def vertical_wind_shear(u, v):
     diff_u[:, :] = u[:, 1:].values - u[:, :-1].values
     diff_v[:, :] = v[:, 1:].values - v[:, :-1].values
 
-    shear = np.sqrt(diff_u ** 2 + diff_v ** 2)
+    velo_change = np.sqrt(diff_u ** 2 + diff_v ** 2)
 
-    # often shear is in [m/s], but I want it per meter, so [1/m]
+    # change of velocity is [m/s], but I want it per meter, which is dwind_dz => [m/s/m] = [1/s]
     thickness = delta_height(ls.lev[1:], ls.T[:, 1:])
     thickness_my = thickness.copy(deep=True)
     thickness_metpy = thickness.copy(deep=True)
@@ -190,11 +190,11 @@ def vertical_wind_shear(u, v):
     for i in range(len(thickness.lev)):
         thickness_metpy[0, i] = mpcalc.thickness_hydrostatic(ls.lev[i + 1:i + 3], ls.T[:1, i + 1:i + 3])[0]
 
-    shear_per_meter = shear / thickness
-    shear_per_meter.attrs['long_name'] = 'Vertical wind shear'
-    shear_per_meter.attrs['units'] = '1/m'
+    shear = velo_change / thickness
+    shear.attrs['long_name'] = 'Vertical wind shear'
+    shear.attrs['units'] = '1/s'
 
-    return xr.merge([ls, xr.Dataset({'dwind_dz': shear_per_meter})])
+    return xr.merge([ls, xr.Dataset({'dwind_dz': shear})])
 
 
 if __name__ == '__main__':

@@ -58,7 +58,8 @@ for cnt in range(len(time)):
 
 single_time = True
 if single_time:
-    idx = 0 # max(cape)=16444 # min(cape)=16815 # min(cin)=2934 # max(sfc_RH)=6570 # min(sfc_RH)=16748 # max(cin)=7248
+    time_idx = (time == np.datetime64('2009-12-18T06:00:00')).argmax()
+    idx = time_idx # max(cape)=16444 # min(cape)=16815 # min(cin)=2934 # max(sfc_RH)=6570 # min(sfc_RH)=16748 # max(cin)=7248
     cape, cin, parcel_profile = get_cape(arg_list[idx], return_parcel_profile=True)
 
     plot_profiles = True
