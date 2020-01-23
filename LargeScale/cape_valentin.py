@@ -7,14 +7,12 @@ import xarray as xr
 import matplotlib.pyplot as plt
 home = expanduser("~")
 
+# take profiles only for 990hPa and above, no bottom level
 with netCDF4.Dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing.nc', 'r') as ncid:
     time     = netCDF4.num2date(ncid['time'][:], ncid['time'].units)
-    lev      = ncid['lev'][:].filled(np.NaN)  # Pressure hPa
-    sfc_pres = ncid['p_srf_aver'][:].filled(np.NaN)
-    temp     = ncid['T'][:].filled(np.NaN)  # Kelvin
-    sfc_temp = ncid['T_srf'][:].filled(np.NaN)
-    wvmr     = 1e-3 * ncid['r'][:].filled(np.NaN)  # convert to kg/kg
-    sfc_wvmr = 1e-3 * ncid['r_srf'][:].filled(np.NaN)
+    lev      = ncid['lev'][1:].filled(np.NaN)  # Pressure hPa
+    temp     = ncid['T'][:, 1:].filled(np.NaN)  # Kelvin
+    wvmr     = 1e-3 * ncid['r'][:, 1:].filled(np.NaN)  # convert to kg/kg
 
 print('Time length: ', len(time))
 
@@ -22,11 +20,6 @@ print('Time length: ', len(time))
 press = np.zeros_like(temp)
 for cnt in range(temp.shape[0]):
     press[cnt, :] = lev
-
-# replace bottommost level with surface variables
-press[:, 0] = sfc_pres
-temp [:, 0] = sfc_temp + 273.15
-wvmr [:, 0] = sfc_wvmr
 
 pressure     = press * units.hPa
 temperature  = temp  * units.K
@@ -58,7 +51,7 @@ for cnt in range(len(time)):
 
 single_time = True
 if single_time:
-    time_idx = (time == np.datetime64('2009-12-18T06:00:00')).argmax()
+    time_idx = (time == np.datetime64('2001-11-02T18:00:00')).argmax()
     idx = time_idx # max(cape)=16444 # min(cape)=16815 # min(cin)=2934 # max(sfc_RH)=6570 # min(sfc_RH)=16748 # max(cin)=7248
     cape, cin, parcel_profile = get_cape(arg_list[idx], return_parcel_profile=True)
 

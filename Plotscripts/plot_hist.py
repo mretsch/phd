@@ -125,8 +125,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
         #bin_edges = [np.linspace(start=0., stop=m.sqrt(250), num=18)**2,
         #             np.linspace(start=0., stop=        80 , num=40+1)]
-        bin_edges = [np.linspace(start=0.5, stop= 5.5 , num=5+1),
-                     np.linspace(start=0., stop=y_series.max(), num=100+1)]
+        # bin_edges = [np.linspace(start=0.5, stop= 5.5 , num=5+1),
+        #              np.linspace(start=0., stop=y_series.max(), num=100+1)]
+        bin_edges = [np.linspace(start=-40, stop=10, num=16),
+                     np.linspace(start=y_series_min, stop=y_series_max, num=16)]
     x_edges = bin_edges[0]
     y_edges = bin_edges[1]
 
@@ -183,7 +185,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     # Plot 2D histogram
     fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='gist_ncar')  # , cmap='tab20c')
+    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='gist_ncar')#  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -200,7 +202,7 @@ if __name__ == '__main__':
 
     hist_2d = True
     if hist_2d:
-        ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
+        # ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 
         subselect = False
         if subselect:
@@ -209,24 +211,25 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.cin
-        var2 = ls.cape
-        # var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
-        # var2 = xr.open_dataarray(home+'/Desktop/Model_300x3_avg_wholeROME_RH_bothtimes_again/predicted.nc')
+        # var1 = ls.omega.sel(lev=515)
+        # var2 = ls.RH.sel(lev=515)
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_area.nc')
         # var1 = var1.where(var2)
 
-        l_no_singlepixel = False
+        l_no_singlepixel = True
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
-            var1 = var1[var1 != 6.25]
+            # var1 = var1[var1 != 6.25]
+            var1 = var1[var1 > 100.]
             # Zoom in via subsetting data
-            var2 = var2[var2 <= 250.]
-            var1 = var1.where(var2)
+            # var2 = var2[var2 <= 250.]
+            # var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=15,
-                                      x_label= var1.long_name+' ['+var1.units+']', #'ROME [km2]', #
-                                      y_label= var2.long_name+' ['+var2.units+']', #'Predicted [km2]', #
+        fig_h_2d, h_2d = histogram_2d(var2, var1,  nbins=40,
+                                      y_label= 'ROME [km2]',      # var1.long_name+' ['+var1.units+']', #
+                                      x_label= 'Conv. area [% scan area]', # var2.long_name+' ['+var2.units+']', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)
         fig_h_2d.show()
