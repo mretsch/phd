@@ -7,13 +7,11 @@ import matplotlib.pyplot as plt
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from Plotscripts.colors_solarized import sol
 
-
-
 start = timeit.default_timer()
 
 # assemble the large scale dataset
-ds_ls = xr.open_dataset(home+'/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
-metric = xr.open_dataarray(home+'/Google Drive File Stream/My Drive/Data_Analysis/rom_km_avg6h.nc')
+ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
@@ -34,23 +32,47 @@ cov_matrix = np.cov(data_norm, rowvar=False)
 
 eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
 
+# sorting eigenvalues with descending values
 idx = np.argsort(eigenvalues)[::-1]
 
-eigenvalues = eigenvalues[idx]
+eigenvalues  = eigenvalues [   idx]
 eigenvectors = eigenvectors[:, idx]
 
+# how much each pattern accounts for of total variance
+variance_perc =  eigenvalues / eigenvalues.sum()
+
 # at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
-norm_orig = np.linalg.norm(eigenvectors, axis=0)
-# now scale each vector such that its l2-norm equals sqrt(eigenvalue).
-eigenvalues[eigenvalues < 0.] = 0
-scale_factor = np.sqrt(eigenvalues) / norm_orig
-eigenvectors = scale_factor * eigenvectors
+l_scale_vectors = False
+if l_scale_vectors:
+    norm_orig = np.linalg.norm(eigenvectors, axis=0)
+    # now scale each vector such that its l2-norm equals sqrt(eigenvalue).
+    eigenvalues[eigenvalues < 0.] = 0
+    scale_factor = np.sqrt(eigenvalues) / norm_orig
+    evec_scaled = scale_factor * eigenvectors
+
+# add dimensions to vectors
+evec = xr.DataArray(eigenvectors,
+                    coords={'level': predictor.lev.values,
+                            'number': list(range(467)),
+                            'quantity': ('level', predictor.long_name.values)},
+                    dims=['level', 'number'])
 
 # try some time series
-pc_1   = eigenvectors[:, 0] @ data_norm.T.values
-# compute the principal component time series for all eigenvectors
-pc_all = eigenvectors.T     @ data_norm.T.values
+if evec.dims[0] == 'level':
+    pc_1   = evec.sel(number=0).values @ data_norm.T.values / (467 - 1)
+    # compute the principal component time series for all eigenvectors
+    pc_all = xr.DataArray(evec.transpose().values @ data_norm.T.values / (467 - 1),
+                          coords={'number': list(range(467)),
+                          'time': predictor.time},
+                          dims=['number', 'time'])
 
+    # reconstruct the original data via the pc time series and the patterns (EOFs)
+    pattern_0_back = pc_all.isel(time=0).values @ evec.transpose().values * (467 - 1)
+    plt.plot(data_norm.isel(time=0).values, color='k', lw=2, ls='--')
+    plt.plot(pattern_0_back, color='r', lw=0.5)
+    plt.legend(['original height profile data, time=0', 'Reconstructed height profile data, time=0'])
+    plt.savefig(home + '/Desktop/plot.pdf', bbox_inches='tight', transparent=True)
+    plt.show()
 
 # the plot, want colors in the background for each 'variable'
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 4))

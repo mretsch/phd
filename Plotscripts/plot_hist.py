@@ -213,23 +213,23 @@ if __name__ == '__main__':
 
         # var1 = ls.omega.sel(lev=515)
         # var2 = ls.RH.sel(lev=515)
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/With_Boundary/conv_area.nc')
+        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
+        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_number.nc')
         # var1 = var1.where(var2)
 
         l_no_singlepixel = True
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
-            var1 = var1[var1 > 100.]
+            var1 = var1[var1 < 600.]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
             # var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var2, var1,  nbins=40,
-                                      y_label= 'ROME [km2]',      # var1.long_name+' ['+var1.units+']', #
-                                      x_label= 'Conv. area [% scan area]', # var2.long_name+' ['+var2.units+']', #
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=35,
+                                      x_label= 'Object mean area [km$^2$]',      # var1.long_name+' ['+var1.units+']', #
+                                      y_label= 'Number of objects [1]', # var2.long_name+' ['+var2.units+']', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)
         fig_h_2d.show()
