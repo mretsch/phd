@@ -13,9 +13,14 @@ start = timeit.default_timer()
 ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
+# take only large ROME values and the according LS variables then in the subroutine
+metric = metric[metric.percentile > 0.95]
+
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
                                                      l_take_same_time=True)
+
+nlev = len(predictor.lev)
 
 # eof-analysis itself
 # see here https://stackoverflow.com/questions/13224362/principal-component-analysis-pca-in-python#13224592
@@ -53,31 +58,31 @@ if l_scale_vectors:
 # add dimensions to vectors
 evec = xr.DataArray(eigenvectors,
                     coords={'level': predictor.lev.values,
-                            'number': list(range(467)),
+                            'number': list(range(nlev)),
                             'quantity': ('level', predictor.long_name.values)},
                     dims=['level', 'number'])
 
 # try some time series
 if evec.dims[0] == 'level':
-    pc_1   = evec.sel(number=0).values @ data_norm.T.values / (467 - 1)
+    pc_1   = evec.sel(number=0).values @ data_norm.T.values / (nlev - 1)
     # compute the principal component time series for all eigenvectors
-    pc_all = xr.DataArray(evec.transpose().values @ data_norm.T.values / (467 - 1),
-                          coords={'number': list(range(467)),
+    pc_all = xr.DataArray(evec.transpose().values @ data_norm.T.values / (nlev - 1),
+                          coords={'number': list(range(nlev)),
                           'time': predictor.time},
                           dims=['number', 'time'])
 
     # reconstruct the original data via the pc time series and the patterns (EOFs)
-    pattern_0_back = pc_all.isel(time=0).values @ evec.transpose().values * (467 - 1)
+    pattern_0_back = pc_all.isel(time=0).values @ evec.transpose().values * (nlev - 1)
     plt.plot(data_norm.isel(time=0).values, color='k', lw=2, ls='--')
     plt.plot(pattern_0_back, color='r', lw=0.5)
     plt.legend(['original height profile data, time=0', 'Reconstructed height profile data, time=0'])
-    plt.savefig(home + '/Desktop/plot.pdf', bbox_inches='tight', transparent=True)
     plt.show()
 
 # the plot, want colors in the background for each 'variable'
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 4))
-ax.plot(eigenvectors[:, 0], color='k', linestyle='-', lw=2.5)
-ax.plot(eigenvectors[:, 1], color='k', linestyle=':', lw=1.5)
+ax.plot(evec.isel(number=0)     , color='k', linestyle='-', lw=2.5)
+ax.plot(evec.isel(number=1) * -1, color='k', linestyle=':', lw=1.5)
+ax.plot(evec.isel(number=2)     , color='r', linestyle=':', lw=1.5)
 plt.axhline(0, color='grey', lw=0.5)
 colors = [sol['yellow'], sol['orange'], sol['red'], sol['magenta'], sol['violet'], sol['blue'], sol['cyan'],
           sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0']]
@@ -89,12 +94,19 @@ for i, length in enumerate(var_size):
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
     tick_values.append(0.5*(tick_1 + tick_2))
 ax.set_xticks(tick_values)
-ax.set_xticklabels(['omega', 'div',
-                    'T_adv_h', 'T_adv_v',
-                    'r_adv_h', 'r_adv_v',
-                    's_adv_h', 's_adv_v',
-                    'dsdt', 'drdt',
-                    'RH', 'shear_v'])
-plt.legend(['Pattern 1 (22%)', 'Pattern 2 (12%)'])
+ax.set_xticklabels([
+                    'omega',
+                    'div',
+                    'T_adv_h',
+                    'T_adv_v',
+                    'r_adv_h',
+                    'r_adv_v',
+                    's_adv_h',
+                    's_adv_v',
+                    'dsdt',
+                    'drdt',
+                    'RH',
+                    'shear_v'])
+plt.legend(['Pattern 1 (27%)', 'Pattern 2 ( 9%)', 'Pattern 3 (8%)'])
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()

@@ -2,75 +2,58 @@ import numpy as np
 import xarray as xr
 
 def large_scale_at_metric_times(ds_largescale, timeseries,
+                                chosen_vars = ['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
+                                               's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH'],
                                 l_take_scalars=False,
                                 l_take_same_time=False,
                                 l_take_only_predecessor_time=False):
-    """Returns a concatenated array of the large-scale variables and the time series, at times of both being present."""
+    """Returns a concatenated array of the large-scale variables and the time series, at times of both being present.
+    chosen_vars selects some variables out of the large-scale state dataset."""
 
-    c1 = xr.concat([
-        #   ds_largescale.T [:, :-1]  # ! bottom level has redundant information
-        # , ds_largescale.r [:, :-1]  # ! bottom level has redundant information
-        # , ds_largescale.s [:, :-1]  # ! bottom level has redundant information
-        # , ds_largescale.u [:, :-1]  # ! bottom level has redundant information
-        # , ds_largescale.v [:, :-1]  # ! bottom level has redundant information
-          ds_largescale.omega   [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.div     [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.T_adv_h [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.T_adv_v [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.r_adv_h [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.r_adv_v [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.s_adv_h [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.s_adv_v [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.dsdt    [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.drdt    [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.RH      [:, :-1]  # ! bottom level has redundant information
-        , ds_largescale.dwind_dz[:, :-2]  # ! bottom levels filled with NaN
-    ], dim='lev')
+    var_list =     [ds_largescale[var]       [:, :-1] for var in chosen_vars] # ! bottom level has redundant information
+    var_list.append(ds_largescale['dwind_dz'][:, :-2]) # ! two bottom levels filled with NaN
 
-    c2 = xr.concat([
-          ds_largescale.cin
-        , ds_largescale.cld_low
-        , ds_largescale.lw_dn_srf
-        , ds_largescale.wspd_srf
-        , ds_largescale.v_srf
-        , ds_largescale.r_srf
-        , ds_largescale.lw_net_toa
-        , ds_largescale.SH
-        , ds_largescale.LWP
-    ])
+    c1 = xr.concat(var_list, dim='lev')
+
+    if l_take_scalars:
+        c2 = xr.concat([
+              ds_largescale.cin
+            , ds_largescale.cld_low
+            , ds_largescale.lw_dn_srf
+            , ds_largescale.wspd_srf
+            , ds_largescale.v_srf
+            , ds_largescale.r_srf
+            , ds_largescale.lw_net_toa
+            , ds_largescale.SH
+            , ds_largescale.LWP
+        ])
 
     # give c1 another coordinate to look up 'easily' which values in concatenated array correspond to which variables
     # Also count how long that variable is in the resulting array.
-    var_strings = ['omega', 'div',
-                   'T_adv_h', 'T_adv_v',
-                   'r_adv_h', 'r_adv_v',
-                   's_adv_h', 's_adv_v',
-                   'dsdt', 'drdt',
-                   'RH']
     names_list, variable_size = [], []
-    for var in var_strings:
+    for var in chosen_vars:
         names_list.extend([ds_largescale[var].long_name for _ in range(len(ds_largescale[var][:, :-1].lev))])
         variable_size.append(len(names_list) - sum(variable_size))
-    names_list   .extend([ds_largescale.dwind_dz.long_name for _ in range(len(ds_largescale.dwind_dz[:, :-2].lev))])
+    names_list   .extend([ds_largescale['dwind_dz'].long_name for _ in range(len(ds_largescale['dwind_dz'][:, :-2].lev))])
     variable_size.append(len(names_list) - sum(variable_size))
 
     c1.coords['long_name'] = ('lev', names_list)
 
-    c2_r = c2.rename({'concat_dims': 'lev'})
-    c2_r.coords['lev'] = np.arange(len(c2))
-    names_list = []
-    names_list.append(ds_largescale.cin       .long_name)
-    names_list.append(ds_largescale.cld_low   .long_name)
-    names_list.append(ds_largescale.lw_dn_srf .long_name)
-    names_list.append(ds_largescale.wspd_srf  .long_name)
-    names_list.append(ds_largescale.v_srf     .long_name)
-    names_list.append(ds_largescale.r_srf     .long_name)
-    names_list.append(ds_largescale.lw_net_toa.long_name)
-    names_list.append(ds_largescale.SH        .long_name)
-    names_list.append(ds_largescale.LWP       .long_name)
-    c2_r.coords['long_name'] = ('lev', names_list)
-
     if l_take_scalars:
+        c2_r = c2.rename({'concat_dims': 'lev'})
+        c2_r.coords['lev'] = np.arange(len(c2))
+        names_list = []
+        names_list.append(ds_largescale.cin       .long_name)
+        names_list.append(ds_largescale.cld_low   .long_name)
+        names_list.append(ds_largescale.lw_dn_srf .long_name)
+        names_list.append(ds_largescale.wspd_srf  .long_name)
+        names_list.append(ds_largescale.v_srf     .long_name)
+        names_list.append(ds_largescale.r_srf     .long_name)
+        names_list.append(ds_largescale.lw_net_toa.long_name)
+        names_list.append(ds_largescale.SH        .long_name)
+        names_list.append(ds_largescale.LWP       .long_name)
+        c2_r.coords['long_name'] = ('lev', names_list)
+
         var = xr.concat([c1, c2_r], dim='lev')
     else:
         var = c1

@@ -9,7 +9,7 @@ start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
 ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
-ds    = xr.open_dataset(home+'/Data/Analysis/With_Boundary/conv_area.nc')
+ds    = xr.open_dataset(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
 
 subselect = True
 if subselect:
@@ -25,7 +25,7 @@ if subselect:
     ds = ds_sub
 
 phase_space = ds_ps.hist_2D
-overlay = ds.conv_area_ratio # div.sel(lev=845) # RH.sel(lev=990) # .where(ds.cop_mod < 60.)
+overlay = ds.rom_kilometres # div.sel(lev=845) # RH.sel(lev=990) # .where(ds.cop_mod < 60.)
 
 # give the overlay time series information about the placements of the bins for each time step
 overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins.values)
@@ -44,9 +44,9 @@ plt.rc('font'  , size=18)
 plt.rc('legend', fontsize=18)
 
 the_plot = ps_overlay.T.plot() # (robust=True)  # (cmap='inferno')  # (cmap='tab20c')
-plt.xlabel('area')
-plt.ylabel('number')
-the_plot.colorbar.set_label('conv. area fraction [% total area]')
+plt.xlabel('Mean area of conv. objects [km$^2$]')
+plt.ylabel('Number of conv. objects')
+the_plot.colorbar.set_label('ROME [km$^2$]')
 
 save = True
 if save:
