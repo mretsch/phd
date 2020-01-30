@@ -14,8 +14,15 @@ ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cap
 metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
 # take only large ROME values and the according LS variables then in the subroutine
-metric = metric[metric.percentile > 0.95]
+# metric = metric[metric.percentile > 0.95]
 
+ls_vars = ['omega',
+           'T_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'RH'
+           ]
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
                                                      l_take_same_time=True)
@@ -94,19 +101,8 @@ for i, length in enumerate(var_size):
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
     tick_values.append(0.5*(tick_1 + tick_2))
 ax.set_xticks(tick_values)
-ax.set_xticklabels([
-                    'omega',
-                    'div',
-                    'T_adv_h',
-                    'T_adv_v',
-                    'r_adv_h',
-                    'r_adv_v',
-                    's_adv_h',
-                    's_adv_v',
-                    'dsdt',
-                    'drdt',
-                    'RH',
-                    'shear_v'])
-plt.legend(['Pattern 1 (27%)', 'Pattern 2 ( 9%)', 'Pattern 3 (8%)'])
+ls_vars.append('shear_v')
+ax.set_xticklabels(ls_vars)
+plt.legend(['Pattern 1 (15%)', 'Pattern 2 (9%)', 'Pattern 3 (6%)'])
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()

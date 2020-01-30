@@ -2,14 +2,16 @@ import numpy as np
 import xarray as xr
 
 def large_scale_at_metric_times(ds_largescale, timeseries,
-                                chosen_vars = ['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
-                                               's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH'],
+                                chosen_vars=None,
                                 l_take_scalars=False,
                                 l_take_same_time=False,
                                 l_take_only_predecessor_time=False):
     """Returns a concatenated array of the large-scale variables and the time series, at times of both being present.
     chosen_vars selects some variables out of the large-scale state dataset."""
 
+    if chosen_vars is None:
+        chosen_vars = ['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
+                       's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH']
     var_list =     [ds_largescale[var]       [:, :-1] for var in chosen_vars] # ! bottom level has redundant information
     var_list.append(ds_largescale['dwind_dz'][:, :-2]) # ! two bottom levels filled with NaN
 

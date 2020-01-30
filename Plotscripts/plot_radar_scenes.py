@@ -17,13 +17,13 @@ metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.n
 metric_2   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
 metric_3   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
 metric_4   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
-ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
+ds_steiner = xr.open_mfdataset(home+'/Data/Steiner_Earlier/*season*', chunks=40)
 
 timeselect = True
-contiguous = False
+contiguous = True
 if timeselect:
-    start_date = '2015-11-10T03:00:00' # '2006-01-09T09:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
-    end_date   = '2015-11-10T06:10:00' # '2006-01-09T14:50' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
+    start_date = '2005-03-11T15:10:00' # '2006-01-09T09:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
+    end_date   = '2005-03-11T20:50:00' # '2006-01-09T14:50' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
     if contiguous:
         times = slice(start_date, end_date)
     else:
@@ -90,7 +90,7 @@ title_numbers = ['$\mathcal{R}_\mathrm{NI}$=130, ROME=157', '$\mathcal{R}_\mathr
                  '$\mathcal{R}_\mathrm{NI}$=126, ROME=127', '$\mathcal{R}_\mathrm{min}$=130, ROME=250']
 darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 2
+n_per_row = 5
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
     # fontsize = 16

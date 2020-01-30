@@ -13,8 +13,8 @@ import pandas as pd
 
 start = timeit.default_timer()
 
-testing = True
-manual_sampling = False
+testing = False
+manual_sampling = True
 
 if testing:
     convolving = False
@@ -191,7 +191,7 @@ if manual_sampling:
         # For reasons unknown, averages crossing a day of no data, not even NaN, into a normal day have wrongly
         # calculated averages. Overwrite manually with correct values.
         m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
-                                loffset='3H').max()
+                                loffset='3H').max() # mean() # std()**2
         manual_overwrite = False
         if manual_overwrite:
             m_avg.loc[

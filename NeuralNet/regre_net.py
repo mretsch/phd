@@ -19,12 +19,19 @@ start = timeit.default_timer()
 l_loading_model = False
 
 # assemble the large scale dataset
-ds_ls = home+'/Google Drive File Stream/My Drive/Data/LargeScale/CPOL_large-scale_forcing_cape_cin_rh_shear.nc'
-metric = home+'/Google Drive File Stream/My Drive/Data_Analysis/rom_km_avg6h.nc'
+ds_ls  = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
-predictor, target = large_scale_at_metric_times(ds_largescale=ds_ls,
-                                                timeseries=metric,
-                                                l_take_same_time=True)
+predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
+                                                   timeseries=metric,
+                                                   chosen_vars=['omega',
+                                                                'T_adv_h',
+                                                                'r_adv_h',
+                                                                'dsdt',
+                                                                'drdt',
+                                                                'RH'
+                                                                ],
+                                                   l_take_same_time=False)
 
 n_lev = len(predictor['lev'])
 
@@ -49,10 +56,9 @@ if not l_loading_model:
         pred = []
         for i, entry in enumerate(predictor):
             pred.append(model.predict(np.array([entry])))
-        p = xr.DataArray(pred)
-        pp = p.squeeze()
-        pp.coords['time'] = ('dim_0', target.time)
-        predicted = pp.swap_dims({'dim_0': 'time'})
+        pred_array = xr.DataArray(pred).squeeze()
+        pred_array.coords['time'] = ('dim_0', target.time)
+        predicted = pred_array.swap_dims({'dim_0': 'time'})
 
         fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
         ax_host.plot(target[-1200:])
