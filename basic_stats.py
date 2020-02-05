@@ -11,11 +11,11 @@ home = expanduser("~")
 def into_pope_regimes(series, l_upsample=True, l_percentile=False, l_all=False):
     """Mask radar/metric time series according to the 5 possible Pope regimes."""
     # get the Pope regimes per day
-    dfr_pope = pd.read_csv(home+'/Google Drive File Stream/My Drive/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
+    dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
     dse = pd.Series(dfr_pope['regime'])
 
     da_pope = xr.DataArray(dse)
-    pope_years = da_pope.sel({'timestring': slice('2009-11-30', '2017-03-31')})
+    pope_years = da_pope.sel({'timestring': slice('1998-12-06', '2017-03-31')})
     pope_years.coords['time'] = ('timestring', pd.to_datetime(pope_years.timestring))
     pope = pope_years.swap_dims({'timestring': 'time'})
     del pope['timestring']
@@ -32,7 +32,7 @@ def into_pope_regimes(series, l_upsample=True, l_percentile=False, l_all=False):
         daily = var.resample(time='1D', skipna=True).mean()
         var = daily.sel({'time': pope.time})
     else:
-        pope = pope.resample(time='10T').interpolate('zero')
+        pope = pope.resample(time='6H').interpolate('zero')
 
     # filter each Pope regime
     pope = pope.where(var.notnull())

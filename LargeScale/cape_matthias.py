@@ -197,8 +197,21 @@ def vertical_wind_shear(u, v):
     return xr.merge([ls, xr.Dataset({'dwind_dz': shear})])
 
 
+def wind_direction(u, v):
+    # depending on input dataset, the lev dimension is transposed or not. I want all levels above 990 hPa.
+    if ls.u.sel(lev=slice(990, None)).lev.max() == 990:
+        wind_dir = xr.full_like(ls.u.sel(lev=slice(990, None)), np.nan)
+        wind_dir[:, :] = mpcalc.wind_direction(ls.u.sel(lev=slice(990, None)), ls.v.sel(lev=slice(990, None)))
+    else:
+        wind_dir = xr.full_like(ls.u.sel(lev=slice(None, 990)), np.nan)
+        wind_dir[:, :] = mpcalc.wind_direction(ls.u.sel(lev=slice(None, 990)), ls.v.sel(lev=slice(None, 990)))
+    wind_dir.attrs['long_name'] = 'wind direction'
+    wind_dir.attrs['units'] = 'degrees'
+    return xr.merge([ls, xr.Dataset({'wind_dir': wind_dir})])
+
+
 if __name__ == '__main__':
-    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
+    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False
@@ -254,4 +267,5 @@ if __name__ == '__main__':
 
         t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
 
-    ls_new = vertical_wind_shear(ls.u, ls.v)
+    # ls_new = vertical_wind_shear(ls.u, ls.v)
+    ls_new = wind_direction(ls.u, ls.v)
