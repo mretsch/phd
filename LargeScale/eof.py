@@ -21,10 +21,13 @@ ls_vars = ['omega',
            'r_adv_h',
            'dsdt',
            'drdt',
-           'RH'
+           'RH',
+           'u',
+           'v',
            ]
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
+                                                     # chosen_vars=ls_vars,
                                                      l_take_same_time=True)
 
 nlev = len(predictor.lev)
@@ -92,7 +95,8 @@ ax.plot(evec.isel(number=1) * -1, color='k', linestyle=':', lw=1.5)
 ax.plot(evec.isel(number=2)     , color='r', linestyle=':', lw=1.5)
 plt.axhline(0, color='grey', lw=0.5)
 colors = [sol['yellow'], sol['orange'], sol['red'], sol['magenta'], sol['violet'], sol['blue'], sol['cyan'],
-          sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0']]
+          sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
+          sol['base01'], sol['base1'], sol['base00'], sol['base0']]
 tick_values = []
 tick_1, tick_2 = 0, 0
 for i, length in enumerate(var_size):
@@ -101,8 +105,7 @@ for i, length in enumerate(var_size):
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
     tick_values.append(0.5*(tick_1 + tick_2))
 ax.set_xticks(tick_values)
-ls_vars.append('shear_v')
 ax.set_xticklabels(ls_vars)
-plt.legend(['Pattern 1 (15%)', 'Pattern 2 (9%)', 'Pattern 3 (6%)'])
+plt.legend(['Pattern 1 (16%)', 'Pattern 2 (8%)', 'Pattern 3 (7%)'])
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()

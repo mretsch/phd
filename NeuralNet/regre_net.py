@@ -22,15 +22,18 @@ l_loading_model = False
 ds_ls  = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
 
+ls_vars = ['omega',
+           'T_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'RH',
+           'u',
+           'v',
+           ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
-                                                   chosen_vars=['omega',
-                                                                'T_adv_h',
-                                                                'r_adv_h',
-                                                                'dsdt',
-                                                                'drdt',
-                                                                'RH'
-                                                                ],
+                                                   chosen_vars=ls_vars,
                                                    l_take_same_time=False)
 
 n_lev = len(predictor['lev'])

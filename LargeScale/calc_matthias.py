@@ -3,6 +3,7 @@ home = expanduser("~")
 import xarray as xr
 import numpy as np
 import metpy.calc as mpcalc
+from metpy.units import units
 
 # global R_d, g
 g = 9.81  # gravitational acceleration
@@ -179,6 +180,9 @@ def vertical_wind_shear(u, v):
     diff_u[:, :] = u[:, 1:].values - u[:, :-1].values
     diff_v[:, :] = v[:, 1:].values - v[:, :-1].values
 
+    # mpcalc.bulk_shear(ls.lev[1:3].values*units.hPa, ls.u[:1, 1:3].squeeze().values*units('m/s'),
+    #                   ls.v[:1, 1:3].squeeze().values*units('m/s'), depth=25.*units.hPa)
+
     velo_change = np.sqrt(diff_u ** 2 + diff_v ** 2)
 
     # change of velocity is [m/s], but I want it per meter, which is dwind_dz => [m/s/m] = [1/s]
@@ -212,6 +216,7 @@ def wind_direction(u, v):
 
 if __name__ == '__main__':
     ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+    # ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False

@@ -10,7 +10,7 @@ from basic_stats import into_pope_regimes
 start = timeit.default_timer()
 
 metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
-predicted = xr.open_dataarray(home+'/Data/NN_models/Model_300x3_avg_wholeROME_bothtimes_reducedinput/predicted.nc')
+predicted = xr.open_dataarray(home+'/Desktop/predicted.nc')
 
 metric = metric.where(predicted.time)
 
@@ -33,7 +33,7 @@ colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
 
 tick_1, tick_2 = -1.5, -0.5
-for i in range (1200):
+for i in range(-1200, 0):
     tick_1, tick_2 = tick_2, tick_2 + 1
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime[i]) - 1], alpha=0.5)
 ax.text(x=1210, y=300, s='(Pope 1, DE)', verticalalignment='top', color=colors[0], fontdict={'fontsize': 16})

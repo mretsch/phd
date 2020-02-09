@@ -11,9 +11,10 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
 
     if chosen_vars is None:
         chosen_vars = ['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
-                       's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH']
-    var_list =     [ds_largescale[var]       [:, :-1] for var in chosen_vars] # ! bottom level has redundant information
-    var_list.append(ds_largescale['dwind_dz'][:, :-2]) # ! two bottom levels filled with NaN
+                       's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH', 'u', 'v', 'dwind_dz']
+    # bottom level has redundant information and two bottom levels filled with NaN for dwind_dz
+    var_list = [ds_largescale[var][:, :-1] if var != 'dwind_dz' else ds_largescale[var][:, :-2]
+                for var in chosen_vars ]
 
     c1 = xr.concat(var_list, dim='lev')
 
@@ -34,10 +35,12 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     # Also count how long that variable is in the resulting array.
     names_list, variable_size = [], []
     for var in chosen_vars:
-        names_list.extend([ds_largescale[var].long_name for _ in range(len(ds_largescale[var][:, :-1].lev))])
-        variable_size.append(len(names_list) - sum(variable_size))
-    names_list   .extend([ds_largescale['dwind_dz'].long_name for _ in range(len(ds_largescale['dwind_dz'][:, :-2].lev))])
-    variable_size.append(len(names_list) - sum(variable_size))
+        if var != 'dwind_dz':
+            names_list.extend([ds_largescale[var].long_name for _ in range(len(ds_largescale[var][:, :-1].lev))])
+            variable_size.append(len(names_list) - sum(variable_size))
+        else:
+            names_list   .extend([ds_largescale['dwind_dz'].long_name for _ in range(len(ds_largescale['dwind_dz'][:, :-2].lev))])
+            variable_size.append(len(names_list) - sum(variable_size))
 
     c1.coords['long_name'] = ('lev', names_list)
 
