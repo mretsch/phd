@@ -16,7 +16,7 @@ import pandas as pd
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_loading_model = False
+l_loading_model = True
 
 # assemble the large scale dataset
 ds_ls  = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
@@ -30,6 +30,7 @@ ls_vars = ['omega',
            'RH',
            'u',
            'v',
+           # 'dwind_dz'
            ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
@@ -74,7 +75,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model = kmodels.load_model('/Users/mret0001/Desktop/Model_300x3_avg_wholeROME_RH_bothtimes_again/model.h5')
+    model = kmodels.load_model(home+'/Data/NN_Models/Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind/model.h5')
 
     input_length = len(predictor[0])
     w = model.get_weights()
@@ -82,10 +83,25 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    for n_node in range(12, 101):
+    l_high_values = False
+    if l_high_values:
+        predicted = xr.open_dataarray(
+            home + '/Data/NN_models/Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind/predicted.nc')
+        # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
+        metric = metric.where(predicted.time)
+        # only interested in high ROME values. Sample size: O(100)
+        metric_high = metric[metric['percentile'] > 0.90]
+        diff = predicted - metric_high
+        off_percent = (abs(diff) / metric_high).values
+        # allow x% of deviation from true value
+        correct_pred = xr.where(abs(diff) < 0.3 * metric, True, False)
+        predicted = predicted.sel(time=metric_high[correct_pred].time.values)
+        metric = metric.sel(time=metric_high[correct_pred].time.values)
+
+    for n_node in range(1, 2):
         maximum_nodes = []
-        for input in predictor:
-            maximum_nodes.append(mlp_insight(model, input, n_highest_node=n_node))
+        for input in [predictor.sel(time='2015-03-21T18:00:00')]:#time=metric.time.values
+                maximum_nodes.append(mlp_insight(model, input, n_highest_node=n_node))
 
         # =================================================
         mn = xr.DataArray(maximum_nodes)
@@ -99,7 +115,12 @@ else:
         ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
         # ax_host.set_xlim(1, None)
         # ax_host.set_yscale('log')
-        plt.savefig('/Users/mret0001/Desktop/histos/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
+        plt.savefig('/Users/mret0001/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
+
+    # u-wind at 65hPa at the predicted time steps where it is most-contributing first-layer node
+    # for NN Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind
+    # l_u65hPa = mn[:, 0] == 235
+    # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))

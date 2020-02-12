@@ -1,7 +1,24 @@
 import numpy as np
 
+
 def mlp_insight(model, data_in, n_highest_node):
-    """Returns 1D-array containing the node index in each layer of a regression MLP, which contributes the most to a prediction."""
+    """
+    Compute the most contributing node index in each layer of a regression MLP.
+    Returns an array with the first element corresponding to the first layer of the MLP,
+    the second element to the second layer, etc..
+
+    Parameters
+    ----------
+    model :
+        Trained regression multilayer perceptron from keras, with one output node.
+    data_in :
+        xarray-dataarray or list with a single instance of prediction values
+        for the provided model.
+    n_highest_node :
+        Which node is backtracked through the model. The most contributing node
+        is given for '1', the second-most contributing for '2', etc..
+    """
+
     output = np.array(data_in)
     weight_list = model.get_weights()
     # each layer has weights and biases
@@ -15,17 +32,20 @@ def mlp_insight(model, data_in, n_highest_node):
         bias = weight_list[i * 2 + 1]
         # the @ is a matrix multiplication, first output is actually the mlp's input
         output = weights.transpose() @ output + bias
+        # ReLU
         output[output < 0] = 0
-        # append output, so it can be overwritten in next iteration
+        # append output, so output can be overwritten in next iteration
         results.append(output)
 
     # after forward pass, recursively find chain of nodes with maximum value in each layer.
     # Last layer maps to only one output node, thus weigh_list has only one element for last layer.
-    last_layer = results[-2] * weight_list[-2][-1].transpose()
+    last_layer = results[-2] * weight_list[-2][:, 0].transpose()
     idx_ascending = last_layer.argsort()
     max_nodes = [idx_ascending[-n_highest_node]]
 
-    # concatenate the original NN input, i.e. data_in, and the output from the remaining layers
+    # concatenate the original NN input, i.e. data_in, and the output from the remaining layers,
+    # excluding output and last layer. iput, like results, are the values in previous layer which have been calculated
+    # in a forward pass, i.e. bias and non-linear function have been applied.
     iput = [np.array(data_in)] + results[:-2]
     for i in range(n_layers - 1)[::-1]:
         # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)

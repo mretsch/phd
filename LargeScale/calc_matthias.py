@@ -215,8 +215,8 @@ def wind_direction(u, v):
 
 
 if __name__ == '__main__':
-    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-    # ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
+    # ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False
