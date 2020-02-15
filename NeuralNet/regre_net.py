@@ -28,9 +28,9 @@ ls_vars = ['omega',
            'dsdt',
            'drdt',
            'RH',
-           'u',
-           'v',
-           # 'dwind_dz'
+           # 'u',
+           # 'v',
+           'dwind_dz'
            ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
@@ -75,7 +75,8 @@ if not l_loading_model:
 
 else:
     # load a model
-    model = kmodels.load_model(home+'/Data/NN_Models/Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind/model.h5')
+    model_path = home + '/Data/NN_Models/Model_300x3_avg_wholeROME_bothtimes_reducedinput_shear/'
+    model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
     w = model.get_weights()
@@ -83,10 +84,9 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
-        predicted = xr.open_dataarray(
-            home + '/Data/NN_models/Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind/predicted.nc')
+        predicted = xr.open_dataarray(model_path + 'predicted.nc')
         # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
         metric = metric.where(predicted.time)
         # only interested in high ROME values. Sample size: O(100)
@@ -100,7 +100,8 @@ else:
 
     for n_node in range(1, 2):
         maximum_nodes = []
-        for input in [predictor.sel(time='2015-03-21T18:00:00')]:#time=metric.time.values
+
+        for input in predictor.sel(time=metric.time.values):
                 maximum_nodes.append(mlp_insight(model, input, n_highest_node=n_node))
 
         # =================================================
@@ -121,6 +122,7 @@ else:
     # for NN Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind
     # l_u65hPa = mn[:, 0] == 235
     # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
-
+plt.close()
+plt.savefig(home+'/Desktop/firstconn.pdf')
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))

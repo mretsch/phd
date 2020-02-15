@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def mlp_insight(model, data_in, n_highest_node):
@@ -53,4 +54,6 @@ def mlp_insight(model, data_in, n_highest_node):
         idx_ascending = layer_to_maxnode.argsort()
         max_nodes.append(idx_ascending[-n_highest_node])
 
+    first_conn = iput[0] * weight_list[0][:, max_nodes[-2]] # take the max_node in the first layer (not input layer)
+    plt.plot(first_conn, alpha=0.1)
     return np.array(max_nodes[::-1])
