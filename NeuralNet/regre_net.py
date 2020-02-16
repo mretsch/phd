@@ -8,7 +8,6 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
-from Plotscripts.plot_hist import histogram_2d
 from NeuralNet.backtracking import mlp_insight
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 import pandas as pd
@@ -16,11 +15,12 @@ import pandas as pd
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_loading_model = True
+l_loading_model = False
 
 # assemble the large scale dataset
-ds_ls  = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+ghome = home+'/Google Drive File Stream/My Drive'
+ds_ls  = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 
 ls_vars = ['omega',
            'T_adv_h',
@@ -28,9 +28,9 @@ ls_vars = ['omega',
            'dsdt',
            'drdt',
            'RH',
-           # 'u',
-           # 'v',
-           'dwind_dz'
+           'u',
+           'v',
+           # 'dwind_dz'
            ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
@@ -38,6 +38,10 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_same_time=False)
 
 n_lev = len(predictor['lev'])
+
+predictor = (predictor - predictor.mean(dim='time')) / predictor.std(dim='time')
+# where std_dev=0., dividing led to NaN, set to 0. instead
+predictor = predictor.where(predictor.notnull(), other=0.)
 
 if not l_loading_model:
     # building the model
@@ -71,7 +75,7 @@ if not l_loading_model:
         # ax_host.xaxis.set_major_locator(ticker.MultipleLocator(1))
         # ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
         # plt.grid(which='both')
-        plt.savefig('/Users/mret0001/Desktop/last1200.pdf', bbox_inches='tight')
+        plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight')
 
 else:
     # load a model
@@ -122,7 +126,7 @@ else:
     # for NN Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind
     # l_u65hPa = mn[:, 0] == 235
     # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
-plt.close()
-plt.savefig(home+'/Desktop/firstconn.pdf')
+# plt.close()
+# plt.savefig(home+'/Desktop/firstconn.pdf')
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))

@@ -11,7 +11,8 @@ home = expanduser("~")
 def into_pope_regimes(series, l_upsample=True, l_percentile=False, l_all=False):
     """Mask radar/metric time series according to the 5 possible Pope regimes."""
     # get the Pope regimes per day
-    dfr_pope = pd.read_csv(home+'/Data/PopeRegimes/Pope_regimes.csv', header=None, names=['timestring', 'regime'], index_col=0)
+    dfr_pope = pd.read_csv(home+'/Google Drive File Stream/My Drive/Data/PopeRegimes/Pope_regimes.csv',
+                           header=None, names=['timestring', 'regime'], index_col=0)
     dse = pd.Series(dfr_pope['regime'])
 
     da_pope = xr.DataArray(dse)
