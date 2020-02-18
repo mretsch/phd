@@ -1,5 +1,27 @@
 import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
+
+
+def high_correct_predictions(target, predictions, target_percentile, prediction_offset):
+    """Return 1d-xarray containing a subset of target and predictions where target has a higher percentile than
+    in target-percentile (in [0, 1]) and the prediction deviates less than prediction_offset
+    (in [0, 1]) from the target."""
+
+    assert 'percentile' in target.coords, 'Target needs to have <percentile> as a coordinate,' \
+                                          'in order to subselect target based upon percentiles.'
+
+    # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
+    target = target.where(predictions.time)
+    # only interested in high ROME values. Sample size: O(100)
+    target_high = target[target['percentile'] > target_percentile]
+    diff = predictions - target_high
+    off_percent = (abs(diff) / target_high).values
+    # allow x% of deviation from true value
+    correct_pred = xr.where(abs(diff) < prediction_offset * target, True, False)
+    predictions_sub = predictions.sel(time=target_high[correct_pred].time.values)
+    target_sub      = target     .sel(time=target_high[correct_pred].time.values)
+    return target_sub, predictions_sub
 
 
 def mlp_insight(model, data_in, n_highest_node):
@@ -54,6 +76,6 @@ def mlp_insight(model, data_in, n_highest_node):
         idx_ascending = layer_to_maxnode.argsort()
         max_nodes.append(idx_ascending[-n_highest_node])
 
-    first_conn = iput[0] * weight_list[0][:, max_nodes[-2]] # take the max_node in the first layer (not input layer)
-    plt.plot(first_conn, alpha=0.1)
+    # first_conn = iput[0] * weight_list[0][:, max_nodes[-2]] # take the max_node in the first layer (not input layer)
+    # plt.plot(first_conn, alpha=0.1)
     return np.array(max_nodes[::-1])

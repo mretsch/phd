@@ -6,6 +6,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from Plotscripts.colors_solarized import sol
 from basic_stats import into_pope_regimes
+from NeuralNet.backtracking import high_correct_predictions
 
 start = timeit.default_timer()
 
@@ -15,19 +16,10 @@ metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 predicted = xr.open_dataarray(
     ghome + '/Model_300x3_avg_wholeROME_bothtime_reduced_uvwind_norm/predicted.nc')
 
-# only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
-metric = metric.where(predicted.time)
-
 l_high_values = False
 if l_high_values:
-    # only interested in high ROME values. Sample size: O(100)
-    metric_high = metric[metric['percentile'] > 0.90]
-    diff = predicted - metric_high
-    off_percent = (abs(diff) / metric_high).values
-    # allow x% of deviation from true value
-    correct_pred = xr.where(abs(diff) < 0.3 * metric, True, False)
-    predicted = predicted.sel(time=metric_high[correct_pred].time.values)
-    metric    = metric   .sel(time=metric_high[correct_pred].time.values)
+    metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
+                                                 target_percentile=0.9, prediction_offset=0.3)
 
 # the plot of predicted versus true ROME values with Pope regimes in the background
 ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
