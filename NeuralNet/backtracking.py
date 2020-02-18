@@ -24,7 +24,7 @@ def high_correct_predictions(target, predictions, target_percentile, prediction_
     return target_sub, predictions_sub
 
 
-def mlp_insight(model, data_in, n_highest_node):
+def mlp_insight(model, data_in, n_highest_node, return_firstconn=False):
     """
     Compute the most contributing node index in each layer of a regression MLP.
     Returns an array with the first element corresponding to the first layer of the MLP,
@@ -76,6 +76,9 @@ def mlp_insight(model, data_in, n_highest_node):
         idx_ascending = layer_to_maxnode.argsort()
         max_nodes.append(idx_ascending[-n_highest_node])
 
-    # first_conn = iput[0] * weight_list[0][:, max_nodes[-2]] # take the max_node in the first layer (not input layer)
-    # plt.plot(first_conn, alpha=0.1)
-    return np.array(max_nodes[::-1])
+    if return_firstconn:
+        first_conn = iput[0] * weight_list[0][:, max_nodes[-2]] # take the max_node in the first layer (not input layer)
+        # plt.plot(first_conn, alpha=0.1)
+        return np.array(max_nodes[::-1]), first_conn
+    else:
+        return np.array(max_nodes[::-1])

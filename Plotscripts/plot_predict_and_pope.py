@@ -20,9 +20,13 @@ l_high_values = False
 if l_high_values:
     metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
                                                  target_percentile=0.9, prediction_offset=0.3)
+else:
+    # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
+    metric = metric.where(predicted.time)
 
 # the plot of predicted versus true ROME values with Pope regimes in the background
 ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
+
 p_regime = xr.full_like(ds_pope.var_all, np.nan)
 p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
@@ -45,6 +49,7 @@ tick_1, tick_2 = -1.5, -0.5
 for thistime in metric[:1200].time.values: #metric_high[correct_pred].time.values:
     tick_1, tick_2 = tick_2, tick_2 + 1
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
+
 ax.text(x=-50, y=300, s='(Pope 1, DE)', verticalalignment='top', color=colors[0], fontdict={'fontsize': 16})
 ax.text(x=-50, y=250, s=' Pope 2, DW ', verticalalignment='top', color=colors[1], fontdict={'fontsize': 16})
 ax.text(x=-50, y=200, s='(Pope 3,  E)', verticalalignment='top', color=colors[2], fontdict={'fontsize': 16})

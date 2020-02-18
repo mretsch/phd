@@ -10,6 +10,7 @@ import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from NeuralNet.backtracking import mlp_insight, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
+from basic_stats import into_pope_regimes
 import pandas as pd
 
 home = expanduser("~")
@@ -86,7 +87,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Desktop/Model_omega_uv/'
+    model_path = ghome + '/Model_omega_uv/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -95,7 +96,7 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
         predicted = xr.open_dataarray(model_path + 'predicted.nc')
         metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
@@ -105,13 +106,23 @@ else:
         # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
         metric = metric.where(predicted.time)
 
+    ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
+    p_regime = xr.full_like(ds_pope.var_all, np.nan)
+    p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
+
     for n_node in range(1, 2):
-        maximum_nodes = []
+        maximum_nodes, first_conn = [], []
 
         for input in predictor.sel(time=metric.time.values):
-                maximum_nodes.append(mlp_insight(model, input, n_highest_node=n_node))
+            max_node, firstconn = mlp_insight(model, input, n_highest_node=n_node, return_firstconn=True)
+            maximum_nodes.append(max_node)
+            first_conn.append(firstconn)
 
-        # =================================================
+        # ========= Plotting ==============================
         mn = xr.DataArray(maximum_nodes)
         first_node = mn[:, 0]
 
@@ -123,13 +134,23 @@ else:
         ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
         # ax_host.set_xlim(1, None)
         # ax_host.set_yscale('log')
-        plt.savefig('/Users/mret0001/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
+        plt.savefig(home+'/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
 
     # u-wind at 65hPa at the predicted time steps where it is most-contributing first-layer node
     # for NN Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind
     # l_u65hPa = mn[:, 0] == 235
     # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
-# plt.close()
-# plt.savefig(home+'/Desktop/firstconn.pdf')
+
+    plt.close()
+    fig, axes = plt.subplots(nrows=5, ncols=1)
+    # axes[0].plot(first_conn[-1])
+    # fig.show()
+    for i, conn in enumerate(first_conn):
+        thetime = metric.time[i]
+        axes[int(p_regime.sel(time=thetime))-1].plot(conn, alpha=0.1)
+    fig.show()
+    # plt.close()
+    # plt.savefig(home+'/Desktop/firstconn.pdf')
+
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
