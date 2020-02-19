@@ -126,8 +126,6 @@ else:
         mn = xr.DataArray(maximum_nodes)
         first_node = mn[:, 0]
 
-        # plt.hist(first_node, bins=np.arange(0, input_length+1))
-
         fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(60, 4))
         ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
         ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
@@ -142,15 +140,32 @@ else:
     # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
 
     plt.close()
-    fig, axes = plt.subplots(nrows=5, ncols=1)
-    # axes[0].plot(first_conn[-1])
-    # fig.show()
+    fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(9, 20))
+    pope_ticker = np.zeros((5, input_length))
     for i, conn in enumerate(first_conn):
         thetime = metric.time[i]
-        axes[int(p_regime.sel(time=thetime))-1].plot(conn, alpha=0.1)
-    fig.show()
-    # plt.close()
-    # plt.savefig(home+'/Desktop/firstconn.pdf')
+        thepope = int(p_regime.sel(time=thetime)) - 1
+        # plot the first connection values into the appropriate subplot (representing Pope regimes)
+        axes[thepope].plot(conn, alpha=0.1)
+        # plot the location and amount of the highest contributing node into the same plot
+        axes[thepope].axvspan(xmin=first_node[i]-0.5, xmax=first_node[i]+0.5,
+                              ymin= pope_ticker[thepope, first_node[i]]   /100,
+                              ymax=(pope_ticker[thepope, first_node[i]]+1)/100,
+                              facecolor='r')
+        pope_ticker[thepope, first_node[i]] += 1
+
+    axes[0].set_title('(Pope 1, DE)')
+    axes[1].set_title(' Pope 2, DW ')
+    axes[2].set_title('(Pope 3,  E)')
+    axes[3].set_title(' Pope 4, SW ')
+    axes[4].set_title(' Pope 5, ME ')
+    ylim_high, ylim_low = 0, 0
+    for ax in axes:
+        ylim_high = xr.where(ax.get_ylim()[1] > ylim_high, ax.get_ylim()[1], ylim_high)
+        ylim_low  = xr.where(ax.get_ylim()[0] < ylim_low , ax.get_ylim()[0], ylim_low )
+    for ax in axes:
+        ax.set_ylim(ylim_low, ylim_high)
+    fig.savefig(home+'/Desktop/first_conn.pdf', transparent=True, bbox_inches='tight')
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
