@@ -16,26 +16,27 @@ import pandas as pd
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_loading_model = True
+l_loading_model = False
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 
-ls_vars = ['omega',
+ls_vars = [#'omega',
            # 'T_adv_h',
            # 'r_adv_h',
            # 'dsdt',
            # 'drdt',
            # 'RH',
-           'u',
-           'v',
+           # 'u',
+           # 'v',
            # 'dwind_dz'
            ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
+                                                   l_take_scalars=True,
                                                    l_take_same_time=False)
 
 n_lev = len(predictor['lev'])
@@ -63,7 +64,6 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    # predictor = predictor.transpose()
     model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = True
