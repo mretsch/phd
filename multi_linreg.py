@@ -1,5 +1,15 @@
+from os.path import expanduser
+import timeit
 import numpy as np
+import xarray as xr
+import pandas as pd
 import statsmodels.api as sm
+from NeuralNet.backtracking import mlp_insight, high_correct_predictions
+from LargeScale.ls_at_metric import large_scale_at_metric_times
+from basic_stats import into_pope_regimes
+
+home = expanduser("~")
+start = timeit.default_timer()
 
 # ===== pen and paper ======
 X = np.array([[1, 5],
@@ -24,5 +34,28 @@ model = sm.OLS(Y, X).fit()
 sm_result = model.predict(X)
 # prints
 # array([65.75757576, 39.03030303, 51.03030303])
+
+# ===== the large scale state and ROME ======
+
+# assemble the large scale dataset
+ghome = home+'/Google Drive File Stream/My Drive'
+ds_ls = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
+
+ls_vars = ['omega',
+           # 'T_adv_h',
+           # 'r_adv_h',
+           # 'dsdt',
+           # 'drdt',
+           # 'RH',
+           'u',
+           'v',
+           # 'dwind_dz'
+          ]
+predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
+                                                   timeseries=metric,
+                                                   chosen_vars=ls_vars,
+                                                   l_take_scalars=False,
+                                                   l_take_same_time=False)
 
 
