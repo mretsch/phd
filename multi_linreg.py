@@ -58,4 +58,11 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=False,
                                                    l_take_same_time=False)
 
+# select a few levels of a few variables which might be relevant to explain ROME
+var1 = predictor.where(predictor['long_name'] == 'vertical velocity',           drop=True).sel(lev=[115, 940])
+var2 = predictor.where(predictor['long_name'] == 'vertical velocity, 6h earli', drop=True).sel(lev=[915])
 
+XX = xr.concat([var1, var2], dim='lev')
+
+mlr_model = sm.OLS(target.values, sm.add_constant(XX.values)).fit()
+mlr_predict = mlr_model.predict(sm.add_constant(XX.values))
