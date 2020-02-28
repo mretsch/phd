@@ -36,7 +36,8 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     names_list, variable_size = [], []
     for var in chosen_vars:
         if var != 'dwind_dz':
-            names_list.extend([ds_largescale[var].long_name for _ in range(len(ds_largescale[var][:, :-1].lev))])
+            # add extra length to variable name, such that additional info can be added later
+            names_list.extend([ds_largescale[var].long_name + '            ' for _ in range(len(ds_largescale[var][:, :-1].lev))])
             variable_size.append(len(names_list) - sum(variable_size))
         else:
             names_list   .extend([ds_largescale['dwind_dz'].long_name for _ in range(len(ds_largescale['dwind_dz'][:, :-2].lev))])
@@ -48,15 +49,15 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         c2_r = c2.rename({'concat_dims': 'lev'})
         c2_r.coords['lev'] = np.arange(len(c2))
         names_list = []
-        names_list.append(ds_largescale.cin       .long_name)
-        names_list.append(ds_largescale.cld_low   .long_name)
-        names_list.append(ds_largescale.lw_dn_srf .long_name)
-        names_list.append(ds_largescale.wspd_srf  .long_name)
-        names_list.append(ds_largescale.v_srf     .long_name)
-        names_list.append(ds_largescale.r_srf     .long_name)
-        names_list.append(ds_largescale.lw_net_toa.long_name)
-        names_list.append(ds_largescale.SH        .long_name)
-        names_list.append(ds_largescale.LWP       .long_name)
+        names_list.append(ds_largescale.cin       .long_name + '            ')
+        names_list.append(ds_largescale.cld_low   .long_name + '            ')
+        names_list.append(ds_largescale.lw_dn_srf .long_name + '            ')
+        names_list.append(ds_largescale.wspd_srf  .long_name + '            ')
+        names_list.append(ds_largescale.v_srf     .long_name + '            ')
+        names_list.append(ds_largescale.r_srf     .long_name + '            ')
+        names_list.append(ds_largescale.lw_net_toa.long_name + '            ')
+        names_list.append(ds_largescale.SH        .long_name + '            ')
+        names_list.append(ds_largescale.LWP       .long_name + '            ')
         c2_r.coords['long_name'] = ('lev', names_list)
 
         var = xr.concat([c1, c2_r], dim='lev')
@@ -99,7 +100,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             # fill one half with values from earlier time step
             var_both_times[:, half:] = var_6earlier_nonull.values
             var_both_times['long_name'][half:] = \
-                [name.item() + ', 6h earlier' for name in var_both_times['long_name'][half:]]
+                [name.item().replace( '            ', ', 6h earlier') for name in var_both_times['long_name'][half:]]
 
             target = timeseries.sel(time=var_both_times.time.values)
             predictor = var_both_times

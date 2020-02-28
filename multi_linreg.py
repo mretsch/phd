@@ -3,6 +3,7 @@ import timeit
 import numpy as np
 import xarray as xr
 import pandas as pd
+import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from NeuralNet.backtracking import mlp_insight, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
@@ -59,10 +60,16 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_same_time=False)
 
 # select a few levels of a few variables which might be relevant to explain ROME
-var1 = predictor.where(predictor['long_name'] == 'vertical velocity',           drop=True).sel(lev=[115, 940])
-var2 = predictor.where(predictor['long_name'] == 'vertical velocity, 6h earli', drop=True).sel(lev=[915])
+var1 = predictor.where(predictor['long_name'] == 'vertical velocity            ', drop=True).sel(lev=[115, 940])
+var2 = predictor.where(predictor['long_name'] == 'vertical velocity, 6h earlier', drop=True).sel(lev=[915])
 
-XX = xr.concat([var1, var2], dim='lev')
+l_subselect = True
+if l_subselect:
+    mlreg_predictor = sm.add_constant(xr.concat([var1, var2], dim='lev').values)
+else:
+    mlreg_predictor = sm.add_constant(predictor.values)
 
-mlr_model = sm.OLS(target.values, sm.add_constant(XX.values)).fit()
-mlr_predict = mlr_model.predict(sm.add_constant(XX.values))
+mlr_model = sm.OLS(target.values, mlreg_predictor).fit()
+mlr_predict = mlr_model.predict(mlreg_predictor)
+
+mlr_result = xr.DataArray(mlr_predict, coords={'time': predictor.time}, dims='time')

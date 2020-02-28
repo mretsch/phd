@@ -16,27 +16,27 @@ import pandas as pd
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_loading_model = False
+l_loading_model = True
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 
-ls_vars = [#'omega',
-           # 'T_adv_h',
-           # 'r_adv_h',
-           # 'dsdt',
-           # 'drdt',
-           # 'RH',
-           # 'u',
-           # 'v',
+ls_vars = ['omega',
+           'T_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'RH',
+           'u',
+           'v',
            # 'dwind_dz'
            ]
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
-                                                   l_take_scalars=True,
+                                                   l_take_scalars=False,
                                                    l_take_same_time=False)
 
 n_lev = len(predictor['lev'])
@@ -87,7 +87,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_omega_uv/'
+    model_path = ghome + '/Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
