@@ -17,7 +17,7 @@ def into_pope_regimes(series, l_upsample=True, l_percentile=False, l_all=False):
 
     da_pope = xr.DataArray(dse)
     pope_years = da_pope.sel({'timestring': slice('1998-12-06', '2017-03-31')})
-    pope_years.coords['time'] = ('timestring', pd.to_datetime(pope_years.timestring))
+    pope_years.coords['time'] = ('timestring', pd.to_datetime(pope_years.timestring.values))
     pope = pope_years.swap_dims({'timestring': 'time'})
     del pope['timestring']
 

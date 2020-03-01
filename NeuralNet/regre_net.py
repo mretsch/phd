@@ -16,7 +16,7 @@ import pandas as pd
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_loading_model = True
+l_loading_model = False
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
@@ -38,6 +38,13 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=False,
                                                    l_take_same_time=False)
+
+l_subselect = False
+if l_subselect:
+    var1 = predictor.where(predictor['long_name'] == 'Surface downwelling LW            ', drop=True)#.sel(lev=[115, 940])
+    var2 = predictor.where(predictor['long_name'] == 'Surface downwelling LW, 6h earlier', drop=True)#.sel(lev=[915])
+    var3 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive            ', drop=True)#.sel(lev=[915])
+    predictor = xr.concat([var1, var2, var3], dim='lev')
 
 n_lev = len(predictor['lev'])
 

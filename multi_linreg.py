@@ -44,11 +44,11 @@ ds_ls = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 
 ls_vars = ['omega',
-           # 'T_adv_h',
-           # 'r_adv_h',
-           # 'dsdt',
-           # 'drdt',
-           # 'RH',
+           'T_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'RH',
            'u',
            'v',
            # 'dwind_dz'
@@ -60,12 +60,13 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_same_time=False)
 
 # select a few levels of a few variables which might be relevant to explain ROME
-var1 = predictor.where(predictor['long_name'] == 'vertical velocity            ', drop=True).sel(lev=[115, 940])
-var2 = predictor.where(predictor['long_name'] == 'vertical velocity, 6h earlier', drop=True).sel(lev=[915])
+var1 = predictor.where(predictor['long_name'] == 'Surface downwelling LW            ', drop=True)#.sel(lev=[115, 940])
+var2 = predictor.where(predictor['long_name'] == 'Surface downwelling LW, 6h earlier', drop=True)#.sel(lev=[915])
+var3 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive            ', drop=True)#.sel(lev=[915])
 
-l_subselect = True
+l_subselect = False
 if l_subselect:
-    mlreg_predictor = sm.add_constant(xr.concat([var1, var2], dim='lev').values)
+    mlreg_predictor = sm.add_constant(xr.concat([var1, var2, var3], dim='lev').values)
 else:
     mlreg_predictor = sm.add_constant(predictor.values)
 
