@@ -68,6 +68,11 @@ def diurnal_cycle(series, group='time', frequency='10T', period=144, time_shift=
     return day.roll(shifts={'time': time_shift}, roll_coords=False)
 
 
+def root_mean_square_error(x, y):
+    """RMSE for two data series, which are subtractable and have a .mean() method."""
+    return ((x - y) ** 2).mean() ** 0.5
+
+
 def covariance(x, y):
     """Covariance. From http://xarray.pydata.org/en/stable/dask.html#automatic-parallelization. """
     return ((x - x.mean(axis=-1)) * (y - y.mean(axis=-1))).mean(axis=-1)
