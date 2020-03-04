@@ -21,6 +21,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     if l_take_scalars:
         c2 = xr.concat([
               ds_largescale.cin
+            , ds_largescale.cape
             , ds_largescale.cld_low
             , ds_largescale.lw_dn_srf
             , ds_largescale.wspd_srf
@@ -50,6 +51,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         c2_r.coords['lev'] = np.arange(len(c2))
         names_list = []
         names_list.append(ds_largescale.cin       .long_name + '            ')
+        names_list.append(ds_largescale.cape      .long_name + '            ')
         names_list.append(ds_largescale.cld_low   .long_name + '            ')
         names_list.append(ds_largescale.lw_dn_srf .long_name + '            ')
         names_list.append(ds_largescale.wspd_srf  .long_name + '            ')

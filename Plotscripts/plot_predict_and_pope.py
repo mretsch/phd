@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 predicted = xr.open_dataarray(
-    ghome + '/Model_all_incl_scalars_norm/predicted.nc')
+    ghome + '/Model_all_incl_scalars_cape_norm/predicted.nc')
 
 l_high_values = False
 if l_high_values:

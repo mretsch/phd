@@ -94,7 +94,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_norm/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_norm/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -103,7 +103,7 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = True
+    l_high_values = False
     if l_high_values:
         predicted = xr.open_dataarray(model_path + 'predicted.nc')
         metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
