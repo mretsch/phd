@@ -5,7 +5,7 @@ import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-from NeuralNet.backtracking import mlp_insight, high_correct_predictions
+from NeuralNet.backtracking import mlp_backtrack_maxnode, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from basic_stats import into_pope_regimes
 

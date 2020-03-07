@@ -8,7 +8,7 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from Plotscripts.plot_hist import histogram_2d
-from NeuralNet.backtracking import mlp_insight
+from NeuralNet.backtracking import mlp_backtrack_maxnode
 import pandas as pd
 
 start = timeit.default_timer()
@@ -159,7 +159,7 @@ if testing:
                     #     for o in range(10,30):
                     #         for p in range(10,30):
                                 x = [k, l, m]#, n, o, p]
-                                maximum_nodes[:, index] = mlp_insight(model=model, data_in=x)
+                                maximum_nodes[:, index] = mlp_backtrack_maxnode(model=model, data_in=x)
                                 index += 1
 
     plotting_model = False

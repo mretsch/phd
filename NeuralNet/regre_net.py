@@ -8,7 +8,7 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
-from NeuralNet.backtracking import mlp_insight, high_correct_predictions
+from NeuralNet.backtracking import mlp_backtrack_maxnode, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from basic_stats import into_pope_regimes
 import pandas as pd
@@ -125,7 +125,7 @@ else:
         maximum_nodes, first_conn = [], []
 
         for input in predictor.sel(time=metric.time.values):
-            max_node, firstconn = mlp_insight(model, input, n_highest_node=n_node, return_firstconn=True)
+            max_node, firstconn = mlp_backtrack_maxnode(model, input, n_highest_node=n_node, return_firstconn=True)
             maximum_nodes.append(max_node)
             first_conn.append(firstconn)
 

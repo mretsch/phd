@@ -24,7 +24,29 @@ def high_correct_predictions(target, predictions, target_percentile, prediction_
     return target_sub, predictions_sub
 
 
-def mlp_insight(model, data_in, n_highest_node, return_firstconn=False):
+def mlp_forward_pass(input_to_mlp=None, weight_list=None):
+    """Computes a forward pass for an MLP given the input, weights list by keras.
+    Returns all node values of the MLP as a list containing arrays."""
+
+    n_layers = int(len(weight_list) / 2)
+    # output is multiplied with corresponding weights, same goes for input in first iteration
+    output = input_to_mlp
+    # cycle through the layers, a forward pass
+    results = []
+    for i in range(n_layers):
+        # get appropriate trained parameters, first are weights, second are biases
+        weights = weight_list[i * 2]
+        bias = weight_list[i * 2 + 1]
+        # the @ is a matrix multiplication, first output is actually the mlp's input
+        output = weights.transpose() @ output + bias
+        # ReLU
+        output[output < 0] = 0
+        # append output to results, so output can be overwritten in next iteration
+        results.append(output)
+    return results
+
+
+def mlp_backtrack_maxnode(model, data_in, n_highest_node, return_firstconn=False):
     """
     Compute the most contributing node index in each layer of a regression MLP.
     Returns an array with the first element corresponding to the first layer of the MLP,
@@ -42,34 +64,22 @@ def mlp_insight(model, data_in, n_highest_node, return_firstconn=False):
         is given for '1', the second-most contributing for '2', etc..
     """
 
-    output = np.array(data_in)
     weight_list = model.get_weights()
     # each layer has weights and biases
     n_layers = int(len(weight_list) / 2)
 
-    # cycle through the layers, a forward pass
-    results = []
-    for i in range(n_layers):
-        # get appropriate trained parameters, first are weights, second are biases
-        weights = weight_list[i * 2]
-        bias = weight_list[i * 2 + 1]
-        # the @ is a matrix multiplication, first output is actually the mlp's input
-        output = weights.transpose() @ output + bias
-        # ReLU
-        output[output < 0] = 0
-        # append output, so output can be overwritten in next iteration
-        results.append(output)
+    node_values = mlp_forward_pass(input_to_mlp=np.array(data_in), weight_list=weight_list)
 
     # after forward pass, recursively find chain of nodes with maximum value in each layer.
     # Last layer maps to only one output node, thus weigh_list has only one element for last layer.
-    last_layer = results[-2] * weight_list[-2][:, 0].transpose()
+    last_layer = node_values[-2] * weight_list[-2][:, 0].transpose()
     idx_ascending = last_layer.argsort()
     max_nodes = [idx_ascending[-n_highest_node]]
 
     # concatenate the original NN input, i.e. data_in, and the output from the remaining layers,
     # excluding output and last layer. iput, like results, are the values in previous layer which have been calculated
     # in a forward pass, i.e. bias and non-linear function have been applied.
-    iput = [np.array(data_in)] + results[:-2]
+    iput = [np.array(data_in)] + node_values[:-2]
     for i in range(n_layers - 1)[::-1]:
         # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1)
         layer_to_maxnode = iput[i] * weight_list[2 * i][:, max_nodes[-1]]
@@ -82,3 +92,13 @@ def mlp_insight(model, data_in, n_highest_node, return_firstconn=False):
         return np.array(max_nodes[::-1]), first_conn
     else:
         return np.array(max_nodes[::-1])
+
+
+def mlp_backtrack_percentage(model, data_in):
+    """"""
+
+    weight_list = model.get_weights()
+    # each layer has weights and biases
+    n_layers = int(len(weight_list) / 2)
+
+    net_values = mlp_forward_pass(input=np.array(data_in), weights=weight_list, n_layers=n_layers)
