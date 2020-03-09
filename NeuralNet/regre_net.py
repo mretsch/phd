@@ -8,7 +8,7 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
-from NeuralNet.backtracking import mlp_insight, high_correct_predictions
+from NeuralNet.backtracking import mlp_insight, mlp_backtracking_percentage, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from basic_stats import into_pope_regimes
 import pandas as pd
@@ -113,18 +113,11 @@ else:
         # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
         metric = metric.where(predicted.time)
 
-    ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
-    p_regime = xr.full_like(ds_pope.var_all, np.nan)
-    p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
-
     for n_node in range(1, 2):
         maximum_nodes, first_conn = [], []
 
         for input in predictor.sel(time=metric.time.values):
+            node_contribution = mlp_backtracking_percentage(model, input, n_highest_node=n_node, return_firstconn=True)
             max_node, firstconn = mlp_insight(model, input, n_highest_node=n_node, return_firstconn=True)
             maximum_nodes.append(max_node)
             first_conn.append(firstconn)
@@ -147,6 +140,15 @@ else:
     # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
 
     plt.close()
+
+    ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
+    p_regime = xr.full_like(ds_pope.var_all, np.nan)
+    p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
+    p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
+
     fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(9, 20))
     pope_ticker = np.zeros((5, input_length))
     for i, conn in enumerate(first_conn):
