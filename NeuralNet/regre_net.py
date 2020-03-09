@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import seaborn as sn
 import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
@@ -113,68 +114,77 @@ else:
         # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
         metric = metric.where(predicted.time)
 
-    for n_node in range(1, 2):
-        maximum_nodes, first_conn = [], []
+    l_maxnode_backtracking = False
+    l_percentage_backtracking = True
 
+    if l_maxnode_backtracking:
+        # compute the backtracking for multiple nodes, not only the most contributing one. Also the second, etc.
+        for n_node in range(1, 2):
+            maximum_nodes, first_conn = [], []
+
+            for input in predictor.sel(time=metric.time.values):
+                max_node, firstconn = mlp_backtracking_maxnode(model, input, n_highest_node=n_node, return_firstconn=True)
+                maximum_nodes.append(max_node)
+                first_conn.append(firstconn)
+
+            # ========= Plotting ==============================
+            mn = xr.DataArray(maximum_nodes)
+            first_node = mn[:, 0]
+
+            fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(60, 4))
+            ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
+            ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
+            ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
+            # ax_host.set_xlim(1, None)
+            # ax_host.set_yscale('log')
+            plt.savefig(home+'/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
+            plt.close()
+
+        # get Pope regimes for split plot
+        ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
+        p_regime = xr.full_like(ds_pope.var_all, np.nan)
+        p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
+        p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
+        p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
+        p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
+        p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
+
+        fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(9, 20))
+        pope_ticker = np.zeros((5, input_length))
+        for i, conn in enumerate(first_conn):
+            thetime = metric.time[i]
+            thepope = int(p_regime.sel(time=thetime)) - 1
+            # plot the first connection values into the appropriate subplot (representing Pope regimes)
+            axes[thepope].plot(conn, alpha=0.1)
+            # plot the location and amount of the highest contributing node into the same plot
+            axes[thepope].axvspan(xmin=first_node[i]-0.5, xmax=first_node[i]+0.5,
+                                  ymin= pope_ticker[thepope, first_node[i]]   /100,
+                                  ymax=(pope_ticker[thepope, first_node[i]]+1)/100,
+                                  facecolor='r')
+            pope_ticker[thepope, first_node[i]] += 1
+
+        axes[0].set_title('(Pope 1, DE)')
+        axes[1].set_title(' Pope 2, DW ')
+        axes[2].set_title('(Pope 3,  E)')
+        axes[3].set_title(' Pope 4, SW ')
+        axes[4].set_title(' Pope 5, ME ')
+        ylim_high, ylim_low = 0, 0
+        for ax in axes:
+            ylim_high = xr.where(ax.get_ylim()[1] > ylim_high, ax.get_ylim()[1], ylim_high)
+            ylim_low  = xr.where(ax.get_ylim()[0] < ylim_low , ax.get_ylim()[0], ylim_low )
+        for ax in axes:
+            ax.set_ylim(ylim_low, ylim_high)
+        fig.savefig(home+'/Desktop/first_conn.pdf', transparent=True, bbox_inches='tight')
+
+    if l_percentage_backtracking:
+
+        input_percentages = []
         for input in predictor.sel(time=metric.time.values):
-            node_contribution = mlp_backtracking_percentage(model, input, n_highest_node=n_node, return_firstconn=True)
-            max_node, firstconn = mlp_backtracking_maxnode(model, input, n_highest_node=n_node, return_firstconn=True)
-            maximum_nodes.append(max_node)
-            first_conn.append(firstconn)
 
-        # ========= Plotting ==============================
-        mn = xr.DataArray(maximum_nodes)
-        first_node = mn[:, 0]
+            node_contribution = mlp_backtracking_percentage(model, input)[0]
+            input_percentages.append(node_contribution)
 
-        fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(60, 4))
-        ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
-        ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
-        ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
-        # ax_host.set_xlim(1, None)
-        # ax_host.set_yscale('log')
-        plt.savefig(home+'/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
-
-    # u-wind at 65hPa at the predicted time steps where it is most-contributing first-layer node
-    # for NN Model_300x3_avg_wholeROME_bothtimes_reducedinput_uvwind
-    # l_u65hPa = mn[:, 0] == 235
-    # predictor.sel(time=metric.time[l_u65hPa.values].values, lev=65)[:, -10]
-
-    plt.close()
-
-    ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
-    p_regime = xr.full_like(ds_pope.var_all, np.nan)
-    p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
-    p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
-
-    fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(9, 20))
-    pope_ticker = np.zeros((5, input_length))
-    for i, conn in enumerate(first_conn):
-        thetime = metric.time[i]
-        thepope = int(p_regime.sel(time=thetime)) - 1
-        # plot the first connection values into the appropriate subplot (representing Pope regimes)
-        axes[thepope].plot(conn, alpha=0.1)
-        # plot the location and amount of the highest contributing node into the same plot
-        axes[thepope].axvspan(xmin=first_node[i]-0.5, xmax=first_node[i]+0.5,
-                              ymin= pope_ticker[thepope, first_node[i]]   /100,
-                              ymax=(pope_ticker[thepope, first_node[i]]+1)/100,
-                              facecolor='r')
-        pope_ticker[thepope, first_node[i]] += 1
-
-    axes[0].set_title('(Pope 1, DE)')
-    axes[1].set_title(' Pope 2, DW ')
-    axes[2].set_title('(Pope 3,  E)')
-    axes[3].set_title(' Pope 4, SW ')
-    axes[4].set_title(' Pope 5, ME ')
-    ylim_high, ylim_low = 0, 0
-    for ax in axes:
-        ylim_high = xr.where(ax.get_ylim()[1] > ylim_high, ax.get_ylim()[1], ylim_high)
-        ylim_low  = xr.where(ax.get_ylim()[0] < ylim_low , ax.get_ylim()[0], ylim_low )
-    for ax in axes:
-        ax.set_ylim(ylim_low, ylim_high)
-    fig.savefig(home+'/Desktop/first_conn.pdf', transparent=True, bbox_inches='tight')
+        # input_percentages = np.array(input_percentages)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))

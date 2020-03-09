@@ -110,23 +110,11 @@ def mlp_backtracking_percentage(model, data_in):
         for the provided model.
     """
 
-    output = np.array(data_in)
     weight_list = model.get_weights()
     # each layer has weights and biases
     n_layers = int(len(weight_list) / 2)
 
-    # cycle through the layers, a forward pass
-    node_values = []
-    for i in range(n_layers):
-        # get appropriate trained parameters, first are weights, second are biases
-        weights = weight_list[i * 2]
-        bias = weight_list[i * 2 + 1]
-        # the @ is a matrix multiplication, first output is actually the mlp's input
-        output = weights.transpose() @ output + bias
-        # ReLU
-        output[output < 0] = 0
-        # append output, so output can be overwritten in next iteration
-        node_values.append(output)
+    node_values = mlp_forward_pass(input_to_mlp=np.array(data_in), weight_list=weight_list)
 
     # ===== Backtracking =======
     node_percentages = []
