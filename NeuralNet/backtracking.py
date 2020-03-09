@@ -84,10 +84,11 @@ def mlp_insight(model, data_in, n_highest_node, return_firstconn=False):
         return np.array(max_nodes[::-1])
 
 
-def mlp_backtracking_percentage(model, data_in, n_highest_node, return_firstconn=False):
+def mlp_backtracking_percentage(model, data_in):
     """
-    Compute the most contributing node index in each layer of a regression MLP.
-    Returns an array with the first element corresponding to the first layer of the MLP,
+    Compute the total percentage contribution of each node in an MLP towards the predicted result.
+    Percentages add up to 100% in each layer.
+    Returns a list with the first element corresponding to the first layer of the MLP,
     the second element to the second layer, etc..
 
     Parameters
@@ -97,9 +98,6 @@ def mlp_backtracking_percentage(model, data_in, n_highest_node, return_firstconn
     data_in :
         xarray-dataarray or list with a single instance of prediction values
         for the provided model.
-    n_highest_node :
-        Which node is backtracked through the model. The most contributing node
-        is given for '1', the second-most contributing for '2', etc..
     """
 
     output = np.array(data_in)
@@ -121,8 +119,6 @@ def mlp_backtracking_percentage(model, data_in, n_highest_node, return_firstconn
         node_values.append(output)
 
     # ===== Backtracking =======
-
-    # allocate list of arrays like weight_list to hold all percentage . NOT YET
     node_percentages = []
 
     # after forward pass, recursively find chain of nodes with maximum value in each layer.
@@ -145,12 +141,9 @@ def mlp_backtracking_percentage(model, data_in, n_highest_node, return_firstconn
         # for each weight-set calculate how much each node in iput-layers contributes to a node in next layer
         for j in range(weight_list[2 * i].shape[1]):
             contribution_to_node = iput[i] * weight_list[2 * i][:, j]
-            # contributions_perc[:, j] = contribution_to_node / contribution_to_node.sum()
-            # TODO i do want to take the pecentage to the percentage of the node its leading to
-            # contributions_perc[:, j] = contribution_to_node / node_percentages[-1][j] * 100
             contributions_perc[:, j] = contribution_to_node / contribution_to_node.sum() * node_percentages[-1][j]
 
         # sum all contributions that went from each node in iput-layer to next layer
         node_percentages.append(contributions_perc.sum(axis=1))
 
-    return np.array(node_percentages[::-1])
+    return node_percentages[::-1]
