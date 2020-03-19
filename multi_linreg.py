@@ -5,7 +5,7 @@ import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-from NeuralNet.backtracking import mlp_backtrack_maxnode, high_correct_predictions
+from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from basic_stats import into_pope_regimes
 
@@ -40,10 +40,7 @@ if l_testing:
 
 # ===== the large scale state and ROME ======
 
-
 ghome = home+'/Google Drive File Stream/My Drive'
-
-l_load_model = False
 
 # assemble the large scale dataset
 ds_ls = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
@@ -71,6 +68,7 @@ if l_normalise_input:
     # where std_dev=0., dividing led to NaN, set to 0. instead
     predictor = predictor.where(predictor.notnull(), other=0.)
 
+l_load_model = False
 if not l_load_model:
 
     l_subselect = False

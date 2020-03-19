@@ -20,7 +20,7 @@ metric_4   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.
 ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
 
 timeselect = True
-contiguous = False
+contiguous = True
 if timeselect:
     start_date = '2015-11-10T03:00:00' # '2006-01-09T09:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
     end_date   = '2015-11-10T06:10:00' # '2006-01-09T14:50' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
@@ -29,8 +29,9 @@ if timeselect:
     else:
         # the order in next lines is not relevant, intersection is sorted along time coordinate
         # times = ds_steiner.indexes['time'].intersection(['2009-12-04T10:30:00', '2009-12-07T11:00:00'])
-        times = [np.datetime64('2013-02-24T08:40:00'), np.datetime64('2016-11-19T14:50:00'),
-                 np.datetime64('2011-03-15T06:10:00'), np.datetime64('2017-02-27T13:00:00')]
+        times = [np.datetime64('2009-12-22T06:20:00'), np.datetime64('2009-12-07T11:00:00')]
+        # times = [np.datetime64('2013-02-24T08:40:00'), np.datetime64('2016-11-19T14:50:00'),
+        #          np.datetime64('2011-03-15T06:10:00'), np.datetime64('2017-02-27T13:00:00')]
 
     steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
     time_select    = ds_steiner.time.sel(time=times)
@@ -90,13 +91,13 @@ title_numbers = ['$\mathcal{R}_\mathrm{NI}$=130, ROME=157', '$\mathcal{R}_\mathr
                  '$\mathcal{R}_\mathrm{NI}$=126, ROME=127', '$\mathcal{R}_\mathrm{min}$=130, ROME=250']
 darwin_time = np.timedelta64(570, 'm')  # UTC + 9.5 hours
 
-n_per_row = 2
+n_per_row = 4
 # aspect is a hack based on measuring pixels on my screen. aspect=1 for a square plot did not work as intended.
 if n_per_row == 2:
-    # fontsize = 16
-    # p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=700./880., size=4, cmap=newcmp)
-    fontsize = 19
-    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=260./300., size=4, cmap=newcmp)
+    fontsize = 16
+    p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=700./880., size=4, cmap=newcmp)
+    # fontsize = 19
+    # p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=260./300., size=4, cmap=newcmp)
 if n_per_row == 5:
     fontsize = 19
     p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=614./754, size=4, cmap=newcmp)
@@ -131,11 +132,13 @@ for i, ax in enumerate(p.axes.flat):
     #    patch = patches.Rectangle(xy, width, height, hatch='xxxx', color='lightgrey', fill=None, zorder=-10)
     #    ax.add_patch(patch)
 
-    if timeselect and not contiguous:
+    l_print_alphabet = False
+    if l_print_alphabet:
         # ax.text(x=129.8, y=-11.0, s=str(alphabet_numbered[i]) + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         # ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         ax.set_title(str(alphabet_numbered[i]) + ')   ' + title_numbers[i])
-    if contiguous:
+    l_print_time = False
+    if l_print_time:
         ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
                 , fontdict={'fontsize': 16})
 

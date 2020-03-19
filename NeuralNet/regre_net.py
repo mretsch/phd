@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import seaborn as sn
+import seaborn as sns
 import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
@@ -178,13 +178,28 @@ else:
 
     if l_percentage_backtracking:
 
-        input_percentages = []
+        input_percentages_list = []
         for input in predictor.sel(time=metric.time.values):
 
             node_contribution = mlp_backtracking_percentage(model, input)[0]
-            input_percentages.append(node_contribution)
+            input_percentages_list.append(node_contribution)
 
-        # input_percentages = np.array(input_percentages)
+        input_percentages = xr.zeros_like(predictor.sel(time=metric.time))
+        input_percentages[:, :] = input_percentages_list
+
+        # only20_vars = input_percentages[:, :20]
+        # sns.boxplot(data=only20_vars)
+        # plt.ylim(-10, 10)
+
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
+        ax.set_ylim(-10, 10)
+        sns.boxplot(data=input_percentages)
+        label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in
+                      zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]
+        plt.xticks(list(range(n_lev)), label_list, rotation='vertical', fontsize=5)
+        # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
+        # ax.tick_params(axis='both', which='major', labelsize=8)
+        plt.savefig(home + '/Desktop/whisker.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
