@@ -71,15 +71,93 @@ if l_normalise_input:
 l_load_model = False
 if not l_load_model:
 
-    l_subselect = False
+    l_subselect = True
     if l_subselect:
+        levels = [115, 515, 990]
         # select a few levels of a few variables which might be relevant to explain ROME
-        var1 = predictor.where(predictor['long_name'] == 'Surface downwelling LW            ',
-                               drop=True)  # .sel(lev=[115, 940])
-        var2 = predictor.where(predictor['long_name'] == 'Surface downwelling LW, 6h earlier', drop=True)  # .sel(lev=[915])
-        var3 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive            ',
-                               drop=True)  # .sel(lev=[915])
-        mlreg_predictor = sm.add_constant(xr.concat([var1, var2, var3], dim='lev').values)
+        var1  = predictor.where(predictor['long_name'] == 'vertical velocity            ',
+                                drop=True).sel(lev=levels)
+        var2  = predictor.where(predictor['long_name'] == 'Horizontal temperature Advection            ',
+                                drop=True).sel(lev=levels)
+        var3  = predictor.where(predictor['long_name'] == 'Horizontal r advection            ',
+                                drop=True).sel(lev=levels)
+        var4  = predictor.where(predictor['long_name'] == 'd(dry static energy)/dt            ',
+                                drop=True).sel(lev=levels)
+        var5  = predictor.where(predictor['long_name'] == 'd(water vapour mixing ratio)/dt            ',
+                                drop=True).sel(lev=levels)
+        var6  = predictor.where(predictor['long_name'] == 'Relative humidity            ',
+                                drop=True).sel(lev=levels)
+        var7  = predictor.where(predictor['long_name'] == 'Horizontal wind U component            ',
+                                drop=True).sel(lev=levels)
+        var8  = predictor.where(predictor['long_name'] == 'Horizontal wind V component            ',
+                                drop=True).sel(lev=levels)
+        var9  = predictor.where(predictor['long_name'] == 'Convective inhibition            ',
+                                drop=True)
+        var10 = predictor.where(predictor['long_name'] == 'Convective Available Potential Energy            ',
+                                drop=True)
+        var11 = predictor.where(predictor['long_name'] == 'Satellite-measured low cloud            ',
+                                drop=True)
+        var12 = predictor.where(predictor['long_name'] == 'Surface downwelling LW            ',
+                                drop=True)
+        var13 = predictor.where(predictor['long_name'] == '10m wind speed            ',
+                                drop=True)
+        var14 = predictor.where(predictor['long_name'] == '10m V component            ',
+                                drop=True)
+        var15 = predictor.where(predictor['long_name'] == '2m water vapour mixing ratio            ',
+                                drop=True)
+        var16 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive            ',
+                                drop=True)
+        var17 = predictor.where(predictor['long_name'] == 'Surface sensible heat flux, upward positive            ',
+                                drop=True)
+        var18 = predictor.where(predictor['long_name'] == 'MWR-measured cloud liquid water path            ',
+                                drop=True)
+        var19 = predictor.where(predictor['long_name'] == 'vertical velocity, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var20 = predictor.where(predictor['long_name'] == 'Horizontal temperature Advection, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var21 = predictor.where(predictor['long_name'] == 'Horizontal r advection, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var22 = predictor.where(predictor['long_name'] == 'd(dry static energy)/dt, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var23 = predictor.where(predictor['long_name'] == 'd(water vapour mixing ratio)/dt, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var24 = predictor.where(predictor['long_name'] == 'Relative humidity, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var25 = predictor.where(predictor['long_name'] == 'Horizontal wind U component, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var26 = predictor.where(predictor['long_name'] == 'Horizontal wind V component, 6h earlier',
+                                drop=True).sel(lev=levels)
+        var27 = predictor.where(predictor['long_name'] == 'Convective inhibition, 6h earlier',
+                                drop=True)
+        var28 = predictor.where(predictor['long_name'] == 'Convective Available Potential Energy, 6h earlier',
+                                drop=True)
+        var29 = predictor.where(predictor['long_name'] == 'Satellite-measured low cloud, 6h earlier',
+                                drop=True)
+        var30 = predictor.where(predictor['long_name'] == 'Surface downwelling LW, 6h earlier',
+                                drop=True)
+        var31 = predictor.where(predictor['long_name'] == '10m wind speed, 6h earlier',
+                                drop=True)
+        var32 = predictor.where(predictor['long_name'] == '10m V component, 6h earlier',
+                                drop=True)
+        var33 = predictor.where(predictor['long_name'] == '2m water vapour mixing ratio, 6h earlier',
+                                drop=True)
+        var34 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive, 6h earlier',
+                                drop=True)
+        var35 = predictor.where(predictor['long_name'] == 'Surface sensible heat flux, upward positive, 6h earlier',
+                                drop=True)
+        var36 = predictor.where(predictor['long_name'] == 'MWR-measured cloud liquid water path, 6h earlier',
+                                drop=True)
+        mlreg_predictor = sm.add_constant(xr.concat([var1 , var2 , var3 , var4 ,
+                                                     var5 , var6 , var7 , var8 ,
+                                                     var9 , var10, var11, var12,
+                                                     var13, var14, var15, var16,
+                                                     var13, var14, var15, var16,
+                                                     var17, var18, var19, var20,
+                                                     var21, var22, var23, var24,
+                                                     var25, var26, var27, var28,
+                                                     var29, var30, var31, var32,
+                                                     var33, var34, var35, var36,
+                                                     ], dim='lev').values)
     else:
         mlreg_predictor = sm.add_constant(predictor.values)
 
