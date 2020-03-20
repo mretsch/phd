@@ -10,14 +10,12 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from NeuralNet.backtracking import mlp_backtracking_maxnode, mlp_backtracking_percentage, high_correct_predictions
-from LargeScale.ls_at_metric import large_scale_at_metric_times
+from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from basic_stats import into_pope_regimes
 import pandas as pd
 
 home = expanduser("~")
 start = timeit.default_timer()
-
-l_loading_model = True
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
@@ -40,12 +38,9 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=True,
                                                    l_take_same_time=False)
 
-l_subselect = False
+l_subselect = True
 if l_subselect:
-    var1 = predictor.where(predictor['long_name'] == 'Surface downwelling LW            ', drop=True)#.sel(lev=[115, 940])
-    var2 = predictor.where(predictor['long_name'] == 'Surface downwelling LW, 6h earlier', drop=True)#.sel(lev=[915])
-    var3 = predictor.where(predictor['long_name'] == 'TOA LW flux, upward positive            ', drop=True)#.sel(lev=[915])
-    predictor = xr.concat([var1, var2, var3], dim='lev')
+    predictor = subselect_ls_vars(predictor)
 
 n_lev = len(predictor['lev'])
 
@@ -55,6 +50,7 @@ if l_normalise_input:
     # where std_dev=0., dividing led to NaN, set to 0. instead
     predictor = predictor.where(predictor.notnull(), other=0.)
 
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -74,7 +70,7 @@ if not l_loading_model:
     # fit the model
     model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
-    l_predict = True
+    l_predict = False
     if l_predict:
         print('Predicting...')
         pred = []
@@ -95,7 +91,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_norm/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_norm/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
