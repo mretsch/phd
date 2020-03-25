@@ -46,11 +46,12 @@ n_lev = len(predictor['lev'])
 
 l_normalise_input = True
 if l_normalise_input:
+    predictor_raw = predictor.copy(deep=True)
     predictor = (predictor - predictor.mean(dim='time')) / predictor.std(dim='time')
     # where std_dev=0., dividing led to NaN, set to 0. instead
     predictor = predictor.where(predictor.notnull(), other=0.)
 
-l_loading_model = True
+l_loading_model = False
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()

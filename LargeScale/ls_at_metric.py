@@ -131,7 +131,8 @@ def subselect_ls_vars(large_scale):
                            drop=True).sel(lev=levels)
     var8 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component            ',
                            drop=True).sel(lev=levels)
-    var9 = large_scale.where(large_scale['long_name'] == 'Convective inhibition            ',
+
+    var9 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition            ',
                            drop=True)
     var10 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy            ',
                             drop=True)
@@ -151,6 +152,7 @@ def subselect_ls_vars(large_scale):
                             drop=True)
     var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path            ',
                             drop=True)
+
     var19 = large_scale.where(large_scale['long_name'] == 'vertical velocity, 6h earlier',
                             drop=True).sel(lev=levels)
     var20 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection, 6h earlier',
@@ -167,7 +169,8 @@ def subselect_ls_vars(large_scale):
                             drop=True).sel(lev=levels)
     var26 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component, 6h earlier',
                             drop=True).sel(lev=levels)
-    var27 = large_scale.where(large_scale['long_name'] == 'Convective inhibition, 6h earlier',
+
+    var27 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition, 6h earlier',
                             drop=True)
     var28 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy, 6h earlier',
                             drop=True)
@@ -189,13 +192,12 @@ def subselect_ls_vars(large_scale):
                             drop=True)
 
     return xr.concat([var1, var2, var3, var4,
-                                 var5, var6, var7, var8,
-                                 var9, var10, var11, var12,
-                                 var13, var14, var15, var16,
-                                 var13, var14, var15, var16,
-                                 var17, var18, var19, var20,
-                                 var21, var22, var23, var24,
-                                 var25, var26, var27, var28,
-                                 var29, var30, var31, var32,
-                                 var33, var34, var35, var36,
-                                 ], dim='lev')
+                      var5, var6, var7, var8,
+                      var9, var10, var11, var12,
+                      var13, var14, var15, var16,
+                      var17, var18, var19, var20,
+                      var21, var22, var23, var24,
+                      var25, var26, var27, var28,
+                      var29, var30, var31, var32,
+                      var33, var34, var35, var36,
+                      ], dim='lev')

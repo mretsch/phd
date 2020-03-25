@@ -71,7 +71,7 @@ if l_normalise_input:
 l_load_model = False
 if not l_load_model:
 
-    l_subselect = False
+    l_subselect = True
     if l_subselect:
         ls_sub = subselect_ls_vars(large_scale=predictor)
         mlreg_predictor = sm.add_constant(ls_sub.values)
