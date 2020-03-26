@@ -51,7 +51,7 @@ if l_normalise_input:
     # where std_dev=0., dividing led to NaN, set to 0. instead
     predictor = predictor.where(predictor.notnull(), other=0.)
 
-l_loading_model = False
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -184,12 +184,9 @@ else:
         input_percentages = xr.zeros_like(predictor.sel(time=metric.time))
         input_percentages[:, :] = input_percentages_list
 
-        # only20_vars = input_percentages[:, :20]
-        # sns.boxplot(data=only20_vars)
-        # plt.ylim(-10, 10)
-
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax.set_ylim(-10, 10)
+        ax.set_ylim(-20, 20)
+        ax.axhline(y=0, color='r', lw=0.5)
         sns.boxplot(data=input_percentages)
         label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in
                       zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]

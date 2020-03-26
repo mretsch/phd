@@ -8,13 +8,14 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from Plotscripts.plot_hist import histogram_2d
-from NeuralNet.backtracking import mlp_backtrack_maxnode
+from NeuralNet.backtracking import mlp_forward_pass, mlp_backtracking_maxnode, mlp_backtracking_percentage
 import pandas as pd
+import seaborn as sns
 
 start = timeit.default_timer()
 
-testing = False
-manual_sampling = True
+testing = True
+manual_sampling = False
 
 if testing:
     convolving = False
@@ -116,7 +117,7 @@ if testing:
     model_insight = True
     if model_insight:
 
-        model = kmodels.load_model('/Users/mret0001/Data/NN_Models/correlationmodel.h5')
+        model = kmodels.load_model('/Users/mret0001/Data/NN_Models/BasicUnderstanding/correlationmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -159,8 +160,13 @@ if testing:
                     #     for o in range(10,30):
                     #         for p in range(10,30):
                                 x = [k, l, m]#, n, o, p]
-                                maximum_nodes[:, index] = mlp_backtrack_maxnode(model=model, data_in=x)
+                                # maximum_nodes[:, index] = mlp_backtracking_maxnode(model=model, data_in=x,
+                                #                                                    n_highest_node=1,
+                                #                                                    return_firstconn=False)
+                                maximum_nodes[:, index] = mlp_backtracking_percentage(model=model, data_in=x)[0]
                                 index += 1
+
+        sns.boxplot(data=maximum_nodes)
 
     plotting_model = False
     if plotting_model:

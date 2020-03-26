@@ -68,7 +68,11 @@ if l_normalise_input:
     # where std_dev=0., dividing led to NaN, set to 0. instead
     predictor = predictor.where(predictor.notnull(), other=0.)
 
-l_load_model = False
+l_subselect = True
+if l_subselect:
+    predictor = subselect_ls_vars(predictor)
+
+l_load_model = True
 if not l_load_model:
 
     l_subselect = True
@@ -89,31 +93,19 @@ if not l_load_model:
 else:
 
     # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_norm/mlr_coeff.csv',
-                            header=None, skiprows=12, skipfooter=9)
+    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_3levels_norm/mlr_3levels_norm_coeff.csv',
+                            header=None, skiprows=12, skipfooter=7)
     mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                      axis='columns', inplace=True)
     mlr_coeff['var'] = predictor['long_name'].values
 
-    relevant_vars = [
-        24,
-        27,
-        155,
-        190,
-        233,
-        313,
-        316,
-        320,
-        369,
-        424,
-        439,
-        476,
-        511,
-        555,
-        557,
-        635,
-        638,
-        640,
-        642
-    ]
-    relevant_coeff = mlr_coeff.loc[relevant_vars, :]
+    n_lev = len(mlr_coeff['var'])
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
+    ax.plot(mlr_coeff['coeff'], marker='p', ls='', color='k')
+    ax.axhline(y=0, color='r', lw=0.5)
+    label_list = [str(element0) + ', ' + element1 + ', ' + str(element2) for element0, element1, element2 in
+                  zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]
+    plt.xticks(list(range(n_lev)), label_list, rotation='vertical', fontsize=5)
+    # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
+    # ax.tick_params(axis='both', which='major', labelsize=8)
+    plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)
