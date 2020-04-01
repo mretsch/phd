@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
 predicted = xr.open_dataarray(
-    ghome + '/Model_all_incl_scalars_cape_3levels_norm/mlr_3levels_norm_predicted.nc')
+    ghome + '/Model_all_incl_scalars_cape_3levels_norm/MLR_6h_later/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -37,7 +37,7 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
 ax.plot(metric   [-1200:], color='white')
 ax.plot(predicted[-1200:], color='black')
-plt.legend(['target', 'mlr_predicted'])
+plt.legend(['target', '6h later mlr_"predicted"'])
 # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 plt.ylim(0, None)

@@ -5,7 +5,9 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
                                 chosen_vars=None,
                                 l_take_scalars=False,
                                 l_take_same_time=False,
-                                l_take_only_predecessor_time=False):
+                                l_take_only_predecessor_time=False,
+                                l_take_also_predecessor_time=False,
+                                l_take_only_successor_time=False):
     """Returns a concatenated array of the large-scale variables and the time series, at times of both being present.
     chosen_vars selects some variables out of the large-scale state dataset."""
 
@@ -91,13 +93,18 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         var_6earlier_nonull = var_6earlier[var_6earlier.notnull().all(dim='lev')]
 
         if l_take_only_predecessor_time:
-            # timeseries 6h later is necessarily a value, because back at times of var_metric, where timeseries is a number.
+            # timeseries at +6h is necessarily a value,
+            # because it is back at times of var_metric, where timeseries is a number.
             target = timeseries.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')).values)
             predictor = var.sel(time=target.time - np.timedelta64(6, 'h'))
-        else:
-            var_6later_nonull = var_nonull.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')))
-            # first 'create' the right array with the correct 'late' time steps
-            var_both_times = xr.concat([var_6later_nonull, var_6later_nonull], dim='lev')
+            predictor['long_name'][:] = \
+                [name.item().replace( '            ', ', 6h earlier') for name in predictor['long_name']]
+
+        if l_take_also_predecessor_time:
+            # choose times of var_nonull which follow a time in var_6earlier_nonull
+            var_time0_nonull = var_nonull.sel(time=(var_6earlier_nonull.time + np.timedelta64(6, 'h')))
+            # first create the right array with the correct 'time=0' time steps
+            var_both_times = xr.concat([var_time0_nonull, var_time0_nonull], dim='lev')
             half = int(len(var_both_times.lev) / 2)
             # fill one half with values from earlier time step
             var_both_times[:, half:] = var_6earlier_nonull.values
@@ -107,97 +114,200 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             target = timeseries.sel(time=var_both_times.time.values)
             predictor = var_both_times
 
+        if l_take_only_successor_time:
+            var_nonull_6later = var_nonull.time + np.timedelta64(6, 'h')
+            times = []
+            for t in var_nonull_6later:
+                try:
+                    _ = var_metric.sel(time=t)
+                    times.append(t.values)
+                except KeyError:
+                    continue
+            var_6later = var_metric.sel(time=times)
+            var_6later_nonull = var_6later[var_6later.notnull().all(dim='lev')]
+
+            # timeseries at -6h is necessarily a value,
+            # because it is back at times of var_metric, where timeseries is a number.
+            target = timeseries.sel(time=(var_6later_nonull.time - np.timedelta64(6, 'h')).values)
+            predictor = var.sel(time=target.time + np.timedelta64(6, 'h'))
+            predictor['long_name'][:] = \
+                [name.item().replace( '            ', ', 6h   later') for name in predictor['long_name']]
+
     return predictor, target, variable_size
 
 
-def subselect_ls_vars(large_scale):
+def subselect_ls_vars(large_scale, levels=None):
 
-    levels = [115, 515, 990]
+    # variable_list = [
+    #     'vertical velocity            ',
+    #     'Horizontal temperature Advection            ',
+    #     'Horizontal r advection            ',
+    #     'd(dry static energy)/dt            ',
+    #     'd(water vapour mixing ratio)/dt            ',
+    #     'Relative humidity            ',
+    #     'Horizontal wind U component            ',
+    #     'Horizontal wind V component            ',
+    #     'Convective Inhibition            ',
+    #     'Convective Available Potential Energy            ',
+    #     'Satellite-measured low cloud            ',
+    #     'Surface downwelling LW            ',
+    #     '10m wind speed            ',
+    #     '10m V component            ',
+    #     '2m water vapour mixing ratio            ',
+    #     'TOA LW flux, upward positive            ',
+    #     'Surface sensible heat flux, upward positive            ',
+    #     'MWR-measured cloud liquid water path            ',
+    #
+    #     'vertical velocity, 6h earlier',
+    #     'Horizontal temperature Advection, 6h earlier',
+    #     'Horizontal r advection, 6h earlier',
+    #     'd(dry static energy)/dt, 6h earlier',
+    #     'd(water vapour mixing ratio)/dt, 6h earlier',
+    #     'Relative humidity, 6h earlier',
+    #     'Horizontal wind U component, 6h earlier',
+    #     'Horizontal wind V component, 6h earlier',
+    #     'Convective Inhibition, 6h earlier',
+    #     'Convective Available Potential Energy, 6h earlier',
+    #     'Satellite-measured low cloud, 6h earlier',
+    #     'Surface downwelling LW, 6h earlier',
+    #     '10m wind speed, 6h earlier',
+    #     '10m V component, 6h earlier',
+    #     '2m water vapour mixing ratio, 6h earlier',
+    #     'TOA LW flux, upward positive, 6h earlier',
+    #     'Surface sensible heat flux, upward positive, 6h earlier',
+    #     'MWR-measured cloud liquid water path, 6h earlier',
+    # ]
 
     # select a few levels of a few variables which might be relevant to explain ROME
-    var1 = large_scale.where(large_scale['long_name'] == 'vertical velocity            ',
-                           drop=True).sel(lev=levels)
-    var2 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection            ',
-                           drop=True).sel(lev=levels)
-    var3 = large_scale.where(large_scale['long_name'] == 'Horizontal r advection            ',
-                           drop=True).sel(lev=levels)
-    var4 = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt            ',
-                           drop=True).sel(lev=levels)
-    var5 = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt            ',
-                           drop=True).sel(lev=levels)
-    var6 = large_scale.where(large_scale['long_name'] == 'Relative humidity            ',
-                           drop=True).sel(lev=levels)
-    var7 = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component            ',
-                           drop=True).sel(lev=levels)
-    var8 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component            ',
-                           drop=True).sel(lev=levels)
 
-    var9 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition            ',
-                           drop=True)
-    var10 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy            ',
+    # var1  = large_scale.where(large_scale['long_name'] == 'vertical velocity, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var2  = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var3  = large_scale.where(large_scale['long_name'] == 'Horizontal r advection, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var4  = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var5  = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var6  = large_scale.where(large_scale['long_name'] == 'Relative humidity, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var7  = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    # var8  = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component, 6h earlier',
+    #                           drop=True).sel(lev=levels)
+    #
+    # var9  = large_scale.where(large_scale['long_name'] == 'Convective Inhibition, 6h earlier',
+    #                           drop=True)
+    # var10 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy, 6h earlier',
+    #                           drop=True)
+    # var11 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud, 6h earlier',
+    #                           drop=True)
+    # var12 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW, 6h earlier',
+    #                           drop=True)
+    # var13 = large_scale.where(large_scale['long_name'] == '10m wind speed, 6h earlier',
+    #                           drop=True)
+    # var14 = large_scale.where(large_scale['long_name'] == '10m V component, 6h earlier',
+    #                           drop=True)
+    # var15 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio, 6h earlier',
+    #                           drop=True)
+    # var16 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive, 6h earlier',
+    #                           drop=True)
+    # var17 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive, 6h earlier',
+    #                           drop=True)
+    # var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path, 6h earlier',
+    #                           drop=True)
+    #
+    # var19 = large_scale.where(large_scale['long_name'] == 'vertical velocity            ',
+    #                         drop=True).sel(lev=levels)
+    # var20 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection            ',
+    #                         drop=True).sel(lev=levels)
+    # var21 = large_scale.where(large_scale['long_name'] == 'Horizontal r advection            ',
+    #                         drop=True).sel(lev=levels)
+    # var22 = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt            ',
+    #                         drop=True).sel(lev=levels)
+    # var23 = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt            ',
+    #                         drop=True).sel(lev=levels)
+    # var24 = large_scale.where(large_scale['long_name'] == 'Relative humidity            ',
+    #                         drop=True).sel(lev=levels)
+    # var25 = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component            ',
+    #                         drop=True).sel(lev=levels)
+    # var26 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component            ',
+    #                         drop=True).sel(lev=levels)
+    #
+    # var27 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition            ',
+    #                        drop=True)
+    # var28 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy            ',
+    #                         drop=True)
+    # var29 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud            ',
+    #                         drop=True)
+    # var30 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW            ',
+    #                         drop=True)
+    # var31 = large_scale.where(large_scale['long_name'] == '10m wind speed            ',
+    #                         drop=True)
+    # var32 = large_scale.where(large_scale['long_name'] == '10m V component            ',
+    #                         drop=True)
+    # var33 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio            ',
+    #                         drop=True)
+    # var34 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive            ',
+    #                         drop=True)
+    # var35 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive            ',
+    #                         drop=True)
+    # var36 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path            ',
+    #                         drop=True)
+
+    var37 = large_scale.where(large_scale['long_name'] == 'vertical velocity, 6h   later',
+                            drop=True).sel(lev=levels)
+    var38 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection, 6h   later',
+                            drop=True).sel(lev=levels)
+    var39 = large_scale.where(large_scale['long_name'] == 'Horizontal r advection, 6h   later',
+                            drop=True).sel(lev=levels)
+    var40 = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt, 6h   later',
+                            drop=True).sel(lev=levels)
+    var41 = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt, 6h   later',
+                            drop=True).sel(lev=levels)
+    var42 = large_scale.where(large_scale['long_name'] == 'Relative humidity, 6h   later',
+                            drop=True).sel(lev=levels)
+    var43 = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component, 6h   later',
+                            drop=True).sel(lev=levels)
+    var44 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component, 6h   later',
+                            drop=True).sel(lev=levels)
+
+    var45 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition, 6h   later',
                             drop=True)
-    var11 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud            ',
+    var46 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy, 6h   later',
                             drop=True)
-    var12 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW            ',
+    var47 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud, 6h   later',
                             drop=True)
-    var13 = large_scale.where(large_scale['long_name'] == '10m wind speed            ',
+    var48 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW, 6h   later',
                             drop=True)
-    var14 = large_scale.where(large_scale['long_name'] == '10m V component            ',
+    var49 = large_scale.where(large_scale['long_name'] == '10m wind speed, 6h   later',
                             drop=True)
-    var15 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio            ',
+    var50 = large_scale.where(large_scale['long_name'] == '10m V component, 6h   later',
                             drop=True)
-    var16 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive            ',
+    var51 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio, 6h   later',
                             drop=True)
-    var17 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive            ',
+    var52 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive, 6h   later',
                             drop=True)
-    var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path            ',
+    var53 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive, 6h   later',
+                            drop=True)
+    var54 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path, 6h   later',
                             drop=True)
 
-    var19 = large_scale.where(large_scale['long_name'] == 'vertical velocity, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var20 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var21 = large_scale.where(large_scale['long_name'] == 'Horizontal r advection, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var22 = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var23 = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var24 = large_scale.where(large_scale['long_name'] == 'Relative humidity, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var25 = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component, 6h earlier',
-                            drop=True).sel(lev=levels)
-    var26 = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component, 6h earlier',
-                            drop=True).sel(lev=levels)
-
-    var27 = large_scale.where(large_scale['long_name'] == 'Convective Inhibition, 6h earlier',
-                            drop=True)
-    var28 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy, 6h earlier',
-                            drop=True)
-    var29 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud, 6h earlier',
-                            drop=True)
-    var30 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW, 6h earlier',
-                            drop=True)
-    var31 = large_scale.where(large_scale['long_name'] == '10m wind speed, 6h earlier',
-                            drop=True)
-    var32 = large_scale.where(large_scale['long_name'] == '10m V component, 6h earlier',
-                            drop=True)
-    var33 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio, 6h earlier',
-                            drop=True)
-    var34 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive, 6h earlier',
-                            drop=True)
-    var35 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive, 6h earlier',
-                            drop=True)
-    var36 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path, 6h earlier',
-                            drop=True)
-
-    return xr.concat([var1, var2, var3, var4,
-                      var5, var6, var7, var8,
-                      var9, var10, var11, var12,
-                      var13, var14, var15, var16,
-                      var17, var18, var19, var20,
-                      var21, var22, var23, var24,
-                      var25, var26, var27, var28,
-                      var29, var30, var31, var32,
-                      var33, var34, var35, var36,
-                      ], dim='lev')
+    return xr.concat([
+        # var1, var2, var3, var4,
+        # var5, var6, var7, var8,
+        # var9, var10, var11, var12,
+        # var13, var14, var15, var16,
+        # var17, var18,
+        # var19, var20,
+        # var21, var22, var23, var24,
+        # var25, var26, var27, var28,
+        # var29, var30, var31, var32,
+        # var33, var34, var35, var36,
+        var37, var38,
+        var39, var40, var41, var42,
+        var43, var44, var45, var46,
+        var47, var48, var49, var50,
+        var51, var52, var53, var54,
+    ], dim='lev')

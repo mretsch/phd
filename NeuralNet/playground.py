@@ -1,3 +1,4 @@
+from os.path import expanduser
 import timeit
 import numpy as np
 import xarray as xr
@@ -7,11 +8,12 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
-from Plotscripts.plot_hist import histogram_2d
 from NeuralNet.backtracking import mlp_forward_pass, mlp_backtracking_maxnode, mlp_backtracking_percentage
 import pandas as pd
 import seaborn as sns
 
+home = expanduser("~")
+ghome = home+'/Google Drive File Stream/My Drive'
 start = timeit.default_timer()
 
 testing = True
@@ -117,7 +119,7 @@ if testing:
     model_insight = True
     if model_insight:
 
-        model = kmodels.load_model('/Users/mret0001/Data/NN_Models/BasicUnderstanding/correlationmodel.h5')
+        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/correlationmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -150,23 +152,31 @@ if testing:
         r = x * weight_list[-6][:, s_maxind]
         print(r.argmax())
 
-        # maximum_nodes = np.zeros(shape=(n_layers, 20**6))
-        maximum_nodes = np.zeros(shape=(n_layers, 50**3))
-        index = 0
-        for k in range(1,51):
-            for l in range(1,51):
-                for m in range(1,51):
-                    # for n in range(10,30):
-                    #     for o in range(10,30):
-                    #         for p in range(10,30):
-                                x = [k, l, m]#, n, o, p]
-                                # maximum_nodes[:, index] = mlp_backtracking_maxnode(model=model, data_in=x,
-                                #                                                    n_highest_node=1,
-                                #                                                    return_firstconn=False)
-                                maximum_nodes[:, index] = mlp_backtracking_percentage(model=model, data_in=x)[0]
-                                index += 1
+        # maximum_nodes = np.zeros(shape=(n_layers, 50**3))
+        # index = 0
+        # for k in range(1,51):
+        #     for l in range(1,51):
+        #         for m in range(1,51):
+        #             x = [k, l, m]#, n, o, p]
+        #             maximum_nodes[:, index] = mlp_backtracking_maxnode(model=model, data_in=x,
+        #                                                                            n_highest_node=1,
+        #                                                                            return_firstconn=False)
 
-        sns.boxplot(data=maximum_nodes)
+        percentage_input = np.zeros(shape=(len(x), 50 ** 3))
+        index = 0
+        for k in range(1, 51):
+            for l in range(1, 51):
+                for m in range(1, 51):
+                    percentage_input[:, index] = mlp_backtracking_percentage(model=model, data_in=x)[0]
+                    index += 1
+
+        # sns.boxplot(data=maximum_nodes.T)
+        # plt.ylim(90, 110)
+        # plt.title('Backtracking for correlation-net (target is 10x node 0).')
+        # plt.xlabel('# input node')
+        # plt.ylabel('Contributing percentage [%]')
+        # plt.savefig(home + '/Desktop/backtrack_corrnet_zoom_0.pdf', bbox_inches='tight')
+        # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
 
     plotting_model = False
     if plotting_model:
