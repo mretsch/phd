@@ -3,6 +3,7 @@ import xarray as xr
 
 def large_scale_at_metric_times(ds_largescale, timeseries,
                                 chosen_vars=None,
+                                l_normalise_input=True,
                                 l_take_scalars=False,
                                 l_take_same_time=False,
                                 l_take_only_predecessor_time=False,
@@ -67,6 +68,14 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         var = xr.concat([c1, c2_r], dim='lev')
     else:
         var = c1
+
+    if l_normalise_input:
+        var_copy = var.copy(deep=True)
+        var_std = (var - var.mean(dim='time')) / var.std(dim='time')
+        # where std_dev=0., dividing led to NaN, set to 0. instead
+        var = var_std.where(var_std.notnull(), other=0.)
+        # put the 'original' NaN back into array
+        var = xr.where(var_copy.isnull(), var_copy, var)
 
     # large scale variables only where timeseries is defined
     var_metric = var.where(timeseries.notnull(), drop=True)
@@ -217,7 +226,7 @@ def subselect_ls_vars(large_scale, levels=None):
     #                           drop=True)
     # var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path, 6h earlier',
     #                           drop=True)
-    #
+
     # var19 = large_scale.where(large_scale['long_name'] == 'vertical velocity            ',
     #                         drop=True).sel(lev=levels)
     # var20 = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection            ',

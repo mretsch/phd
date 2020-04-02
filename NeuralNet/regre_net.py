@@ -36,20 +36,13 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_same_time=False)
+                                                   l_take_only_successor_time=True)
 
 l_subselect = True
 if l_subselect:
-    predictor = subselect_ls_vars(predictor)
+    predictor = subselect_ls_vars(predictor, levels=[115, 515, 990])
 
 n_lev = len(predictor['lev'])
-
-l_normalise_input = True
-if l_normalise_input:
-    predictor_raw = predictor.copy(deep=True)
-    predictor = (predictor - predictor.mean(dim='time')) / predictor.std(dim='time')
-    # where std_dev=0., dividing led to NaN, set to 0. instead
-    predictor = predictor.where(predictor.notnull(), other=0.)
 
 l_loading_model = True
 if not l_loading_model:
@@ -78,8 +71,7 @@ if not l_loading_model:
         for i, entry in enumerate(predictor):
             pred.append(model.predict(np.array([entry])))
         pred_array = xr.DataArray(pred).squeeze()
-        pred_array.coords['time'] = ('dim_0', target.time)
-        predicted = pred_array.swap_dims({'dim_0': 'time'})
+        predicted = xr.DataArray(pred_array.values, coords={'time': predictor.time}, dims='time')
 
         fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
         ax_host.plot(target[-1200:])
@@ -92,7 +84,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_norm/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_norm/NN_6h_later/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -184,8 +176,8 @@ else:
         input_percentages = xr.zeros_like(predictor.sel(time=metric.time))
         input_percentages[:, :] = input_percentages_list
 
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax.set_ylim(-20, 20)
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(24, 4))
+        ax.set_ylim(-40, 40)
         ax.axhline(y=0, color='r', lw=0.5)
         sns.boxplot(data=input_percentages)
         label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in
