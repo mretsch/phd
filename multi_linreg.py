@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
-from basic_stats import into_pope_regimes
+from basic_stats import into_pope_regimes, root_mean_square_error
 
 home = expanduser("~")
 start = timeit.default_timer()
@@ -62,12 +62,6 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=True,
                                                    l_take_only_successor_time=True)
 
-l_normalise_input = True
-if l_normalise_input:
-    predictor = (predictor - predictor.mean(dim='time')) / predictor.std(dim='time')
-    # where std_dev=0., dividing led to NaN, set to 0. instead
-    predictor = predictor.where(predictor.notnull(), other=0.)
-
 l_subselect = True
 if l_subselect:
     levels = [115, 515, 990]
@@ -89,7 +83,7 @@ if not l_load_model:
 else:
 
     # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_3levels_norm/MLR_6h_later/mlr_coeff.csv',
+    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_3levels_normb4sub/MLR_6h_later/mlr_coeff.csv',
                             header=None, skiprows=12, skipfooter=7)
     mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                      axis='columns', inplace=True)
@@ -99,7 +93,7 @@ else:
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(24, 4))
     ax.plot(mlr_coeff['coeff'], marker='p', ls='', color='k')
     # y-limits of plot with two times (0 and 6h before) as predictor
-    ax.set_ylim((-42.22668, 22.384680000000003))
+    ax.set_ylim((-40.5769, 22.772100000000002))
     ax.axhline(y=0, color='r', lw=0.5)
     label_list = [str(element0) + ', ' + element1 + ', ' + str(element2) for element0, element1, element2 in
                   zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]
