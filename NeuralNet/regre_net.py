@@ -36,7 +36,7 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_only_successor_time=True)
+                                                   l_take_only_predecessor_time=True)
 
 l_subselect = True
 if l_subselect:
@@ -84,7 +84,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub/NN_6h_later/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub/NN_6h_earlier/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -93,7 +93,7 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = True
+    l_high_values = False
     if l_high_values:
         predicted = xr.open_dataarray(model_path + 'predicted.nc')
         metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
@@ -168,16 +168,16 @@ else:
     if l_percentage_backtracking:
 
         input_percentages_list = []
-        for input in predictor.sel(time=metric.time.values):
+        for input in predictor:
 
             node_contribution = mlp_backtracking_percentage(model, input)[0]
             input_percentages_list.append(node_contribution)
 
-        input_percentages = xr.zeros_like(predictor.sel(time=metric.time))
+        input_percentages = xr.zeros_like(predictor)
         input_percentages[:, :] = input_percentages_list
 
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(24, 4))
-        ax.set_ylim(-30, 30)
+        # ax.set_ylim(-30, 30)
         ax.axhline(y=0, color='r', lw=0.5)
         sns.boxplot(data=input_percentages)
         label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in

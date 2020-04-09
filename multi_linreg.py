@@ -60,14 +60,14 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_only_successor_time=True)
+                                                   l_take_only_predecessor_time=True)
 
 l_subselect = True
 if l_subselect:
     levels = [115, 515, 990]
     predictor = subselect_ls_vars(predictor, levels=levels)
 
-l_load_model = True
+l_load_model = False
 if not l_load_model:
 
     mlreg_predictor = sm.add_constant(predictor.values)

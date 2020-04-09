@@ -118,6 +118,7 @@ def mlp_backtracking_percentage(model, data_in):
 
     # ===== Backtracking =======
     node_percentages = []
+    node_percentages_full = []
 
     # after forward pass, recursively find chain of nodes with maximum value in each layer.
     # Last layer maps to only one output node, thus weigh_list has only one element for last layer.
@@ -126,6 +127,7 @@ def mlp_backtracking_percentage(model, data_in):
     # attribute to each node the percentage the node contributed to next layer (bias not of importance here)
     last_layer_perc = last_layer / last_layer.sum() * 100
     node_percentages.append(last_layer_perc)
+    node_percentages_full.append(last_layer_perc)
 
     # concatenate the original NN input, i.e. data_in, and the output from the remaining layers,
     # excluding output and last layer. iput, like node_values, are the values in previous layer
@@ -139,9 +141,16 @@ def mlp_backtracking_percentage(model, data_in):
         # for each weight-set calculate how much each node in iput-layers contributes to a node in next layer
         for j in range(weight_list[2 * i].shape[1]):
             contribution_to_node = iput[i] * weight_list[2 * i][:, j]
-            contributions_perc[:, j] = contribution_to_node / contribution_to_node.sum() * node_percentages[-1][j]
+
+            dot_to_bias = contribution_to_node.sum() / (contribution_to_node.sum() + weight_list[2 * i + 1][j])
+
+            # contributions_perc[:, j] = contribution_to_node / contribution_to_node.sum() * node_percentages[-1][j]
+            # contributions_perc[:, j] = abs(contribution_to_node) / abs(contribution_to_node).sum() * node_percentages[-1][j]
+            contributions_perc[:, j] = contribution_to_node / contribution_to_node.sum() * dot_to_bias * node_percentages[-1][j]
 
         # sum all contributions that went from each node in iput-layer to next layer
         node_percentages.append(contributions_perc.sum(axis=1))
+        node_percentages_full.append(contributions_perc)
 
     return node_percentages[::-1]
+    # return node_percentages_full[::-1]

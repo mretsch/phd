@@ -119,7 +119,7 @@ if testing:
     model_insight = True
     if model_insight:
 
-        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/correlationmodel.h5')
+        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/Correlation_Model/correlationmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -163,14 +163,18 @@ if testing:
         #                                                                            return_firstconn=False)
 
         percentage_input = np.zeros(shape=(len(x), 50 ** 3))
+        percentage_input_full = []
         index = 0
         for k in range(1, 51):
             for l in range(1, 51):
                 for m in range(1, 51):
+                    x = [k, l, m]
                     percentage_input[:, index] = mlp_backtracking_percentage(model=model, data_in=x)[0]
+                    # percentage_input_full.append(mlp_backtracking_percentage(model=model, data_in=x))
+                    # percentage_input[:, index] = percentage_input_full[-1][0]
                     index += 1
 
-        # sns.boxplot(data=maximum_nodes.T)
+        # sns.boxplot(data=percentage_input .T)
         # plt.ylim(90, 110)
         # plt.title('Backtracking for correlation-net (target is 10x node 0).')
         # plt.xlabel('# input node')
