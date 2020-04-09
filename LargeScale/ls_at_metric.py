@@ -189,43 +189,43 @@ def subselect_ls_vars(large_scale, levels=None):
 
     # select a few levels of a few variables which might be relevant to explain ROME
 
-    # var1  = large_scale.where(large_scale['long_name'] == 'vertical velocity            ',
-    #                           drop=True).sel(lev=levels)
-    # var2  = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection            ',
-    #                           drop=True).sel(lev=levels)
-    # var3  = large_scale.where(large_scale['long_name'] == 'Horizontal r advection            ',
-    #                           drop=True).sel(lev=levels)
-    # var4  = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt            ',
-    #                           drop=True).sel(lev=levels)
-    # var5  = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt            ',
-    #                           drop=True).sel(lev=levels)
-    # var6  = large_scale.where(large_scale['long_name'] == 'Relative humidity            ',
-    #                           drop=True).sel(lev=levels)
-    # var7  = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component            ',
-    #                           drop=True).sel(lev=levels)
-    # var8  = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component            ',
-    #                           drop=True).sel(lev=levels)
-    #
-    # var9  = large_scale.where(large_scale['long_name'] == 'Convective Inhibition            ',
-    #                           drop=True)
-    # var10 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy            ',
-    #                           drop=True)
-    # var11 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud            ',
-    #                           drop=True)
-    # var12 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW            ',
-    #                           drop=True)
-    # var13 = large_scale.where(large_scale['long_name'] == '10m wind speed            ',
-    #                           drop=True)
-    # var14 = large_scale.where(large_scale['long_name'] == '10m V component            ',
-    #                           drop=True)
-    # var15 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio            ',
-    #                           drop=True)
-    # var16 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive            ',
-    #                           drop=True)
-    # var17 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive            ',
-    #                           drop=True)
-    # var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path            ',
-    #                           drop=True)
+    var1  = large_scale.where(large_scale['long_name'] == 'vertical velocity            ',
+                              drop=True).sel(lev=levels)
+    var2  = large_scale.where(large_scale['long_name'] == 'Horizontal temperature Advection            ',
+                              drop=True).sel(lev=levels)
+    var3  = large_scale.where(large_scale['long_name'] == 'Horizontal r advection            ',
+                              drop=True).sel(lev=levels)
+    var4  = large_scale.where(large_scale['long_name'] == 'd(dry static energy)/dt            ',
+                              drop=True).sel(lev=levels)
+    var5  = large_scale.where(large_scale['long_name'] == 'd(water vapour mixing ratio)/dt            ',
+                              drop=True).sel(lev=levels)
+    var6  = large_scale.where(large_scale['long_name'] == 'Relative humidity            ',
+                              drop=True).sel(lev=levels)
+    var7  = large_scale.where(large_scale['long_name'] == 'Horizontal wind U component            ',
+                              drop=True).sel(lev=levels)
+    var8  = large_scale.where(large_scale['long_name'] == 'Horizontal wind V component            ',
+                              drop=True).sel(lev=levels)
+
+    var9  = large_scale.where(large_scale['long_name'] == 'Convective Inhibition            ',
+                              drop=True)
+    var10 = large_scale.where(large_scale['long_name'] == 'Convective Available Potential Energy            ',
+                              drop=True)
+    var11 = large_scale.where(large_scale['long_name'] == 'Satellite-measured low cloud            ',
+                              drop=True)
+    var12 = large_scale.where(large_scale['long_name'] == 'Surface downwelling LW            ',
+                              drop=True)
+    var13 = large_scale.where(large_scale['long_name'] == '10m wind speed            ',
+                              drop=True)
+    var14 = large_scale.where(large_scale['long_name'] == '10m V component            ',
+                              drop=True)
+    var15 = large_scale.where(large_scale['long_name'] == '2m water vapour mixing ratio            ',
+                              drop=True)
+    var16 = large_scale.where(large_scale['long_name'] == 'TOA LW flux, upward positive            ',
+                              drop=True)
+    var17 = large_scale.where(large_scale['long_name'] == 'Surface sensible heat flux, upward positive            ',
+                              drop=True)
+    var18 = large_scale.where(large_scale['long_name'] == 'MWR-measured cloud liquid water path            ',
+                              drop=True)
 
     var19 = large_scale.where(large_scale['long_name'] == 'vertical velocity, 6h earlier',
                               drop=True).sel(lev=levels)
@@ -304,11 +304,11 @@ def subselect_ls_vars(large_scale, levels=None):
     #                         drop=True)
 
     return xr.concat([
-        # var1, var2, var3, var4,
-        # var5, var6, var7, var8,
-        # var9, var10, var11, var12,
-        # var13, var14, var15, var16,
-        # var17, var18,
+        var1, var2, var3, var4,
+        var5, var6, var7, var8,
+        var9, var10, var11, var12,
+        var13, var14, var15, var16,
+        var17, var18,
         var19, var20,
         var21, var22, var23, var24,
         var25, var26, var27, var28,
