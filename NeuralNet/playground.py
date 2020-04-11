@@ -116,10 +116,22 @@ if testing:
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=1, epochs=200, validation_split=0.3)
 
+    l_model7 = False
+    if l_model7:
+        x = np.random.randint(1, 50, size=(1000, 3))
+        y = x[:, 1] ** 2
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=10, epochs=150, validation_split=0.3)
+
     model_insight = True
     if model_insight:
 
-        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/Correlation_Model/correlationmodel.h5')
+        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/Squared_Model/squaredmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -143,14 +155,6 @@ if testing:
         # the correct predicition
         print(model.predict(np.array([x])))
         print(t.sum() + bias)
-        print(t.argmax())
-        t_maxind = t.argmax()
-        # weights stored in array of shape (# nodes in layer n, # nodes in layer n+1)
-        s = results[-3] * weight_list[-4][:, t_maxind]
-        print(s.argmax())
-        s_maxind = s.argmax()
-        r = x * weight_list[-6][:, s_maxind]
-        print(r.argmax())
 
         # maximum_nodes = np.zeros(shape=(n_layers, 50**3))
         # index = 0

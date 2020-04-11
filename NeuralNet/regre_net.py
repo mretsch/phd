@@ -168,12 +168,12 @@ else:
     if l_percentage_backtracking:
 
         input_percentages_list = []
-        for input in predictor:
+        for input in predictor.sel(time=predicted.time):
 
             node_contribution = mlp_backtracking_percentage(model, input)[0]
             input_percentages_list.append(node_contribution)
 
-        input_percentages = xr.zeros_like(predictor)
+        input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
         input_percentages[:, :] = input_percentages_list
 
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
