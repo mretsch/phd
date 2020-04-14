@@ -128,10 +128,50 @@ if testing:
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=10, epochs=150, validation_split=0.3)
 
+    l_model8 = False
+    if l_model8:
+        x = np.random.randint(1, 50, size=(500, 3))
+        y = 0.7 * x[:, 1] + 0.3 * x[:, 2]
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(150, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(150, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=1, epochs=2, validation_split=0.3)
+
+    l_model9 = False
+    if l_model9:
+        x = np.random.randint(1, 50, size=(500, 3))
+        # y = x[:, 1] * x[:, 2]
+        y = x[:, 1] * x[:, 2] + x[:, 0]
+
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        checkpoint = kcallbacks.ModelCheckpoint(home+'/Desktop/Models/model-{epoch:02d}-{val_loss:.2f}.h5',
+                                                monitor='val_loss', verbose=1, save_weights_only=False)
+        model.fit(x, y, batch_size=10, epochs=150, validation_split=0.3, callbacks=[checkpoint])
+
+    l_model10 = False
+    if l_model10:
+        x = np.random.randint(1, 50, size=(1000, 3))
+        y = np.sqrt(x[:, 1]) + 3 * x[:, 2]
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=10, epochs=5, validation_split=0.3)
+
     model_insight = True
     if model_insight:
 
-        model = kmodels.load_model(ghome+'/Data/NN_Models/BasicUnderstanding/Squared_Model/squaredmodel.h5')
+        model = kmodels.load_model(
+            ghome+'/Data/NN_Models/BasicUnderstanding/SquareSum_Model/squaresummodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
