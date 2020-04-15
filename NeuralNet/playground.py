@@ -16,8 +16,8 @@ home = expanduser("~")
 ghome = home+'/Google Drive File Stream/My Drive'
 start = timeit.default_timer()
 
-testing = True
-manual_sampling = False
+testing = False
+manual_sampling = True
 
 if testing:
     convolving = False
@@ -249,56 +249,60 @@ if testing:
 if manual_sampling:
     l_resample = True
     if l_resample:
-        metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+        metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_kilometres.nc')
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
         # the averaging period. Thus the labels are aligned to the large scale data set.
         # For reasons unknown, averages crossing a day of no data, not even NaN, into a normal day have wrongly
         # calculated averages. Overwrite manually with correct values.
+        # Take sum and divide by 36 time steps (for 10 min intervals in 6 hours), to avoid one single value in 6 hours
+        # (with the rest NaNs) to have that value as the average. sum()/36. treats NaNs as Zeros basically.
         m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
-                                loffset='3H').max() # mean() # std()**2
+                                loffset='3H').sum()/36. # mean() # max() # std()**2
         manual_overwrite = False
         if manual_overwrite:
             m_avg.loc[
                 [np.datetime64('2003-03-15T00:00'), np.datetime64('2003-03-17T00:00'), np.datetime64('2003-10-30T00:00'),
                  np.datetime64('2003-11-25T00:00'), np.datetime64('2006-11-11T00:00')]] = \
-                [metric.sel(time=slice('2003-03-14T21', '2003-03-15T02:50')).mean(),
-                 metric.sel(time=slice('2003-03-16T21', '2003-03-17T02:50')).mean(),
-                 metric.sel(time=slice('2003-10-29T21', '2003-10-30T02:50')).mean(),
-                 metric.sel(time=slice('2003-11-24T21', '2003-11-25T02:50')).mean(),
-                 metric.sel(time=slice('2006-11-10T21', '2006-11-11T02:50')).mean()]
+                [metric.sel(time=slice('2003-03-14T21', '2003-03-15T02:50')).sum()/36.,
+                 metric.sel(time=slice('2003-03-16T21', '2003-03-17T02:50')).sum()/36.,
+                 metric.sel(time=slice('2003-10-29T21', '2003-10-30T02:50')).sum()/36.,
+                 metric.sel(time=slice('2003-11-24T21', '2003-11-25T02:50')).sum()/36.,
+                 metric.sel(time=slice('2006-11-10T21', '2006-11-11T02:50')).sum()/36.]
         m_avg.coords['percentile'] = m_avg.rank(dim='time', pct=True)
 
-    # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
-    metric = m_avg
+    l_split_and_redistribute = False
+    if l_split_and_redistribute:
+        # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
+        metric = m_avg
 
-    # ROME-value at given percentile
-    threshold = metric[abs((metric.percentile - 0.85)).argmin()]
-    n_above_thresh = (metric > threshold).sum().item()
-    sample_ind = xr.DataArray(np.zeros(shape=2*n_above_thresh))
-    sample_ind[:] = -1
+        # ROME-value at given percentile
+        threshold = metric[abs((metric.percentile - 0.85)).argmin()]
+        n_above_thresh = (metric > threshold).sum().item()
+        sample_ind = xr.DataArray(np.zeros(shape=2*n_above_thresh))
+        sample_ind[:] = -1
 
-    # find arguments (meaning indizes) for the highest ROME-values
-    m_present = metric.where(metric.notnull(), drop=True)
-    sort_ind = m_present.argsort()
-    sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
+        # find arguments (meaning indizes) for the highest ROME-values
+        m_present = metric.where(metric.notnull(), drop=True)
+        sort_ind = m_present.argsort()
+        sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
 
-    # stride through ROME-values (not the percentiles or sorted indizes) linearly
-    # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
-    # We sort that out below.
-    check_values = np.linspace(6.25, threshold, n_above_thresh)
-    for i, v in enumerate(check_values):
-        ind = abs((m_present - v)).argmin()
-        sample_ind[i] = ind
+        # stride through ROME-values (not the percentiles or sorted indizes) linearly
+        # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
+        # We sort that out below.
+        check_values = np.linspace(6.25, threshold, n_above_thresh)
+        for i, v in enumerate(check_values):
+            ind = abs((m_present - v)).argmin()
+            sample_ind[i] = ind
 
-    unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
+        unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
 
-    # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
-    # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
-    sample_ind_unique = sample_ind[indizes]
+        # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
+        # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
+        sample_ind_unique = sample_ind[indizes]
 
-    metric_sample = m_present[sample_ind_unique.astype(int)]
-    sample = metric_sample.rename({'dim_0': 'time'})
-    sample.to_netcdf('/Users/mret0001/Desktop/rom_sample.nc')
+        metric_sample = m_present[sample_ind_unique.astype(int)]
+        sample = metric_sample.rename({'dim_0': 'time'})
+        sample.to_netcdf(home+'/Desktop/rom_sample.nc')
 
 
 stop = timeit.default_timer()
