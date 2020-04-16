@@ -20,7 +20,7 @@ start = timeit.default_timer()
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
+metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
 ls_vars = ['omega',
            'T_adv_h',
@@ -44,7 +44,7 @@ if l_subselect:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = True
+l_loading_model = False
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -57,12 +57,12 @@ if not l_loading_model:
     model.compile(optimizer='adam', loss='mean_squared_error')  # , metrics=['accuracy'])
 
     # checkpoint
-    filepath = home+'/Desktop/weights-improvement-{epoch:02d}-{val_loss:.2f}.h5'
+    filepath = home+'/Desktop/model-{epoch:02d}-{val_loss:.2f}.h5'
     checkpoint = kcallbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=False)
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target.percentile, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -74,7 +74,7 @@ if not l_loading_model:
         predicted = xr.DataArray(pred_array.values, coords={'time': predictor.time}, dims='time')
 
         fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax_host.plot(target[-1200:])
+        ax_host.plot(target.percentile[-1200:])
         ax_host.plot(predicted[-1200:])
         plt.legend(['target', 'predicted'])
         # ax_host.xaxis.set_major_locator(ticker.MultipleLocator(1))

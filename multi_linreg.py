@@ -44,7 +44,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 # assemble the large scale dataset
 ds_ls = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h.nc')
+metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
 ls_vars = ['omega',
            'T_adv_h',
@@ -60,7 +60,7 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_only_predecessor_time=True)
+                                                   l_take_also_predecessor_time=True)
 
 l_subselect = True
 if l_subselect:
@@ -72,7 +72,7 @@ if not l_load_model:
 
     mlreg_predictor = sm.add_constant(predictor.values)
 
-    mlr_model = sm.OLS(target.values, mlreg_predictor).fit()
+    mlr_model = sm.OLS(target.percentile.values, mlreg_predictor).fit()
     mlr_predict = mlr_model.predict(mlreg_predictor)
 
     mlr_predicted = xr.DataArray(mlr_predict, coords={'time': predictor.time}, dims='time')
