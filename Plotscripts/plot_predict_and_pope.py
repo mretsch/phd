@@ -36,15 +36,20 @@ p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
+plt.rc('font'  , size=22)
+
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-ax.plot(metric.percentile[-1200:], color='white')
-# ax.plot(predicted[-1200:], color='black')
+ax.plot(metric   [-1200:], color='white', lw=1)
+ax.plot(predicted[-1200:], color='black', lw=1)
 # ax.plot(    predicted[-1200:], color='red')
-ax.plot(predicted[-1200:], color='black')
-plt.legend(['target', 'nn_predicted'])
+# ax.plot(mlr_predicted[-1200:], color='black')
+plt.legend(['target', '6h_later nn_"predicted"'])
 # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
+plt.xlabel('Time [6h intervals]')
+plt.ylabel('6h-average ROME [km$^2$]')
 plt.ylim(0, None)
+# plt.xlim(0, 400)
 
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
@@ -60,7 +65,7 @@ for thistime in metric[-1200:].time.values: #metric_high[correct_pred].time.valu
 # ax.text(x=-50, y=150, s=' Pope 4, SW ', verticalalignment='top', color=colors[3], fontdict={'fontsize': 16})
 # ax.text(x=-50, y=100, s=' Pope 5, ME ', verticalalignment='top', color=colors[4], fontdict={'fontsize': 16})
 
-plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight')
+plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
