@@ -167,11 +167,23 @@ if testing:
         model.compile(optimizer='adam', loss='mean_squared_error')
         model.fit(x, y, batch_size=10, epochs=5, validation_split=0.3)
 
+    l_model11 = False
+    if l_model11:
+        x = np.random.randint(1, 50, size=(1000, 3))
+        y = np.sqrt(x[:, 1]) + np.log(x[:, 2])
+        model = kmodels.Sequential()
+        model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(1, activation='linear'))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(x, y, batch_size=10, epochs=20, validation_split=0.3)
+
     model_insight = True
     if model_insight:
 
         model = kmodels.load_model(
-            ghome+'/Data/NN_Models/BasicUnderstanding/SquareSum_Model/squaresummodel.h5')
+            ghome+'/Data/NN_Models/BasicUnderstanding/SqrtLn_Model/sqrtlnmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -218,12 +230,12 @@ if testing:
                     # percentage_input[:, index] = percentage_input_full[-1][0]
                     index += 1
 
-        # sns.boxplot(data=percentage_input .T)
+        sns.boxplot(data=percentage_input .T)
         # plt.ylim(90, 110)
-        # plt.title('Backtracking for correlation-net (target is 10x node 0).')
-        # plt.xlabel('# input node')
-        # plt.ylabel('Contributing percentage [%]')
-        # plt.savefig(home + '/Desktop/backtrack_corrnet_zoom_0.pdf', bbox_inches='tight')
+        plt.title('Backtracking for sqrtln-net (target is sqrt(node1) + ln(node2).')
+        plt.xlabel('# input node')
+        plt.ylabel('Contributing percentage [%]')
+        plt.savefig(home + '/Desktop/backtrack_corrnet_zoom_0.pdf', bbox_inches='tight')
         # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
 
     plotting_model = False
@@ -258,7 +270,12 @@ if manual_sampling:
         # (with the rest NaNs) to have that value as the average. sum()/36. treats NaNs as Zeros basically.
         m_avg = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
                                 loffset='3H').sum()/36. # mean() # max() # std()**2
-        manual_overwrite = False
+        # .sum() applied to NaNs in xarray yields Zero, not NaN as with .mean().
+        # put NaNs where .mean() yields NaNs.
+        m_mean = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+                                loffset='3H').mean()
+        m_avg = m_avg.where(m_mean.notnull(), other=np.nan)
+        manual_overwrite = True
         if manual_overwrite:
             m_avg.loc[
                 [np.datetime64('2003-03-15T00:00'), np.datetime64('2003-03-17T00:00'), np.datetime64('2003-10-30T00:00'),

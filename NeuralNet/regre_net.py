@@ -62,7 +62,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target.percentile, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -74,7 +74,7 @@ if not l_loading_model:
         predicted = xr.DataArray(pred_array.values, coords={'time': predictor.time}, dims='time')
 
         fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax_host.plot(target.percentile[-1200:])
+        ax_host.plot(target[-1200:])
         ax_host.plot(predicted[-1200:])
         plt.legend(['target', 'predicted'])
         # ax_host.xaxis.set_major_locator(ticker.MultipleLocator(1))

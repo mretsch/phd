@@ -48,7 +48,7 @@ plt.legend(['target', '6h_later nn_"predicted"'])
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 plt.xlabel('Time [6h intervals]')
 plt.ylabel('6h-average ROME [km$^2$]')
-plt.ylim(0, None)
+plt.ylim(0, 442.8759794239834)
 # plt.xlim(0, 400)
 
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
