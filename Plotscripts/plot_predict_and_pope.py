@@ -14,9 +14,9 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 predicted = xr.open_dataarray(
-    ghome + '/Model_percentiles_nanzero/predicted.nc')
+    ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/predicted.nc')
 mlr_predicted = xr.open_dataarray(
-    ghome + '/Model_percentiles_nanzero/mlr_predicted.nc')
+    ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -36,14 +36,14 @@ p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
-plt.rc('font'  , size=22)
+# plt.rc('font'  , size=22)
 
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-ax.plot(metric   [-1200:], color='white', lw=1)
-ax.plot(predicted[-1200:], color='black', lw=1)
-# ax.plot(    predicted[-1200:], color='red')
-# ax.plot(mlr_predicted[-1200:], color='black')
-plt.legend(['target', '6h_later nn_"predicted"'])
+ax.plot(metric   [-1200:], color='white', lw=1.5)
+# ax.plot(predicted[-1200:], color='black', lw=1.5)
+ax.plot(    predicted[-1200:], color='red')
+ax.plot(mlr_predicted[-1200:], color='black')
+plt.legend(['ROME', 'Earlier and same time NN', 'Earlier and same time MLR'])
 # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 plt.xlabel('Time [6h intervals]')

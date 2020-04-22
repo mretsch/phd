@@ -36,7 +36,7 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_also_predecessor_time=True)
+                                                   l_take_same_time=True)
 
 l_subselect = True
 if l_subselect:
@@ -44,7 +44,7 @@ if l_subselect:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = False
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -84,7 +84,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/NN_same_time/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -103,89 +103,25 @@ else:
         # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
         metric = metric.where(predicted.time)
 
-    l_maxnode_backtracking = False
-    l_percentage_backtracking = True
+    input_percentages_list = []
+    for input in predictor.sel(time=predicted.time):
 
-    if l_maxnode_backtracking:
-        # compute the backtracking for multiple nodes, not only the most contributing one. Also the second, etc.
-        for n_node in range(1, 2):
-            maximum_nodes, first_conn = [], []
+        node_contribution = mlp_backtracking_percentage(model, input)[0]
+        input_percentages_list.append(node_contribution)
 
-            for input in predictor.sel(time=metric.time.values):
-                max_node, firstconn = mlp_backtracking_maxnode(model, input, n_highest_node=n_node, return_firstconn=True)
-                maximum_nodes.append(max_node)
-                first_conn.append(firstconn)
+    input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
+    input_percentages[:, :] = input_percentages_list
 
-            # ========= Plotting ==============================
-            mn = xr.DataArray(maximum_nodes)
-            first_node = mn[:, 0]
-
-            fig, ax_host = plt.subplots(nrows=1, ncols=1, figsize=(60, 4))
-            ax_host.hist(first_node, bins=np.arange(0, input_length + 1))
-            ax_host.xaxis.set_major_locator(ticker.MultipleLocator(10))
-            ax_host.xaxis.set_minor_locator(ticker.MultipleLocator(2))
-            # ax_host.set_xlim(1, None)
-            # ax_host.set_yscale('log')
-            plt.savefig(home+'/Desktop/'+str(n_node)+'_input_histo.pdf', transparent=True, bbox_inches='tight')
-            plt.close()
-
-        # get Pope regimes for split plot
-        ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
-        p_regime = xr.full_like(ds_pope.var_all, np.nan)
-        p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
-        p_regime[:] = xr.where(ds_pope.var_p2.notnull(), 2, p_regime)
-        p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
-        p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
-        p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
-
-        fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(9, 20))
-        pope_ticker = np.zeros((5, input_length))
-        for i, conn in enumerate(first_conn):
-            thetime = metric.time[i]
-            thepope = int(p_regime.sel(time=thetime)) - 1
-            # plot the first connection values into the appropriate subplot (representing Pope regimes)
-            axes[thepope].plot(conn, alpha=0.1)
-            # plot the location and amount of the highest contributing node into the same plot
-            axes[thepope].axvspan(xmin=first_node[i]-0.5, xmax=first_node[i]+0.5,
-                                  ymin= pope_ticker[thepope, first_node[i]]   /100,
-                                  ymax=(pope_ticker[thepope, first_node[i]]+1)/100,
-                                  facecolor='r')
-            pope_ticker[thepope, first_node[i]] += 1
-
-        axes[0].set_title('(Pope 1, DE)')
-        axes[1].set_title(' Pope 2, DW ')
-        axes[2].set_title('(Pope 3,  E)')
-        axes[3].set_title(' Pope 4, SW ')
-        axes[4].set_title(' Pope 5, ME ')
-        ylim_high, ylim_low = 0, 0
-        for ax in axes:
-            ylim_high = xr.where(ax.get_ylim()[1] > ylim_high, ax.get_ylim()[1], ylim_high)
-            ylim_low  = xr.where(ax.get_ylim()[0] < ylim_low , ax.get_ylim()[0], ylim_low )
-        for ax in axes:
-            ax.set_ylim(ylim_low, ylim_high)
-        fig.savefig(home+'/Desktop/first_conn.pdf', transparent=True, bbox_inches='tight')
-
-    if l_percentage_backtracking:
-
-        input_percentages_list = []
-        for input in predictor.sel(time=predicted.time):
-
-            node_contribution = mlp_backtracking_percentage(model, input)[0]
-            input_percentages_list.append(node_contribution)
-
-        input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
-        input_percentages[:, :] = input_percentages_list
-
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-        ax.set_ylim(-15, 15)
-        ax.axhline(y=0, color='r', lw=0.5)
-        sns.boxplot(data=input_percentages)
-        label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in
-                      zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]
-        plt.xticks(list(range(n_lev)), label_list, rotation='vertical', fontsize=5)
-        # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
-        # ax.tick_params(axis='both', which='major', labelsize=8)
-        plt.savefig(home + '/Desktop/whisker.pdf', bbox_inches='tight', transparent=True)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(24, 4))
+    ax.set_ylim(-25, 25)
+    ax.axhline(y=0, color='r', lw=0.5)
+    sns.boxplot(data=input_percentages)
+    label_list = [str(element0)+', '+element1+', '+str(element2) for element0, element1, element2 in
+                  zip(range(n_lev), predictor['long_name'].values, predictor.lev.values)]
+    plt.xticks(list(range(n_lev)), label_list, rotation='vertical', fontsize=5)
+    # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
+    # ax.tick_params(axis='both', which='major', labelsize=8)
+    plt.savefig(home + '/Desktop/whisker.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
