@@ -36,7 +36,7 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_same_time=True)
+                                                   l_take_only_predecessor_time=True)
 
 l_subselect = True
 if l_subselect:
@@ -84,7 +84,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/NN_same_time/'
+    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/NN_6h_earlier/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])

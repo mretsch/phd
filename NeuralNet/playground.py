@@ -16,8 +16,8 @@ home = expanduser("~")
 ghome = home+'/Google Drive File Stream/My Drive'
 start = timeit.default_timer()
 
-testing = False
-manual_sampling = True
+testing = True
+manual_sampling = False
 
 if testing:
     convolving = False
@@ -141,9 +141,10 @@ if testing:
 
     l_model9 = False
     if l_model9:
-        x = np.random.randint(1, 50, size=(500, 3))
+        x = np.random.randint(1, 50, size=(1000, 3))
         # y = x[:, 1] * x[:, 2]
-        y = x[:, 1] * x[:, 2] + x[:, 0]
+        # y = x[:, 1] * x[:, 2] + x[:, 0]
+        y = x[:, 0] * x[:, 1] * x[:, 2]
 
         model = kmodels.Sequential()
         model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
@@ -153,19 +154,19 @@ if testing:
         model.compile(optimizer='adam', loss='mean_squared_error')
         checkpoint = kcallbacks.ModelCheckpoint(home+'/Desktop/Models/model-{epoch:02d}-{val_loss:.2f}.h5',
                                                 monitor='val_loss', verbose=1, save_weights_only=False)
-        model.fit(x, y, batch_size=10, epochs=150, validation_split=0.3, callbacks=[checkpoint])
+        model.fit(x, y, batch_size=10, epochs=250, validation_split=0.3, callbacks=[checkpoint])
 
     l_model10 = False
     if l_model10:
         x = np.random.randint(1, 50, size=(1000, 3))
-        y = np.sqrt(x[:, 1]) + 3 * x[:, 2]
+        y = np.sqrt(x[:, 1]) # + 3 * x[:, 2]
         model = kmodels.Sequential()
         model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
         model.add(klayers.Dense(750, activation='relu'))
         model.add(klayers.Dense(750, activation='relu'))
         model.add(klayers.Dense(1, activation='linear'))
         model.compile(optimizer='adam', loss='mean_squared_error')
-        model.fit(x, y, batch_size=10, epochs=5, validation_split=0.3)
+        model.fit(x, y, batch_size=10, epochs=35, validation_split=0.3)
 
     l_model11 = False
     if l_model11:
@@ -183,7 +184,7 @@ if testing:
     if model_insight:
 
         model = kmodels.load_model(
-            ghome+'/Data/NN_Models/BasicUnderstanding/SqrtLn_Model/sqrtlnmodel.h5')
+            ghome+'/Data/NN_Models/BasicUnderstanding/Multi3_Model/multi3model.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -235,7 +236,7 @@ if testing:
         plt.title('Backtracking for sqrtln-net (target is sqrt(node1) + ln(node2).')
         plt.xlabel('# input node')
         plt.ylabel('Contributing percentage [%]')
-        plt.savefig(home + '/Desktop/backtrack_corrnet_zoom_0.pdf', bbox_inches='tight')
+        plt.savefig(home + '/Desktop/backtrack_testnet.pdf', bbox_inches='tight')
         # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
 
     plotting_model = False

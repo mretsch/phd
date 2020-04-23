@@ -60,7 +60,7 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_same_time=True)
+                                                   l_take_only_predecessor_time=True)
 
 l_subselect = True
 if l_subselect:
@@ -83,7 +83,7 @@ if not l_load_model:
 else:
 
     # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/MLR_same_time/mlr_coeff.csv',
+    mlr_coeff = pd.read_csv(ghome+'/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/MLR_6h_earlier/mlr_coeff.csv',
                             header=None, skiprows=12, skipfooter=7)
     mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                      axis='columns', inplace=True)
