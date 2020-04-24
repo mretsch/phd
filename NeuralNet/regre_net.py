@@ -32,15 +32,16 @@ ls_vars = ['omega',
            'v',
            # 'dwind_dz'
            ]
+ls_times = 'same_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   l_take_only_predecessor_time=True)
+                                                   large_scale_time=ls_times)
 
 l_subselect = True
 if l_subselect:
-    predictor = subselect_ls_vars(predictor, levels=[115, 515, 990])
+    predictor = subselect_ls_vars(predictor, levels=[115, 515, 990], large_scale_time=ls_times)
 
 n_lev = len(predictor['lev'])
 
