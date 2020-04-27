@@ -22,18 +22,46 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     c1 = xr.concat(var_list, dim='lev')
 
     if l_take_scalars:
-        c2 = xr.concat([
-              ds_largescale.cin
-            , ds_largescale.cape
-            , ds_largescale.cld_low
-            , ds_largescale.lw_dn_srf
-            , ds_largescale.wspd_srf
-            , ds_largescale.v_srf
-            , ds_largescale.r_srf
-            , ds_largescale.lw_net_toa
-            , ds_largescale.SH
-            , ds_largescale.LWP
-        ])
+        scalars = [
+            'cin',
+            'cape',
+            'cld_low',
+            'lw_dn_srf',
+            'wspd_srf',
+            'v_srf',
+            'r_srf',
+            'lw_net_toa',
+            'SH',
+            'LWP',
+
+            'LH',
+            'p_srf_aver',
+            'T_srf',
+            'T_skin',
+            'RH_srf',
+            'u_srf',
+            'rad_net_srf',
+            'sw_net_toa',
+            'cld_mid',
+            'cld_high',
+            'cld_tot',
+            'dh2odt_col',
+            'h2o_adv_col',
+            # 'evap_srf', # correlation to other variables too high
+            'dsdt_col',
+            # 's_adv_col', # correlation to other variables too high
+            # 'rad_heat_col', # correlation to other variables too high
+            'LH_col',
+            # 'r_srf',
+            's_srf',
+            'PW',
+            'lw_up_srf',
+            # 'lw_dn_srf', # correlation to other variables too high
+            # 'sw_up_srf', # has same long_name as sw_dn_srf
+            'sw_dn_srf',
+        ]
+
+        c2 = xr.concat([ds_largescale[scalar] for scalar in scalars])
 
     # give c1 another coordinate to look up 'easily' which values in concatenated array correspond to which variables
     # Also count how long that variable is in the resulting array.
@@ -53,17 +81,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     if l_take_scalars:
         c2_r = c2.rename({'concat_dims': 'lev'})
         c2_r.coords['lev'] = np.arange(len(c2))
-        names_list = []
-        names_list.append(ds_largescale.cin       .long_name + '            ')
-        names_list.append(ds_largescale.cape      .long_name + '            ')
-        names_list.append(ds_largescale.cld_low   .long_name + '            ')
-        names_list.append(ds_largescale.lw_dn_srf .long_name + '            ')
-        names_list.append(ds_largescale.wspd_srf  .long_name + '            ')
-        names_list.append(ds_largescale.v_srf     .long_name + '            ')
-        names_list.append(ds_largescale.r_srf     .long_name + '            ')
-        names_list.append(ds_largescale.lw_net_toa.long_name + '            ')
-        names_list.append(ds_largescale.SH        .long_name + '            ')
-        names_list.append(ds_largescale.LWP       .long_name + '            ')
+        names_list = [ds_largescale[scalar].long_name + '            ' for scalar in scalars]
         c2_r.coords['long_name'] = ('lev', names_list)
 
         var = xr.concat([c1, c2_r], dim='lev')
@@ -174,6 +192,32 @@ def subselect_ls_vars(large_scale, levels=None, large_scale_time=None):
         'TOA LW flux, upward positive',
         'Surface sensible heat flux, upward positive',
         'MWR-measured cloud liquid water path',
+
+        'Surface latent heat flux, upward positive',
+        'Surface pressure averaged over the domain',
+        '2m air temperature',
+        'Surface skin temperature',
+        '2m air relative humidity',
+        '10m U component',
+        'Surface net radiation, downward positive',
+        'TOA net SW flux, downward positive',
+        'Satellite-measured middle cloud',
+        'Satellite-measured high cloud',
+        'Satellite-measured total cloud',
+        'Column-integrated dH2O/dt',
+        'Column-integrated H2O advection',
+        # 'Surface evaporation', # correlation to other variables too high
+        'Column d(dry static energy)/dt',
+        # 'Column dry static energy advection', # correlation to other variables too high
+        # 'Column radiative heating',
+        'Column latent heating',
+        # '2m water vapour mixing ratio', # correlation to other variables too high
+        '2m dry static energy',
+        'MWR-measured column precipitable water',
+        'Surface upwelling LW',
+        # 'Surface downwelling LW', # correlation to other variables too high
+        # 'Surface downwelling SW', # has same long_name as sw_dn_srf
+        'Surface downwelling SW',
     ]
 
     ls_list = []

@@ -32,7 +32,7 @@ ls_vars = ['omega',
            'v',
            # 'dwind_dz'
            ]
-ls_times = 'same_time'
+ls_times = 'same_and_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -85,7 +85,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/Model_all_incl_scalars_cape_3levels_normb4sub_nanzero/NN_6h_earlier/'
+    model_path = ghome + '/ROME_Models/AllScalars/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
