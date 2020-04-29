@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/AllScalars/mlr_predicted.nc')
+    ghome + '/ROME_Models/AllScalars/predicted.nc')
 mlr_predicted = xr.open_dataarray(
     ghome + '/ROME_Models/AllScalars/mlr_predicted.nc')
 
@@ -36,26 +36,26 @@ p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
-# plt.rc('font'  , size=22)
+plt.rc('font'  , size=22)
 
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-ax.plot(metric   [-1200:], color='white', lw=1.5)
-ax.plot(predicted[-1200:], color='black', lw=1.5)
+ax.plot(metric   [-400:], color='white', lw=3  )
+# ax.plot(predicted[-400:], color='black', lw=3  )
 # ax.plot(    predicted[-1200:], color='red')
-# ax.plot(mlr_predicted[-1200:], color='black')
+ax.plot(mlr_predicted[-400:], color='black', lw=3  )
 plt.legend(['ROME', 'Earlier and same time MLR'])#, 'Earlier and same time MLR'])
 # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 plt.xlabel('Time [6h intervals]')
 plt.ylabel('6h-average ROME [km$^2$]')
 plt.ylim(0, 442.8759794239834)
-# plt.xlim(0, 400)
+plt.xlim(0, 400)
 
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
 
 tick_1, tick_2 = -1.5, -0.5
-for thistime in metric[-1200:].time.values: #metric_high[correct_pred].time.values:
+for thistime in metric[-400:].time.values: #metric_high[correct_pred].time.values:
     tick_1, tick_2 = tick_2, tick_2 + 1
     plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
 

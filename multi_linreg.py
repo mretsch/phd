@@ -56,7 +56,7 @@ ls_vars = ['omega',
            'v',
            # 'dwind_dz'
           ]
-ls_times = 'same_and_earlier_time'
+ls_times = 'same_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -67,6 +67,35 @@ l_subselect = True
 if l_subselect:
     levels = [115, 515, 990]
     predictor = subselect_ls_vars(predictor, levels=levels, large_scale_time=ls_times)
+
+
+def gen_correlation(array):
+    # the level dimension in large-scale data is much smaller than time dimension
+    assert array.shape[1] < array.shape[0]
+
+    for i in range(len(array.lev)):
+        timeseries_1 = array[:, i]
+        string_1 = timeseries_1['long_name'].values.item() + ', ' +str(int(timeseries_1['lev']))
+
+        for k in range(i + 1, len(array.lev)):
+            timeseries_2 = array[:, k]
+            string_2 = timeseries_2['long_name'].values.item() + ', ' + str(int(timeseries_2['lev']))
+            r = np.corrcoef(timeseries_1, timeseries_2)[0, 1]
+            yield string_1, string_2, r
+
+corr = list(gen_correlation(predictor))
+
+t0, t1, t2 = zip(*corr)
+
+corr_r = xr.DataArray(list(t2))
+corr_r['partner0'] = ('dim_0', list(t0))
+corr_r['partner1'] = ('dim_0', list(t1))
+
+high_corr = corr_r[abs(corr_r)>0.8]
+
+# from org_metrics import gen_tuplelist
+# tupes = list(gen_tuplelist(predictor.T))
+
 
 l_load_model = True
 if not l_load_model:
