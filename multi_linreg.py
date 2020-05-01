@@ -126,27 +126,55 @@ else:
 
     n_lev = len(mlr_coeff['var'])
 
-    plt.rc('font', size=33)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 12))
-    ax.plot(mlr_coeff['coeff'][:n_lev//2], marker='o', ms=19., ls='', color='k')
+    plt.rc('font', size=13)
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
 
-    # y-limits of plot with two times (0 and 6h before) as predictor
-    # ax.set_ylim((-50, 50))
-    ax.set_xlim((-1, 46))
-    ax.axhline(y=0, color='r', lw=1.5)
+    for i, ax in enumerate(axes):
 
-    # label_list = [str(element0) + ', ' + element1 + ', ' + str(element2) for element0, element1, element2 in
-    #               zip(range(n_lev//2), predictor['long_name'].values, predictor.lev.values)]
-    label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                  zip(predictor['long_name'][:24].values, predictor.lev.values)]
-    label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                   zip(predictor['long_name'][24:].values, predictor.lev.values)]
-    label_list = label_list1 + label_list2
+        if i == 0:
+            # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
+            # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
+            var_to_plot_1 = list(range(24))
+            var_to_plot_2 = list(range(24, n_lev//2))
+        else:
+            # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
+            # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
+            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 24))
+            var_to_plot_2 = list(range(n_lev//2 + 24, n_lev        ))
+        var_to_plot = var_to_plot_1 + var_to_plot_2
 
-    plt.xticks(list(range(n_lev//2)), label_list, rotation='vertical')#, fontsize=5)
-    plt.yticks(rotation=90)
-    # for tick in ax.get_xticklabels():
-    #     tick.set_fontname("Andale Mono")
-    # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
-    # ax.tick_params(axis='both', which='major', labelsize=8)
+        ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=12., ls='', color='k')
+
+        # y-limits of plot with two times (0 and 6h before) as predictor
+        # ax.set_ylim((-50, 50))
+        # ax.set_xlim((45, 92))
+        ax.set_xlim((-25.946335, 30.829835))
+        ax.axvline(x=0, color='r', lw=1.5)
+
+        # label_list = [str(element0) + ', ' + element1 + ', ' + str(element2) for element0, element1, element2 in
+        #               zip(range(n_lev//2), predictor['long_name'].values, predictor.lev.values)]
+        label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
+                      zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
+        label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+                       zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
+        label_list = label_list1 + label_list2
+
+        # ax[0].yticks(list(range(len(var_to_plot))), label_list)#, rotation='vertical')#, fontsize=5)
+        ax.set_yticks(list(range(len(var_to_plot))))
+        if i == 0:
+            ax.set_yticklabels(label_list)
+            # ax.legend(['Same time'])
+            plt.text(0.5, 0.95, 'Same\ntime', transform=ax.transAxes,
+                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+        else:
+            ax.set_yticklabels([])
+            plt.text(0.1, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+        ax.invert_yaxis()
+        # plt.xticks(rotation=90)
+        # for tick in ax.get_xticklabels():
+        #     tick.set_fontname("Andale Mono")
+        # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
+        # ax.tick_params(axis='both', which='major', labelsize=8)
+
     plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)
