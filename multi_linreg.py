@@ -56,7 +56,7 @@ ls_vars = ['omega',
            'v',
            # 'dwind_dz'
           ]
-ls_times = 'same_and_earlier_time'
+ls_times = 'only_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -102,7 +102,7 @@ if l_subselect:
 # tupes = list(gen_tuplelist(predictor.T))
 
 
-l_load_model = True
+l_load_model = False
 if not l_load_model:
 
     mlreg_predictor = sm.add_constant(predictor.values)
@@ -118,7 +118,7 @@ if not l_load_model:
 else:
 
     # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-    mlr_coeff = pd.read_csv(ghome+'/ROME_Models/NoCorrScalars/mlr_coeff.csv',
+    mlr_coeff = pd.read_csv(ghome+'/ROME_Models/NoCorrScalars/Only_Earlier_Time/mlr_coeff.csv',
                             header=None, skiprows=12, skipfooter=7)
     mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                      axis='columns', inplace=True)
@@ -127,7 +127,14 @@ else:
     n_lev = len(mlr_coeff['var'])
 
     plt.rc('font', size=13)
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+
+    if ls_times == 'same_and_earlier_time':
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+        n_lev_onetime = n_lev//2
+    else:
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
+        axes = [axes]
+        n_lev_onetime = n_lev
 
     for i, ax in enumerate(axes):
 
@@ -135,7 +142,7 @@ else:
             # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
             # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
             var_to_plot_1 = list(range(24))
-            var_to_plot_2 = list(range(24, n_lev//2))
+            var_to_plot_2 = list(range(24, n_lev_onetime))
         else:
             # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
             # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
@@ -145,36 +152,25 @@ else:
 
         ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=12., ls='', color='k')
 
-        # y-limits of plot with two times (0 and 6h before) as predictor
-        # ax.set_ylim((-50, 50))
-        # ax.set_xlim((45, 92))
-        ax.set_xlim((-25.946335, 30.829835))
         ax.axvline(x=0, color='r', lw=1.5)
 
-        # label_list = [str(element0) + ', ' + element1 + ', ' + str(element2) for element0, element1, element2 in
-        #               zip(range(n_lev//2), predictor['long_name'].values, predictor.lev.values)]
         label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
                       zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
         label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
                        zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
         label_list = label_list1 + label_list2
 
-        # ax[0].yticks(list(range(len(var_to_plot))), label_list)#, rotation='vertical')#, fontsize=5)
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
             ax.set_yticklabels(label_list)
-            # ax.legend(['Same time'])
             plt.text(0.5, 0.95, 'Same\ntime', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
         else:
             ax.set_yticklabels([])
             plt.text(0.1, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+            ax.set_xlim(axes[0].get_xlim())
         ax.invert_yaxis()
-        # plt.xticks(rotation=90)
-        # for tick in ax.get_xticklabels():
-        #     tick.set_fontname("Andale Mono")
-        # ax.axes.set_yticklabels(labels=predictor['long_name'].values, fontdict={'fontsize':8})
-        # ax.tick_params(axis='both', which='major', labelsize=8)
+        ax.grid(axis='x')
 
     plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)

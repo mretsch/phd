@@ -32,7 +32,7 @@ ls_vars = ['omega',
            'v',
            # 'dwind_dz'
            ]
-ls_times = 'same_and_earlier_time'
+ls_times = 'only_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -45,7 +45,7 @@ if l_subselect:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = True
+l_loading_model = False
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -85,7 +85,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/ROME_Models/NoCorrScalars/'
+    model_path = ghome + '/ROME_Models/NoCorrScalars/Same_time/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -115,7 +115,14 @@ else:
 
     # ===== Plots =====================
     plt.rc('font', size=13)
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+
+    if ls_times == 'same_and_earlier_time':
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+        n_lev_onetime = n_lev//2
+    else:
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
+        axes = [axes]
+        n_lev_onetime = n_lev
 
     for i, ax in enumerate(axes):
 
@@ -123,7 +130,7 @@ else:
             # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
             # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
             var_to_plot_1 = list(range(24))
-            var_to_plot_2 = list(range(24, n_lev//2))
+            var_to_plot_2 = list(range(24, n_lev_onetime))
         else:
             # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
             # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
@@ -134,7 +141,7 @@ else:
         plt.sca(ax)
         sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=0.)
 
-        ax.set_xlim(-20, 20)
+        ax.set_xlim(-100, 100)
         ax.axvline(x=0, color='r', lw=1.5)
 
 
