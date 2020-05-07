@@ -164,22 +164,10 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     return predictor, target, variable_size
 
 
-def subselect_ls_vars(large_scale, levels=None, large_scale_time=None):
+def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=None):
 
     if large_scale_time not in ['same_time', 'same_and_earlier_time', 'only_earlier_time', 'only_later_time']:
         raise ValueError("String large_scale_time to select large-scale time steps does not match or is not provided.")
-
-    # select a few levels of a few variables which might be relevant to explain ROME
-    profiles = [
-        'vertical velocity',
-        'Horizontal temperature Advection',
-        'Horizontal r advection',
-        'd(dry static energy)/dt',
-        'd(water vapour mixing ratio)/dt',
-        'Relative humidity',
-        'Horizontal wind U component',
-        'Horizontal wind V component',
-    ]
 
     scalars = [
         'Convective Inhibition',
@@ -224,6 +212,10 @@ def subselect_ls_vars(large_scale, levels=None, large_scale_time=None):
 
     if large_scale_time == 'same_and_earlier_time':
         for profile_string in profiles:
+            if profile_string != 'Vertical wind shear':
+                levels = levels_in
+            else:
+                levels = [115, 515, 965]
             ls_list.append(
                 large_scale.where(large_scale['long_name'] == profile_string+'            ',
                                   drop=True).sel(lev=levels)
@@ -236,6 +228,10 @@ def subselect_ls_vars(large_scale, levels=None, large_scale_time=None):
             )
 
         for profile_string in profiles:
+            if profile_string != 'Vertical wind shear':
+                levels = levels_in
+            else:
+                levels = [115, 515, 965]
             ls_list.append(
                 large_scale.where(large_scale['long_name'] == profile_string+', 6h earlier',
                                   drop=True).sel(lev=levels)
@@ -257,6 +253,10 @@ def subselect_ls_vars(large_scale, levels=None, large_scale_time=None):
             string_selection = ', 6h   later'
 
         for profile_string in profiles:
+            if profile_string != 'Vertical wind shear':
+                levels = levels_in
+            else:
+                levels = [115, 515, 965]
             ls_list.append(
                 large_scale.where(large_scale['long_name'] == profile_string+string_selection,
                                   drop=True).sel(lev=levels)

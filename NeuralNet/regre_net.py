@@ -28,11 +28,12 @@ ls_vars = ['omega',
            'dsdt',
            'drdt',
            'RH',
-           'u',
-           'v',
-           # 'dwind_dz'
+           # 'u',
+           # 'v',
+           'dwind_dz'
            ]
-ls_times = 'only_earlier_time'
+long_names = [ds_ls[var].long_name for var in ls_vars]
+ls_times = 'same_and_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -41,11 +42,11 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
 
 l_subselect = True
 if l_subselect:
-    predictor = subselect_ls_vars(predictor, levels=[115, 515, 990], large_scale_time=ls_times)
+    predictor = subselect_ls_vars(predictor, long_names, levels_in=[115, 515, 990], large_scale_time=ls_times)
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = False
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -85,7 +86,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/ROME_Models/NoCorrScalars/Same_time/'
+    model_path = ghome + '/ROME_Models/WindShear/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -105,9 +106,9 @@ else:
         metric = metric.where(predicted.time)
 
     input_percentages_list = []
-    for input in predictor.sel(time=predicted.time):
+    for model_input in predictor.sel(time=predicted.time):
 
-        node_contribution = mlp_backtracking_percentage(model, input)[0]
+        node_contribution = mlp_backtracking_percentage(model, model_input)[0]
         input_percentages_list.append(node_contribution)
 
     input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))

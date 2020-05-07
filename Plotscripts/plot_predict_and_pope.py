@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/NoCorrScalars/Only_Earlier_Time/predicted.nc')
+    ghome + '/ROME_Models/WindShear/predicted.nc')
 # mlr_predicted = xr.open_dataarray(
 #     ghome + '/ROME_Models/NoCorrScalars/mlr_predicted.nc')
 
@@ -43,7 +43,7 @@ ax.plot(metric   [-1200:], color='white', lw=1.5  )
 ax.plot(predicted[-1200:], color='black', lw=1.5  )
 # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
 # ax.plot(    predicted[-1200:], color='red')
-plt.legend(['ROME', '6h earlier NN'])#, 'Earlier and same time MLR'])
+plt.legend(['ROME', 'Earlier and same time NN'])
 # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
 # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 plt.xlabel('Time [6h intervals]')
