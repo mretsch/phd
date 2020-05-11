@@ -4,6 +4,7 @@ import timeit
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from Plotscripts.colors_solarized import sol
 
@@ -24,11 +25,13 @@ ls_vars = ['omega',
            'RH',
            'u',
            'v',
+           'dwind_dz'
            ]
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
-                                                     # chosen_vars=ls_vars,
-                                                     l_take_same_time=True)
+                                                     l_normalise_input=False,
+                                                     chosen_vars=ls_vars, # default is all vars
+                                                     large_scale_time='same_time')
 
 nlev = len(predictor.lev)
 
@@ -57,7 +60,7 @@ eigenvectors = eigenvectors[:, idx]
 variance_perc =  eigenvalues / eigenvalues.sum()
 
 # at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
-l_scale_vectors = False
+l_scale_vectors = True
 if l_scale_vectors:
     norm_orig = np.linalg.norm(eigenvectors, axis=0)
     # now scale each vector such that its l2-norm equals sqrt(eigenvalue).
@@ -66,7 +69,7 @@ if l_scale_vectors:
     evec_scaled = scale_factor * eigenvectors
 
 # add dimensions to vectors
-evec = xr.DataArray(eigenvectors,
+evec = xr.DataArray(evec_scaled, #eigenvectors, #
                     coords={'level': predictor.lev.values,
                             'number': list(range(nlev)),
                             'quantity': ('level', predictor.long_name.values)},
@@ -89,14 +92,17 @@ if evec.dims[0] == 'level':
     plt.show()
 
 # the plot, want colors in the background for each 'variable'
+plt.rc('font', size=15)
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 4))
 ax.plot(evec.isel(number=0)     , color='k', linestyle='-', lw=2.5)
-ax.plot(evec.isel(number=1) * -1, color='k', linestyle=':', lw=1.5)
-ax.plot(evec.isel(number=2)     , color='r', linestyle=':', lw=1.5)
+ax.plot(evec.isel(number=1) * -1, color='r', linestyle=':', lw=1.5)
+ax.plot(evec.isel(number=2)     , color='k', linestyle=':', lw=1.5)
 plt.axhline(0, color='grey', lw=0.5)
-colors = [sol['yellow'], sol['orange'], sol['red'], sol['magenta'], sol['violet'], sol['blue'], sol['cyan'],
-          sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
-          sol['base01'], sol['base1'], sol['base00'], sol['base0']]
+# colors = [sol['yellow'], sol['blue'], sol['orange'], sol['violet'], sol['magenta'], sol['cyan'], sol['red'],
+#           sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
+#           sol['base01'], sol['base1'], sol['base00'], sol['base0']]
+colors = [sol['base01'], sol['base1']] * 7
+ax.set_xlim(0, evec.shape[0])
 tick_values = []
 tick_1, tick_2 = 0, 0
 for i, length in enumerate(var_size):
@@ -106,6 +112,11 @@ for i, length in enumerate(var_size):
     tick_values.append(0.5*(tick_1 + tick_2))
 ax.set_xticks(tick_values)
 ax.set_xticklabels(ls_vars)
-plt.legend(['Pattern 1 (16%)', 'Pattern 2 (8%)', 'Pattern 3 (7%)'])
+# ax.set_xticklabels(['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
+#                     's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH', 'u', 'v', 'dwind_dz'])
+ax.set_xlabel('Profile quantities')
+ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
+ax.set_ylabel('EOF pattern [standard deviation]')
+plt.legend(['Pattern 1 (16%)', 'Pattern 2 (8%)', 'Pattern 3 (6%)'], fontsize=12)
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()

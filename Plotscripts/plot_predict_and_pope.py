@@ -14,9 +14,9 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/WindShear/predicted.nc')
-# mlr_predicted = xr.open_dataarray(
-#     ghome + '/ROME_Models/NoCorrScalars/mlr_predicted.nc')
+    ghome + '/ROME_Models/NoCorrScalars/Same_Time/predicted.nc')
+mlr_predicted = xr.open_dataarray(
+    ghome + '/ROME_Models/NoCorrScalars/Same_Time/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -36,35 +36,42 @@ p_regime[:] = xr.where(ds_pope.var_p3.notnull(), 3, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p4.notnull(), 4, p_regime)
 p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
-plt.rc('font'  , size=22)
+plt.rc('font', size=24)
 
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(48, 4))
-ax.plot(metric   [-1200:], color='white', lw=1.5  )
-ax.plot(predicted[-1200:], color='black', lw=1.5  )
-# ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
-# ax.plot(    predicted[-1200:], color='red')
-plt.legend(['ROME', 'Earlier and same time NN'])
-# plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
-# plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
+predicted_both = [mlr_predicted, predicted]
+legend_both = ['MLR', 'NN']
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
+for i, ax in enumerate(axes):
+    ax.plot(metric           [-400:], color='white', lw=3  )
+    ax.plot(predicted_both[i][-400:], color='black', lw=3  )
+    # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
+    # ax.plot(    predicted[-1200:], color='red')
+    ax.legend(['ROME', 'Same time '+legend_both[i]])
+    # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
+    # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
+    ax.set_ylim(0, 442.8759794239834)
+    ax.set_xlim(0, 400)
+
+    colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
+    # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
+
+    tick_1, tick_2 = -1.5, -0.5
+    for thistime in metric[-1200:].time.values: #metric_high[correct_pred].time.values:
+        tick_1, tick_2 = tick_2, tick_2 + 1
+        ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
+
+    # ax.text(x=-50, y=300, s='(Pope 1, DE)', verticalalignment='top', color=colors[0], fontdict={'fontsize': 16})
+    # ax.text(x=-50, y=250, s=' Pope 2, DW ', verticalalignment='top', color=colors[1], fontdict={'fontsize': 16})
+    # ax.text(x=-50, y=200, s='(Pope 3,  E)', verticalalignment='top', color=colors[2], fontdict={'fontsize': 16})
+    # ax.text(x=-50, y=150, s=' Pope 4, SW ', verticalalignment='top', color=colors[3], fontdict={'fontsize': 16})
+    # ax.text(x=-50, y=100, s=' Pope 5, ME ', verticalalignment='top', color=colors[4], fontdict={'fontsize': 16})
+
+# add a big axis, hide frame
+fig.add_subplot(111, frameon=False)
+# hide tick and tick label of the big axis
+plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 plt.xlabel('Time [6h intervals]')
-plt.ylabel('6h-average ROME [km$^2$]')
-plt.ylim(0, 442.8759794239834)
-# plt.xlim(0, 400)
-
-colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
-# colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
-
-tick_1, tick_2 = -1.5, -0.5
-for thistime in metric[-1200:].time.values: #metric_high[correct_pred].time.values:
-    tick_1, tick_2 = tick_2, tick_2 + 1
-    plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
-
-# ax.text(x=-50, y=300, s='(Pope 1, DE)', verticalalignment='top', color=colors[0], fontdict={'fontsize': 16})
-# ax.text(x=-50, y=250, s=' Pope 2, DW ', verticalalignment='top', color=colors[1], fontdict={'fontsize': 16})
-# ax.text(x=-50, y=200, s='(Pope 3,  E)', verticalalignment='top', color=colors[2], fontdict={'fontsize': 16})
-# ax.text(x=-50, y=150, s=' Pope 4, SW ', verticalalignment='top', color=colors[3], fontdict={'fontsize': 16})
-# ax.text(x=-50, y=100, s=' Pope 5, ME ', verticalalignment='top', color=colors[4], fontdict={'fontsize': 16})
-
+plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
 plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()

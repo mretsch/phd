@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import seaborn as sns
 import statsmodels.api as sm
 from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predictions
@@ -130,7 +131,7 @@ else:
 
     # ===== plots ==========
 
-    l_percentage_plots = True
+    l_percentage_plots = False
     if l_percentage_plots:
         input_percentages_list = []
         for model_input in predictor.sel(time=target.time):
@@ -139,7 +140,7 @@ else:
         input_percentages = xr.zeros_like(predictor.sel(time=target.time))
         input_percentages[:, :] = input_percentages_list
 
-        plt.rc('font', size=23)
+        plt.rc('font', size=25)
 
         if ls_times == 'same_and_earlier_time':
             fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
@@ -189,9 +190,11 @@ else:
         for ax in axes:
             ax.set_xlim(xlim_low, xlim_upp)
 
+        plt.subplots_adjust(wspace=0.05)
+
         plt.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
 
-    plt.rc('font', size=13)
+    plt.rc('font', size=25)
 
     if ls_times == 'same_and_earlier_time':
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
@@ -228,14 +231,23 @@ else:
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
             ax.set_yticklabels(label_list)
-            plt.text(0.5, 0.95, 'Same\ntime', transform=ax.transAxes,
+            plt.text(0.75, 0.95, 'Same\ntime', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
         else:
             ax.set_yticklabels([])
-            plt.text(0.1, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+            plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-            ax.set_xlim(axes[0].get_xlim())
+
         ax.invert_yaxis()
+        ax.set_ylim(n_lev_onetime-0.5, -0.5)
+
+    xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
+    xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
+    for ax in axes:
+        ax.set_xlim(xlim_low, xlim_upp)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.grid(axis='x')
+
+    plt.subplots_adjust(wspace=0.05)
 
     plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)

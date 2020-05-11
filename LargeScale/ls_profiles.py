@@ -5,6 +5,7 @@ import numpy as np
 import metpy.calc as mpcalc
 from Plotscripts.colors_solarized import sol
 home = expanduser("~")
+plt.rc('font', size=18)
 
 # ls = xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
 ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dir.nc')
@@ -28,7 +29,7 @@ var_strings = [
 # ,'s'
 # ,'u'
 # ,'v'
-# ,'omega'
+'omega'
 # ,'div'
 # ,'T_adv_h'
 # ,'T_adv_v'
@@ -37,10 +38,10 @@ var_strings = [
 # ,'s_adv_h'
 # ,'s_adv_v'
 # ,'dsdt'
-# ,'drdt'
+# 'drdt'
 # ,'RH'
 # 'dwind_dz'
-'wind_dir'
+# 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -79,7 +80,10 @@ for var in var_strings:
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure [hPa]')
     plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
-    plt.legend(['1st decile', '2st decile', '3st decile', '4st decile', '5st decile', '6st decile', '7st decile', '8st decile', '9st decile', '10st decile'])
+    plt.legend(['1st decile', '2st decile', '3st decile',
+                '4st decile', '5st decile', '6st decile',
+                '7st decile', '8st decile', '9st decile',
+                '10st decile'], fontsize=9)
 
-    plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight')
+    plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight', transparent=True)
     plt.close()
