@@ -28,8 +28,8 @@ ls_vars = ['omega',
            'dsdt',
            'drdt',
            'RH',
-           # 'u',
-           # 'v',
+           'u',
+           'v',
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -46,7 +46,7 @@ if l_subselect:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = True
+l_loading_model = False
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()

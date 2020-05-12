@@ -10,6 +10,7 @@ import statsmodels.api as sm
 from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from basic_stats import into_pope_regimes, root_mean_square_error
+from Plotscripts.colors_solarized import sol
 
 home = expanduser("~")
 start = timeit.default_timer()
@@ -56,7 +57,7 @@ ls_vars = ['omega',
            'RH',
            'u',
            'v',
-           # 'dwind_dz'
+           'dwind_dz'
           ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
 ls_times = 'same_and_earlier_time'
@@ -121,8 +122,11 @@ if not l_load_model:
 else:
 
     # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-    mlr_coeff = pd.read_csv(ghome+'/ROME_Models/NoCorrScalars/mlr_coeff.csv',
-                            header=None, skiprows=12, skipfooter=7)
+    mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/UVandWindShear/mlr_coeff.csv',
+                                 header=None, skiprows=11, skipfooter=7)
+    mlr_bias = mlr_coeff_bias.iloc[0, 1]
+    mlr_coeff = mlr_coeff_bias.drop(index=0)
+    mlr_coeff.index = list(range(mlr_coeff.shape[0]))
     mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                      axis='columns', inplace=True)
     mlr_coeff['var'] = predictor['long_name'].values
@@ -131,11 +135,12 @@ else:
 
     # ===== plots ==========
 
-    l_percentage_plots = False
+    l_percentage_plots = True
     if l_percentage_plots:
         input_percentages_list = []
         for model_input in predictor.sel(time=target.time):
-            input_percentages_list.append(mlr_coeff['coeff'] * model_input)
+            input_percentages_list.append(mlr_coeff['coeff'] * model_input /
+                                          (np.dot(mlr_coeff['coeff'], model_input) + mlr_bias) * 100)
 
         input_percentages = xr.zeros_like(predictor.sel(time=target.time))
         input_percentages[:, :] = input_percentages_list
@@ -155,17 +160,18 @@ else:
             if i == 0:
                 # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
                 # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-                var_to_plot_1 = list(range(24))
-                var_to_plot_2 = list(range(24, n_lev_onetime))
+                var_to_plot_1 = list(range(27))
+                var_to_plot_2 = list(range(27, n_lev_onetime))
             else:
                 # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
                 # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-                var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 24))
-                var_to_plot_2 = list(range(n_lev//2 + 24, n_lev        ))
+                var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+                var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
             var_to_plot = var_to_plot_1 + var_to_plot_2
 
             plt.sca(ax)
-            sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=2.)
+            sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
+                        color='plum', medianprops=dict(lw=3, color='cyan'))
 
             ax.axvline(x=0, color='r', lw=1.5)
 
@@ -185,10 +191,13 @@ else:
                 plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
 
+            ax.set_xlabel('Contribution to predicted value [%]')
+
         xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
         xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
         for ax in axes:
-            ax.set_xlim(xlim_low, xlim_upp)
+            # ax.set_xlim(xlim_low, xlim_upp)
+            ax.set_xlim(-75, 75)
 
         plt.subplots_adjust(wspace=0.05)
 
@@ -209,13 +218,13 @@ else:
         if i == 0:
             # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
             # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-            var_to_plot_1 = list(range(24))
-            var_to_plot_2 = list(range(24, n_lev_onetime))
+            var_to_plot_1 = list(range(27))
+            var_to_plot_2 = list(range(27, n_lev_onetime))
         else:
             # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
             # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 24))
-            var_to_plot_2 = list(range(n_lev//2 + 24, n_lev        ))
+            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+            var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
         var_to_plot = var_to_plot_1 + var_to_plot_2
 
         ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=12., ls='', color='k')

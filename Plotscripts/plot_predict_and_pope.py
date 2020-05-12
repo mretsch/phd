@@ -14,9 +14,9 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/NoCorrScalars/Same_Time/predicted.nc')
+    ghome + '/ROME_Models/UVandWindShear/predicted.nc')
 mlr_predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/NoCorrScalars/Same_Time/mlr_predicted.nc')
+    ghome + '/ROME_Models/UVandWindShear/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -38,25 +38,26 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
+n_last = 400
 predicted_both = [mlr_predicted, predicted]
 legend_both = ['MLR', 'NN']
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
 for i, ax in enumerate(axes):
-    ax.plot(metric           [-400:], color='white', lw=3  )
-    ax.plot(predicted_both[i][-400:], color='black', lw=3  )
+    ax.plot(metric           [-n_last:], color='white', lw=3  )
+    ax.plot(predicted_both[i][-n_last:], color='black', lw=3  )
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
-    ax.legend(['ROME', 'Same time '+legend_both[i]])
+    ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
     ax.set_ylim(0, 442.8759794239834)
-    ax.set_xlim(0, 400)
+    ax.set_xlim(0, n_last)
 
     colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
     # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
 
     tick_1, tick_2 = -1.5, -0.5
-    for thistime in metric[-1200:].time.values: #metric_high[correct_pred].time.values:
+    for thistime in metric[-n_last:].time.values: #metric_high[correct_pred].time.values:
         tick_1, tick_2 = tick_2, tick_2 + 1
         ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
 
