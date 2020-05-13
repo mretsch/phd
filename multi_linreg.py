@@ -171,7 +171,7 @@ else:
 
             plt.sca(ax)
             sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
-                        color='plum', medianprops=dict(lw=3, color='cyan'))
+                        color='darksalmon', medianprops=dict(lw=3, color='dodgerblue'))
 
             ax.axvline(x=0, color='r', lw=1.5)
 
@@ -246,6 +246,8 @@ else:
             ax.set_yticklabels([])
             plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+
+        ax.set_xlabel('Coefficients for MLR [km$^2$]')
 
         ax.invert_yaxis()
         ax.set_ylim(n_lev_onetime-0.5, -0.5)
