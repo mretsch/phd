@@ -3,6 +3,7 @@ home = expanduser("~")
 import xarray as xr
 import numpy as np
 import metpy.calc as mpcalc
+import metpy.constants as mpconsts
 from metpy.units import units
 
 # global R_d, g
@@ -202,7 +203,8 @@ def vertical_wind_shear(u, v):
 
 
 def wind_direction(u, v):
-    # depending on input dataset, the lev dimension is transposed or not. I want all levels above 990 hPa.
+    # depending on input dataset, the lev dimension is transposed or not. I want all levels above 990 hPa,
+    # not the 1015-level below 990 hPa.
     if ls.u.sel(lev=slice(990, None)).lev.max() == 990:
         wind_dir = xr.full_like(ls.u.sel(lev=slice(990, None)), np.nan)
         wind_dir[:, :] = mpcalc.wind_direction(ls.u.sel(lev=slice(990, None)), ls.v.sel(lev=slice(990, None)))
@@ -214,9 +216,32 @@ def wind_direction(u, v):
     return xr.merge([ls, xr.Dataset({'wind_dir': wind_dir})])
 
 
+def down_cape(start_level=27):
+    temp = ls.T.sel(lev=slice(None, 990))
+    mix = ls.r.sel(lev=slice(None, 990))
+    lev_vector = ls.lev.sel(lev=slice(None, 990))
+    p_start = lev_vector[start_level].item() * units['hPa']
+
+    rh = mpcalc.relative_humidity_from_mixing_ratio(mix / 1000, temp, lev_vector)
+    dew_temp = mpcalc.dewpoint_from_relative_humidity(temp, rh)
+
+    # example level 27 is 715hPa
+    wb_temp = mpcalc.wet_bulb_temperature(p_start, temp[0, start_level], dew_temp[0, start_level])
+
+    moist_adiabat_below = mpcalc.moist_lapse(lev_vector[start_level+1:], wb_temp, p_start)
+    env_temp = temp[0, start_level+1:] * units['kelvin']
+
+    temp_diff = env_temp - moist_adiabat_below
+    p_below = lev_vector[start_level+1:] * units['hPa']
+
+    d_cape = (mpconsts.Rd
+              * (np.trapz(temp_diff, np.log(p_below)) * units.degK)).to(units('J/kg'))
+
+
 if __name__ == '__main__':
-    # ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-    ls = xr.open_dataset(home + '/Data/LargeScaleState/CPOL_large-scale_forcing.nc')
+    ghome = home + '/Google Drive File Stream/My Drive'
+    ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+    # ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False
@@ -273,4 +298,7 @@ if __name__ == '__main__':
         t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
 
     # ls_new = vertical_wind_shear(ls.u, ls.v)
-    ls_new = wind_direction(ls.u, ls.v)
+    # ls_new = wind_direction(ls.u, ls.v)
+
+    ls_new = down_cape(ls.T)
+
