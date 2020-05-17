@@ -216,26 +216,54 @@ def wind_direction(u, v):
     return xr.merge([ls, xr.Dataset({'wind_dir': wind_dir})])
 
 
-def down_cape(start_level=27):
-    temp = ls.T.sel(lev=slice(None, 990))
-    mix = ls.r.sel(lev=slice(None, 990))
-    lev_vector = ls.lev.sel(lev=slice(None, 990))
-    p_start = lev_vector[start_level].item() * units['hPa']
+def down_cape(p_start=None):
 
-    rh = mpcalc.relative_humidity_from_mixing_ratio(mix / 1000, temp, lev_vector)
-    dew_temp = mpcalc.dewpoint_from_relative_humidity(temp, rh)
+    if p_start not in ls.lev:
+        raise ValueError("Please provide pressure of one level of large-scale dataset to start calculating DCAPE from.")
 
-    # example level 27 is 715hPa
-    wb_temp = mpcalc.wet_bulb_temperature(p_start, temp[0, start_level], dew_temp[0, start_level])
+    # find index of p_start
+    start_level = int((abs(ls.lev - p_start)).argmin())
 
-    moist_adiabat_below = mpcalc.moist_lapse(lev_vector[start_level+1:], wb_temp, p_start)
-    env_temp = temp[0, start_level+1:] * units['kelvin']
+    # get temperature and humidity from large-scale state
+    temp     = ls.T  .sel(lev=slice(None, 990)).metpy.unit_array
+    mix      = ls.r  .sel(lev=slice(None, 990)).metpy.unit_array.to('kg/kg')
+    p_vector = ls.lev.sel(lev=slice(None, 990)).metpy.unit_array
 
-    temp_diff = env_temp - moist_adiabat_below
-    p_below = lev_vector[start_level+1:] * units['hPa']
+    # get dew-point temperature
+    vap_pres = mpcalc.vapor_pressure(p_vector, mix)
+    dew_temp = mpcalc.dewpoint(vap_pres)
 
-    d_cape = (mpconsts.Rd
-              * (np.trapz(temp_diff, np.log(p_below)) * units.degK)).to(units('J/kg'))
+    # pressure levels to integrate over
+    p_down = ls.lev.sel(lev=slice(p_start, 990))
+
+    # find NaNs
+    l_valid = ls.T[:, start_level].notnull().values
+
+    d_cape   = xr.full_like(ls.cape, np.nan)
+    x        = p_down.values
+    temp     = temp    [l_valid, :]
+    dew_temp = dew_temp[l_valid, :]
+    # loop over all non-NaN times in large-scale state
+    for i, this_time in enumerate(ls.T[l_valid].time):
+        print(i)
+        # bug: p_start has to be multiplied with units when given as argument, not beforehand
+        wb_temp = mpcalc.wet_bulb_temperature(p_start*units['hPa'], temp[i, start_level], dew_temp[i, start_level])
+
+        # create placeholder for moist adiabat temperature
+        moist_adiabat = temp[i, start_level:].to('degC')
+
+        moist_adiabat_below = mpcalc.moist_lapse(p_vector[start_level+1:], wb_temp, p_start*units['hPa'])
+        moist_adiabat[0]    = wb_temp
+        moist_adiabat[1:]   = moist_adiabat_below
+
+        env_temp  = temp[i, start_level:]
+        temp_diff = moist_adiabat - env_temp
+
+        y = temp_diff.magnitude
+        d_cape.loc[this_time] = (mpconsts.Rd * (np.trapz(y, np.log(x)) * units.degK)).to(units('J/kg'))
+
+    d_cape.attrs['long_name'] = 'Downward CAPE'
+    return xr.merge([ls, xr.Dataset({'d_cape': d_cape})])
 
 
 if __name__ == '__main__':
@@ -299,6 +327,5 @@ if __name__ == '__main__':
 
     # ls_new = vertical_wind_shear(ls.u, ls.v)
     # ls_new = wind_direction(ls.u, ls.v)
-
-    ls_new = down_cape(ls.T)
+    ls_new = down_cape(p_start=515)
 

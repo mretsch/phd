@@ -46,7 +46,7 @@ if l_subselect:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = False
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -86,7 +86,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/ROME_Models/WindShear/'
+    model_path = ghome + '/ROME_Models/UVandWindShear/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -115,7 +115,7 @@ else:
     input_percentages[:, :] = input_percentages_list
 
     # ===== Plots =====================
-    plt.rc('font', size=13)
+    plt.rc('font', size=25)
 
     if ls_times == 'same_and_earlier_time':
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
@@ -130,21 +130,21 @@ else:
         if i == 0:
             # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
             # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-            var_to_plot_1 = list(range(24))
-            var_to_plot_2 = list(range(24, n_lev_onetime))
+            var_to_plot_1 = list(range(27))
+            var_to_plot_2 = list(range(27, n_lev_onetime))
         else:
             # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
             # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 24))
-            var_to_plot_2 = list(range(n_lev//2 + 24, n_lev        ))
+            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+            var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
         var_to_plot = var_to_plot_1 + var_to_plot_2
 
         plt.sca(ax)
-        sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=0.)
+        sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
+                    color='darksalmon', medianprops=dict(lw=3, color='dodgerblue'))
 
-        ax.set_xlim(-100, 100)
+        ax.set_xlim(-35, 35)
         ax.axvline(x=0, color='r', lw=1.5)
-
 
         label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
                       zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
@@ -155,12 +155,21 @@ else:
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
             ax.set_yticklabels(label_list)
-            plt.text(0.95, 0.95, 'Same\ntime', transform=ax.transAxes,
+            plt.text(0.8, 0.95, 'Same\ntime', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
         else:
             ax.set_yticklabels([])
-            plt.text(0.95, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+            plt.text(0.8, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+
+        ax.set_xlabel('Contribution to predicted value [%]')
+
+    xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
+    xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
+    for ax in axes:
+        ax.set_xlim(xlim_low, xlim_upp)
+
+    plt.subplots_adjust(wspace=0.05)
 
     plt.savefig(home + '/Desktop/whisker.pdf', bbox_inches='tight', transparent=True)
 
