@@ -31,7 +31,7 @@ predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
                                                      l_normalise_input=False,
                                                      chosen_vars=ls_vars, # default is all vars
-                                                     large_scale_time='same_time')
+                                                     large_scale_time='all_ls')
 
 nlev = len(predictor.lev)
 

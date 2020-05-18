@@ -9,7 +9,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     """Returns a concatenated array of the large-scale variables and the time series, at times of both being present.
     chosen_vars selects some variables out of the large-scale state dataset."""
 
-    if large_scale_time not in ['same_time', 'same_and_earlier_time', 'only_earlier_time', 'only_later_time']:
+    if large_scale_time not in ['same_time', 'same_and_earlier_time', 'only_earlier_time', 'only_later_time', 'all_ls']:
         raise ValueError("String large_scale_time to select large-scale time steps does not match or is not provided.")
 
     if chosen_vars is None:
@@ -96,6 +96,11 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         # put the 'original' NaN back into array
         var = xr.where(var_copy.isnull(), var_copy, var)
 
+    if large_scale_time == "all_ls":
+        # only return the large scale variables, without considering anything else
+        predictor = var.where(var.notnull(), drop=True)
+        target, variable_size = np.nan, np.nan
+
     # large scale variables only where timeseries is defined
     var_metric = var.where(timeseries.notnull(), drop=True)
 
@@ -107,7 +112,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         predictor = var_metric[{'time': l_var_nonull}]
         target = timeseries.sel(time=predictor.time)
 
-    else:
+    elif large_scale_time in ['only_earlier_time', 'same_and_earlier_time', 'only_later_time']:
         var_nonull = var_metric[l_var_nonull]
         time_nonull_6earlier = var_nonull.time - np.timedelta64(6, 'h')
         times = []
