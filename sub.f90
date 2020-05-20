@@ -139,3 +139,67 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
     WRITE(*,*) "Hello from lovely FORTRAN."
 
 END SUBROUTINE histogram_2d
+
+SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, length, bin_values)
+    USE ieee_arithmetic
+
+    INTEGER      :: mn                   ! dimension size of flattened 2d-histogram
+    INTEGER      :: length               ! length of the time series to put 'into' 2d-histogram
+
+    REAL(KIND=8) :: indices1(mn)         !  IN
+    REAL(KIND=8) :: indices2(mn)         !  IN
+    REAL(KIND=8) :: overlay  (length)    !  IN
+    REAL(KIND=8) :: overlay_x(length)    !  IN
+    REAL(KIND=8) :: overlay_y(length)    !  IN
+    REAL(KIND=8) :: bin_values(mn)       !  OUT
+
+    !f2py intent(in  )                   :: indices1, indices2, overlay, overlay_x, overlay_y
+    !f2py intent(hide), depend(indices1) :: mn
+    !f2py intent(hide), depend(overlay ) :: length
+    !f2py intent( out)                   :: bin_values
+
+    LOGICAL      :: l_1(length), l_2(length), l_12(length), l_hit_nans(length)
+    INTEGER      :: i_12(length), total(mn)
+    REAL(KIND=8) :: hit_values(length), hit_value_sum(mn)
+
+    DO i=1, mn
+        l_1 = overlay_x .EQ. indices1(i)
+        l_2 = overlay_y .EQ. indices2(i)
+        l_12 = l_1 .AND. l_2
+
+        ! subselect values of the overlay time series for one histogram-bin, set rest to zero
+        hit_values = MERGE(overlay, 0.d0, l_12)
+        ! if hit_values contain NaNs, also set them to zero
+        l_hit_nans = ISNAN(hit_values)
+        hit_values = MERGE(0.d0, hit_values, l_hit_nans)
+        ! logical converted to integer of indices that survived filtering
+        i_12 = l_12 .AND. (.NOT. l_hit_nans)
+
+        total(i)         = sum(i_12)
+        hit_value_sum(i) = sum(hit_values)
+    END DO
+
+    ! compute the average value of survived values
+    ! Fortran-NaNs are converted to 0. in python, so choose a special value to check against in python
+    bin_values = MERGE(-9999999999.d0, hit_value_sum / total, total .EQ. 0)
+
+    WRITE(*,*) "Hello from lovely FORTRAN again."
+END SUBROUTINE phasespace
+
+SUBROUTINE nantest(vector, n, l1)
+    USE ieee_arithmetic
+
+    REAL(KIND=8) :: vector(n)
+    INTEGER      :: n
+    !f2py intent(in) :: vector
+    !f2py intent(hide), depend(vector) :: n
+    !f2py intent(out) :: l1
+
+!    LOGICAL :: l1(n)
+!    l1 = ISNAN(vector)
+!    l1 = IEEE_IS_NAN(vector)
+    REAL(KIND=8) :: l1
+    l1 = IEEE_VALUE(l1, IEEE_QUIET_NAN)
+
+    WRITE(*,*) "Hello from lovely FORTRAN here."
+END SUBROUTINE nantest
