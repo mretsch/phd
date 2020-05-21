@@ -1,4 +1,7 @@
-SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins, l_cut_off, cut_off, l_density, hist_2d)
+SUBROUTINE histogram_2d(xseries, yseries, length, &
+                        xedges, yedges, nxbins, nybins, &
+                        l_cut_off, cut_off, l_density, &
+                        hist_2d, xwhichbins, ywhichbins)
 
     INTEGER      :: length                  !     length of xseries & yseries
     INTEGER      :: nxbins                  !     number of bins for x-axis
@@ -10,6 +13,8 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
     REAL(KIND=8) :: xedges(nxbins+1)        !  IN
     REAL(KIND=8) :: yedges(nybins+1)        !  IN
     REAL(KIND=8) :: hist_2d(nybins, nxbins) ! OUT
+    REAL(KIND=8) :: xwhichbins(length)      ! OUT
+    REAL(KIND=8) :: ywhichbins(length)      ! OUT
 
     LOGICAL      :: l_cut_off               !  IN
     LOGICAL      :: l_density               !  IN
@@ -18,11 +23,10 @@ SUBROUTINE histogram_2d(xseries, yseries, length, xedges, yedges, nxbins, nybins
     !f2py intent(hide ), depend(xseries) :: length=shape(xseries,1)
     !f2py intent(hide ), depend(xedges)  :: nxbins=shape(xedges,1)-1
     !f2py intent(hide ), depend(yedges)  :: nybins=shape(yedges,1)-1
-    !f2py intent(  out)                  :: hist_2d
+    !f2py intent(  out)                  :: xwhichbins, ywhichbins, hist_2d
 
     INTEGER      :: x_indx, y_indx
     REAL(KIND=8) :: ymasked(length), xbins(nxbins), ybins(nybins), dx(nxbins), dy(nybins), hist_sum
-    REAL(KIND=8) :: xwhichbins(length), ywhichbins(length)
     REAL(KIND=8) :: tmp_x(nxbins), tmp_y(nybins), fillvalue
     LOGICAL      :: l_mask(length), l_temp
 
@@ -170,7 +174,7 @@ SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, len
         ! subselect values of the overlay time series for one histogram-bin, set rest to zero
         hit_values = MERGE(overlay, 0.d0, l_12)
         ! if hit_values contain NaNs, also set them to zero
-        l_hit_nans = ISNAN(hit_values)
+        l_hit_nans = IEEE_IS_NAN(hit_values)
         hit_values = MERGE(0.d0, hit_values, l_hit_nans)
         ! logical converted to integer of indices that survived filtering
         i_12 = l_12 .AND. (.NOT. l_hit_nans)
@@ -185,21 +189,3 @@ SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, len
 
     WRITE(*,*) "Hello from lovely FORTRAN again."
 END SUBROUTINE phasespace
-
-SUBROUTINE nantest(vector, n, l1)
-    USE ieee_arithmetic
-
-    REAL(KIND=8) :: vector(n)
-    INTEGER      :: n
-    !f2py intent(in) :: vector
-    !f2py intent(hide), depend(vector) :: n
-    !f2py intent(out) :: l1
-
-!    LOGICAL :: l1(n)
-!    l1 = ISNAN(vector)
-!    l1 = IEEE_IS_NAN(vector)
-    REAL(KIND=8) :: l1
-    l1 = IEEE_VALUE(l1, IEEE_QUIET_NAN)
-
-    WRITE(*,*) "Hello from lovely FORTRAN here."
-END SUBROUTINE nantest

@@ -135,10 +135,12 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     l_fortran = True
     # takes seconds
     if l_fortran:
-        H = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
-                                 xedges=x_edges, yedges=y_edges,
-                                 l_cut_off=False, cut_off=50, l_density=False)
-                                 # l_cut_off=True, cut_off=50)
+        H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
+                                                         xedges=x_edges, yedges=y_edges,
+                                                         l_density=False,
+                                                         l_cut_off=True, cut_off=2)
+        xbinseries[xbinseries == -1.] = np.nan
+        ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
         # H = np.ma.masked_greater(H, 50)
         # percentages
@@ -166,12 +168,14 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
     abscissa = x_edges[:-1] + 0.5 * (x_edges[1:] - x_edges[:-1])
     ordinate = y_edges[:-1] + 0.5 * (y_edges[1:] - y_edges[:-1])
 
-    x_bin_series = xr.DataArray(pd.cut(np.array(x_series), x_edges,
-                                       labels=abscissa,  # np.linspace(1, len(x_edges)-1, len(x_edges)-1),
-                                       right=False).get_values())
-    y_bin_series = xr.DataArray(pd.cut(np.array(y_series), y_edges,
-                                       labels=ordinate,  # np.linspace(1, len(y_edges)-1, len(y_edges)-1),
-                                       right=False).get_values())
+    # x_bin_series = xr.DataArray(pd.cut(np.array(x_series), x_edges,
+    #                                    labels=abscissa,  # np.linspace(1, len(x_edges)-1, len(x_edges)-1),
+    #                                    right=False).get_values())
+    # y_bin_series = xr.DataArray(pd.cut(np.array(y_series), y_edges,
+    #                                    labels=ordinate,  # np.linspace(1, len(y_edges)-1, len(y_edges)-1),
+    #                                    right=False).get_values())
+    x_bin_series = xr.DataArray(xbinseries)
+    y_bin_series = xr.DataArray(ybinseries)
 
     samplesize = min(x_bin_series.notnull().sum(), y_bin_series.notnull().sum())
 

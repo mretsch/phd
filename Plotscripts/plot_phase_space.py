@@ -10,7 +10,7 @@ home = expanduser("~")
 start = timeit.default_timer()
 
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
-ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
+ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist_gt1.nc')
 ds    = xr.open_dataset(home+'/Data/Analysis/With_Boundary/conv_intensity.nc')
 
 subselect = True
