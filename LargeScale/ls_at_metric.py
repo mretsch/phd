@@ -99,7 +99,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     if large_scale_time == "all_ls":
         # only return the large scale variables, without considering anything else
         predictor = var.where(var.notnull(), drop=True)
-        target, variable_size = np.nan, np.nan
+        target = np.nan
 
     # large scale variables only where timeseries is defined
     var_metric = var.where(timeseries.notnull(), drop=True)

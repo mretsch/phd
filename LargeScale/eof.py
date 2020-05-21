@@ -11,8 +11,9 @@ from Plotscripts.colors_solarized import sol
 start = timeit.default_timer()
 
 # assemble the large scale dataset
-ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-metric = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+ghome = home + '/Google Drive File Stream/My Drive'
+ds_ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
 # take only large ROME values and the according LS variables then in the subroutine
 # metric = metric[metric.percentile > 0.95]
