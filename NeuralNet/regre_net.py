@@ -115,11 +115,11 @@ else:
     input_percentages[:, :] = input_percentages_list
 
     # ===== Plots =====================
-    plt.rc('font', size=25)
+    plt.rc('font', size=29)
 
     if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
-        n_lev_onetime = n_lev//2
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12))
+        n_lev_onetime = 11 # n_lev//2
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
         axes = [axes]
@@ -128,15 +128,15 @@ else:
     for i, ax in enumerate(axes):
 
         if i == 0:
-            # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
-            # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-            var_to_plot_1 = list(range(27))
-            var_to_plot_2 = list(range(27, n_lev_onetime))
+            var_to_plot_1 = [1, 15, 17, 18, 20, 26]  # profile variables
+            var_to_plot_2 = [28, 34, 35, 44, 45]  # scalars
+            # var_to_plot_1 = list(range(27))
+            # var_to_plot_2 = list(range(27, n_lev_onetime))
         else:
-            # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
-            # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-            var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
-            var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
+            var_to_plot_1 = [50, 64, 66, 67, 69, 75]
+            var_to_plot_2 = [77, 83, 84, 93, 94]
+            # var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+            # var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
         var_to_plot = var_to_plot_1 + var_to_plot_2
 
         plt.sca(ax)
@@ -155,11 +155,11 @@ else:
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
             ax.set_yticklabels(label_list)
-            plt.text(0.8, 0.95, 'Same\ntime', transform=ax.transAxes,
+            plt.text(0.8, 0.85, 'Same\ntime', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
         else:
             ax.set_yticklabels([])
-            plt.text(0.8, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+            plt.text(0.7, 0.85, '6 hours\nearlier', transform=ax.transAxes,
                      bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
 
         ax.set_xlabel('Contribution to predicted value [%]')

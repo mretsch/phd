@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
         # ===== plots ==========
 
-        l_percentage_plots = True
+        l_percentage_plots = False
         if l_percentage_plots:
             input_percentages_list = []
             for model_input in predictor.sel(time=target.time):
@@ -200,11 +200,11 @@ if __name__ == "__main__":
 
             plt.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
 
-        plt.rc('font', size=25)
+        plt.rc('font', size=28)
 
         if ls_times == 'same_and_earlier_time':
-            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
-            n_lev_onetime = n_lev//2
+            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12))
+            n_lev_onetime = 11 # n_lev//2
         else:
             fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
             axes = [axes]
@@ -213,18 +213,18 @@ if __name__ == "__main__":
         for i, ax in enumerate(axes):
 
             if i == 0:
-                # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
-                # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-                var_to_plot_1 = list(range(27))
-                var_to_plot_2 = list(range(27, n_lev_onetime))
+                var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
+                var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
+                # var_to_plot_1 = list(range(27))
+                # var_to_plot_2 = list(range(27, n_lev_onetime))
             else:
-                # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
-                # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-                var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
-                var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
+                var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
+                var_to_plot_2 = [                        77, 83, 84, 93, 94]
+                # var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+                # var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
             var_to_plot = var_to_plot_1 + var_to_plot_2
 
-            ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=12., ls='', color='k')
+            ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
 
             ax.axvline(x=0, color='r', lw=1.5)
 
@@ -237,11 +237,11 @@ if __name__ == "__main__":
             ax.set_yticks(list(range(len(var_to_plot))))
             if i == 0:
                 ax.set_yticklabels(label_list)
-                plt.text(0.75, 0.95, 'Same\ntime', transform=ax.transAxes,
+                plt.text(0.75, 0.85, 'Same\ntime', transform=ax.transAxes,
                          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
             else:
                 ax.set_yticklabels([])
-                plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+                plt.text(0.75, 0.85, '6 hours\nearlier', transform=ax.transAxes,
                          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
 
             ax.set_xlabel('Coefficients for MLR [km$^2$]')

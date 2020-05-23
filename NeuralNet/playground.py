@@ -186,7 +186,7 @@ if testing:
     if model_insight:
 
         model = kmodels.load_model(
-            ghome+'/Data/NN_Models/BasicUnderstanding/SqrtandSqrt_Model/sqrtandsqrtmodel.h5')
+            ghome+'/Data/NN_Models/BasicUnderstanding/Multi_Model/multimodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -235,10 +235,10 @@ if testing:
 
         sns.boxplot(data=percentage_input .T)
         # plt.ylim(90, 110)
-        plt.title('Backtracking (target is sqrt(node1) + sqrt(node2)).')
+        plt.title('Backtracking (target is node1*node2).')
         plt.xlabel('# input node')
         plt.ylabel('Contributing percentage [%]')
-        plt.savefig(home + '/Desktop/backtrack_sqrtandsqrtnet.pdf', bbox_inches='tight')
+        plt.savefig(home + '/Desktop/backtrack_net.pdf', bbox_inches='tight')
         # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
 
     plotting_model = False
