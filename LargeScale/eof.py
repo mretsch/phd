@@ -94,30 +94,35 @@ if evec.dims[0] == 'level':
 
 # the plot, want colors in the background for each 'variable'
 plt.rc('font', size=15)
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 4))
-ax.plot(evec.isel(number=0)     , color='k', linestyle='-', lw=2.5)
-ax.plot(evec.isel(number=1) * -1, color='r', linestyle=':', lw=1.5)
-ax.plot(evec.isel(number=2)     , color='k', linestyle=':', lw=1.5)
-plt.axhline(0, color='grey', lw=0.5)
-# colors = [sol['yellow'], sol['blue'], sol['orange'], sol['violet'], sol['magenta'], sol['cyan'], sol['red'],
-#           sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
-#           sol['base01'], sol['base1'], sol['base00'], sol['base0']]
-colors = [sol['base01'], sol['base1']] * 7
-ax.set_xlim(0, evec.shape[0])
-tick_values = []
-tick_1, tick_2 = 0, 0
-for i, length in enumerate(var_size):
-    tick_1, tick_2 = tick_2, tick_2 + length
-    # plt.axvline(x=tick_2, color='red')
-    plt.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
-    tick_values.append(0.5*(tick_1 + tick_2))
-ax.set_xticks(tick_values)
-ax.set_xticklabels(ls_vars)
-# ax.set_xticklabels(['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
-#                     's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH', 'u', 'v', 'dwind_dz'])
-ax.set_xlabel('Profile quantities')
-ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
-ax.set_ylabel('EOF pattern [standard deviation]')
-plt.legend(['Pattern 1 (16%)', 'Pattern 2 (8%)', 'Pattern 3 (6%)'], fontsize=12)
+fig, axes = plt.subplots(nrows=20, ncols=1, figsize=(15, 4*20))
+ymin, ymax = 1e10, -1e10
+for i, ax in enumerate(axes):
+    ax.plot(evec.isel(number=i)     , color='k', linestyle='-', lw=2.5)
+    ax.axhline(0, color='r', lw=0.5)
+    # colors = [sol['yellow'], sol['blue'], sol['orange'], sol['violet'], sol['magenta'], sol['cyan'], sol['red'],
+    #           sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
+    #           sol['base01'], sol['base1'], sol['base00'], sol['base0']]
+    colors = [sol['base01'], sol['base1']] * 7
+    ax.set_xlim(0, evec.shape[0])
+    tick_values = []
+    tick_1, tick_2 = 0, 0
+    for i, length in enumerate(var_size):
+        tick_1, tick_2 = tick_2, tick_2 + length
+        # plt.axvline(x=tick_2, color='red')
+        ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
+        tick_values.append(0.5*(tick_1 + tick_2))
+    ax.set_xticks(tick_values)
+    ax.set_xticklabels(ls_vars)
+    # ax.set_xticklabels(['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
+    #                     's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH', 'u', 'v', 'dwind_dz'])
+    ax.set_xlabel('Profile quantities')
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.2))
+    ymin_ax, ymax_ax = ax.get_ylim()
+    ymin   , ymax    = min(ymin, ymin_ax), max(ymax, ymax_ax)
+    ax.set_ylabel('EOF pattern [standard deviation]')
+for i, ax in enumerate(axes):
+    ax.set_ylim(ymin, ymax)
+    ax.legend(['Pattern ' + str(i + 1) + ' (' + str(round(variance_perc[i] * 100, 2)) + '%)'])
+# plt.legend(['Pattern 1 (16%)', 'Pattern 2 (8%)', 'Pattern 3 (6%)'], fontsize=12)
 plt.savefig(home+'/Desktop/eof_plot.pdf', bbox_inches='tight', transparent=True)
 plt.show()
