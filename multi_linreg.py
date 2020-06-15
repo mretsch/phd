@@ -64,17 +64,17 @@ if __name__ == "__main__":
     ghome = home+'/Google Drive File Stream/My Drive'
 
     # assemble the large scale dataset
-    ds_ls = xr.open_dataset(ghome+'/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+    ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
     ls_vars = ['omega',
-               'T_adv_h',
-               'r_adv_h',
-               'dsdt',
-               'drdt',
+               # 'T_adv_h',
+               # 'r_adv_h',
+               # 'dsdt',
+               # 'drdt',
                'RH',
-               'u',
-               'v',
+               # 'u',
+               # 'v',
                'dwind_dz'
               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     l_subselect = True
     if l_subselect:
-        levels = [115, 515, 990]
+        levels = [215, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
 
     l_compute_correlations = False
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     else:
 
         # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-        mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/UVandWindShear/mlr_coeff.csv',
+        mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/PhysSelect/mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7)
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
         mlr_coeff = mlr_coeff_bias.drop(index=0)
@@ -202,9 +202,10 @@ if __name__ == "__main__":
 
         plt.rc('font', size=28)
 
+        n_profile_vars = 9  # 27 #
         if ls_times == 'same_and_earlier_time':
             fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12))
-            n_lev_onetime = 11 # n_lev//2
+            n_lev_onetime =  n_lev//2 #11 #
         else:
             fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
             axes = [axes]
@@ -213,15 +214,15 @@ if __name__ == "__main__":
         for i, ax in enumerate(axes):
 
             if i == 0:
-                var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
-                var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
-                # var_to_plot_1 = list(range(27))
-                # var_to_plot_2 = list(range(27, n_lev_onetime))
+                # var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
+                # var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
+                var_to_plot_1 = list(range(n_profile_vars))
+                var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
             else:
-                var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
-                var_to_plot_2 = [                        77, 83, 84, 93, 94]
-                # var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
-                # var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
+                # var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
+                # var_to_plot_2 = [                        77, 83, 84, 93, 94]
+                var_to_plot_1 = list(range(n_lev//2                 , n_lev//2 + n_profile_vars))
+                var_to_plot_2 = list(range(n_lev//2 + n_profile_vars, n_lev                    ))
             var_to_plot = var_to_plot_1 + var_to_plot_2
 
             ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
