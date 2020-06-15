@@ -12,7 +12,8 @@ start = timeit.default_timer()
 
 ghome = home+'/Google Drive File Stream/My Drive'
 
-metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
+rome = xr.open_dataarray(ghome + '/Data_Analysis/rom_km_avg6h_nanzero.nc')
+area   = xr.open_dataarray(ghome+'/Data_Analysis/o_area_avg6h_nanzero.nc') * 6.25
 predicted = xr.open_dataarray(
     ghome + '/ROME_Models/UVandWindShear/predicted.nc')
 mlr_predicted = xr.open_dataarray(
@@ -20,14 +21,15 @@ mlr_predicted = xr.open_dataarray(
 
 l_high_values = False
 if l_high_values:
-    metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
-                                                 target_percentile=0.9, prediction_offset=0.3)
+    rome, predicted = high_correct_predictions(target=rome, predictions=predicted,
+                                               target_percentile=0.9, prediction_offset=0.3)
 else:
     # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
-    metric = metric.where(predicted.time)
+    rome = rome.where(predicted.time)
+    area = area.where(predicted.time)
 
 # the plot of predicted versus true ROME values with Pope regimes in the background
-ds_pope = into_pope_regimes(metric, l_upsample=True, l_all=True)
+ds_pope = into_pope_regimes(rome, l_upsample=True, l_all=True)
 
 p_regime = xr.full_like(ds_pope.var_all, np.nan)
 p_regime[:] = xr.where(ds_pope.var_p1.notnull(), 1, p_regime)
@@ -39,15 +41,16 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 plt.rc('font', size=24)
 
 n_last = 400
-predicted_both = [mlr_predicted, predicted]
-legend_both = ['MLR', 'NN']
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
-for i, ax in enumerate(axes):
-    ax.plot(metric           [-n_last:], color='white', lw=3  )
-    ax.plot(predicted_both[i][-n_last:], color='black', lw=3  )
+predicted_list = [predicted] # [mlr_predicted, predicted]
+legend_both = ['NN'] # ['MLR', 'NN']
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
+for i, ax in enumerate([axes]):
+    ax.plot(rome             [-n_last:], color='white', lw=3  )
+    ax.plot(area             [-n_last:], color='red'  , lw=1.5)
+    ax.plot(predicted_list[i][-n_last:], color='black', lw=1.5)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
-    ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
+    ax.legend(['ROME', 'Avg area', 'Earlier & same time '+legend_both[i]])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
     ax.set_ylim(0, 442.8759794239834)
@@ -57,7 +60,7 @@ for i, ax in enumerate(axes):
     # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
 
     tick_1, tick_2 = -1.5, -0.5
-    for thistime in metric[-n_last:].time.values: #metric_high[correct_pred].time.values:
+    for thistime in rome[-n_last:].time.values: #metric_high[correct_pred].time.values:
         tick_1, tick_2 = tick_2, tick_2 + 1
         ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
 
@@ -74,6 +77,23 @@ plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=Fa
 plt.xlabel('Time [6h intervals]')
 plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
 plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
+
+l_area_plot = False
+if l_area_plot:
+    rome_area_diff = rome      - area
+    pred_area_diff = predicted - area
+    romediff_order = np.   sort(rome_area_diff)
+    arg_order      = np.argsort(rome_area_diff)
+    preddiff_order = pred_area_diff[arg_order.values]
+    preddiff_roll = preddiff_order.rolling(time=30, center=True).mean()
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 9))
+    ax.plot(preddiff_order, color='lightgrey', lw=1)
+    ax.plot(romediff_order, color=sol['cyan'], lw=2)
+    ax.plot(preddiff_roll,  color=sol['violet'], lw=2)
+    ax.legend(['Prediction - Area', 'ROME - Area', '30-wide avg(Prediction - Area)'])
+    ax.set_xlim(0, len(romediff_order))
+    ax.axhline(y=0, color=sol['red'], lw=1.5)
+    plt.savefig(home+'/Desktop/a.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
