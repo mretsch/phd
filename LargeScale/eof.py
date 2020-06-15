@@ -70,7 +70,7 @@ if l_scale_vectors:
     evec_scaled = scale_factor * eigenvectors
 
 # add dimensions to vectors
-evec = xr.DataArray(evec_scaled, #eigenvectors, #
+evec = xr.DataArray(eigenvectors, #evec_scaled, #
                     coords={'level': predictor.lev.values,
                             'number': list(range(nlev)),
                             'quantity': ('level', predictor.long_name.values)},

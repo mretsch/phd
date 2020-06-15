@@ -78,17 +78,24 @@ if __name__ == "__main__":
                'dwind_dz'
               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
-    ls_times = 'same_and_earlier_time'
+    ls_times = 'all_ls'
     predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                        timeseries=metric,
                                                        chosen_vars=ls_vars,
-                                                       l_take_scalars=True,
+                                                       l_take_scalars=False,
                                                        large_scale_time=ls_times)
 
-    l_subselect = True
+    l_subselect = False
     if l_subselect:
         levels = [115, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
+
+    l_eof_input = True
+    if l_eof_input:
+        eof_predictor = xr.open_dataarray(ghome + '/Data/LargeScale/eof_pcseries_all.nc')
+        predictor = eof_predictor.sel(number=list(range(20))).rename({'number': 'lev'}).T
+        predictor = predictor[target.notnull()]
+        target = target[target.notnull()]
 
     l_compute_correlations = False
     if l_compute_correlations:
@@ -119,14 +126,14 @@ if __name__ == "__main__":
     else:
 
         # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-        mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/UVandWindShear/mlr_coeff.csv',
+        mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/PCSeries/mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7)
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
         mlr_coeff = mlr_coeff_bias.drop(index=0)
         mlr_coeff.index = list(range(mlr_coeff.shape[0]))
         mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                          axis='columns', inplace=True)
-        mlr_coeff['var'] = predictor['long_name'].values
+        # mlr_coeff['var'] = predictor['long_name'].values
 
         n_lev = len(mlr_coeff['var'])
 
@@ -203,8 +210,8 @@ if __name__ == "__main__":
         plt.rc('font', size=28)
 
         if ls_times == 'same_and_earlier_time':
-            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12))
-            n_lev_onetime = 11 # n_lev//2
+            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+            n_lev_onetime = n_lev//2
         else:
             fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
             axes = [axes]
@@ -213,35 +220,37 @@ if __name__ == "__main__":
         for i, ax in enumerate(axes):
 
             if i == 0:
-                var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
-                var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
-                # var_to_plot_1 = list(range(27))
-                # var_to_plot_2 = list(range(27, n_lev_onetime))
+                # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
+                # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
+                var_to_plot_1 = list(range(27))
+                var_to_plot_2 = list(range(27, n_lev_onetime))
             else:
-                var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
-                var_to_plot_2 = [                        77, 83, 84, 93, 94]
-                # var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
-                # var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
-            var_to_plot = var_to_plot_1 + var_to_plot_2
+                # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
+                # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
+                var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
+                var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
+            var_to_plot = list(range(n_lev)) # var_to_plot_1 + var_to_plot_2
 
             ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
 
             ax.axvline(x=0, color='r', lw=1.5)
 
-            label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                          zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-            label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                           zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-            label_list = label_list1 + label_list2
+            # label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
+            #               zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
+            # label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+            #                zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
+            var_to_plot.pop(0)
+            var_to_plot.append(n_lev_onetime)
+            label_list = var_to_plot# label_list1 + label_list2
 
             ax.set_yticks(list(range(len(var_to_plot))))
             if i == 0:
                 ax.set_yticklabels(label_list)
-                plt.text(0.75, 0.85, 'Same\ntime', transform=ax.transAxes,
+                plt.text(0.75, 0.95, 'Same\ntime', transform=ax.transAxes,
                          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
             else:
                 ax.set_yticklabels([])
-                plt.text(0.75, 0.85, '6 hours\nearlier', transform=ax.transAxes,
+                plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
                          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
 
             ax.set_xlabel('Coefficients for MLR [km$^2$]')
@@ -249,13 +258,13 @@ if __name__ == "__main__":
             ax.invert_yaxis()
             ax.set_ylim(n_lev_onetime-0.5, -0.5)
 
-        xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
-        xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
-        for ax in axes:
-            ax.set_xlim(xlim_low, xlim_upp)
-            ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-            ax.grid(axis='x')
-
+        # xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
+        # xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
+        # for ax in axes:
+        #     ax.set_xlim(xlim_low, xlim_upp)
+        #     ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+        #     ax.grid(axis='x')
+        #
         plt.subplots_adjust(wspace=0.05)
 
         plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)

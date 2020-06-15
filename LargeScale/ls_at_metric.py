@@ -61,7 +61,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             # 'sw_dn_srf', # correlation to other variables higher than 0.8
         ]
 
-        c2 = xr.concat([ds_largescale[scalar] for scalar in scalars])
+        c2 = xr.concat([ds_largescale[scalar] for scalar in scalars], dim='concat_dims')
 
     # give c1 another coordinate to look up 'easily' which values in concatenated array correspond to which variables
     # Also count how long that variable is in the resulting array.
@@ -99,7 +99,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     if large_scale_time == "all_ls":
         # only return the large scale variables, without considering anything else
         predictor = var.where(var.notnull(), drop=True)
-        target = np.nan
+        target = timeseries.sel(time=predictor.time)
 
     # large scale variables only where timeseries is defined
     var_metric = var.where(timeseries.notnull(), drop=True)
