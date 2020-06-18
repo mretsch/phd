@@ -222,7 +222,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
             else:
-                levels = [115, 515, 965]
+                levels = levels_in[:-1] + [965]
             ls_list.append(
                 large_scale.where(large_scale['long_name'] == profile_string+'            ',
                                   drop=True).sel(lev=levels)
@@ -238,7 +238,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
             else:
-                levels = [115, 515, 965]
+                levels = levels_in[:-1] + [965]
             ls_list.append(
                 large_scale.where(large_scale['long_name'] == profile_string+', 6h earlier',
                                   drop=True).sel(lev=levels)
