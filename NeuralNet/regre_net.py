@@ -19,17 +19,18 @@ start = timeit.default_timer()
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
-ds_ls  = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+ds_ls  = xr.open_dataset(home+
+                         '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
 ls_vars = ['omega',
-           # 'T_adv_h',
-           # 'r_adv_h',
-           # 'dsdt',
-           # 'drdt',
+           'T_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
            'RH',
-           # 'u',
-           # 'v',
+           'u',
+           'v',
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -40,11 +41,11 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=True,
                                                    large_scale_time=ls_times)
 
-l_subselect = True
+l_subselect = False
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = True
+l_eof_input = False
 if l_eof_input:
     eof_predictor = xr.open_dataarray(ghome+'/Data/LargeScale/eof_pcseries_all.nc')
     predictor = eof_predictor.sel(number=list(range(20))).rename({'number': 'lev'}).T
@@ -66,12 +67,12 @@ if not l_loading_model:
     model.compile(optimizer='adam', loss='mean_squared_error')  # , metrics=['accuracy'])
 
     # checkpoint
-    filepath = home+'/Desktop/model-{epoch:02d}-{val_loss:.2f}.h5'
+    filepath = home+'/Desktop/M/model-{epoch:02d}-{val_loss:.2f}.h5'
     checkpoint = kcallbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=False)
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=20, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -93,7 +94,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = ghome + '/ROME_Models/PhysSelect/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -122,11 +123,11 @@ else:
     input_percentages[:, :] = input_percentages_list
 
     # ===== Plots =====================
-    plt.rc('font', size=29)
+    plt.rc('font', size=19)
 
-    n_profile_vars = 9 # 27 #
+    n_profile_vars = 27 # 9 #
     if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 12))
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
         n_lev_onetime = n_lev//2 # 11 #
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
@@ -152,6 +153,16 @@ else:
         plt.sca(ax)
         sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
                     color='darksalmon', medianprops=dict(lw=3, color='dodgerblue'))
+        l75 = list(map(lambda x: x[abs(x.rank(dim='time', pct=True) - 0.75).argmin().item()].item(), input_percentages.T))
+
+        def nth_percentile(x, p):
+            assert x.dims[0] == 'time'
+            assert (0 < p) & (p < 1)
+            return x[abs(x.rank(dim='time', pct=True) - p).argmin().item()].item()
+        p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
+        p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
+        spread = p75 - p25
+        high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
 
         # ax.set_xlim(-35, 35)
         ax.axvline(x=0, color='r', lw=1.5)

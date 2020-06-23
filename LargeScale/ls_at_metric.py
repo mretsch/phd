@@ -26,36 +26,36 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'cin',
             'cape',
             'd_cape',
-            # 'cld_low',
-            # 'lw_dn_srf',
-            # 'wspd_srf',
-            # 'v_srf',
-            # 'r_srf',
-            # 'lw_net_toa',
-            # 'SH',
-            # 'LWP',
+            'cld_low',
+            'lw_dn_srf',
+            'wspd_srf',
+            'v_srf',
+            'r_srf',
+            'lw_net_toa',
+            'SH',
+            'LWP',
 
-            # 'LH',
-            # 'p_srf_aver',
-            # 'T_srf',
+            'LH',
+            'p_srf_aver',
+            'T_srf',
             # 'T_skin', # correlation to other variables higher than 0.8
-            # 'RH_srf',
-            # 'u_srf',
+            'RH_srf',
+            'u_srf',
             # 'rad_net_srf', # correlation to other variables higher than 0.8
             # 'sw_net_toa', # correlation to other variables higher than 0.8
-            # 'cld_mid',
-            # 'cld_high',
-            # 'cld_tot',
-            # 'dh2odt_col',
-            # 'h2o_adv_col',
+            'cld_mid',
+            'cld_high',
+            'cld_tot',
+            'dh2odt_col',
+            'h2o_adv_col',
             # 'evap_srf', # correlation to other variables too high (according to statsmodels)
-            # 'dsdt_col',
+            'dsdt_col',
             # 's_adv_col', # correlation to other variables too high (according to statsmodels)
             # 'rad_heat_col', # correlation to other variables too high (according to statsmodels)
             # 'LH_col', # correlation to other variables higher than 0.8
             # 'r_srf', # correlation to other variables too high (according to statsmodels)
-            # 's_srf',
-            # 'PW',
+            's_srf',
+            'PW',
             # 'lw_up_srf', # correlation to other variables higher than 0.8
             # 'lw_dn_srf', # correlation to other variables too high (according to statsmodels)
             # 'sw_up_srf', # has same long_name as sw_dn_srf (according to statsmodels)

@@ -12,12 +12,12 @@ start = timeit.default_timer()
 
 ghome = home+'/Google Drive File Stream/My Drive'
 
-rome = xr.open_dataarray(ghome + '/Data_Analysis/rom_km_avg6h_nanzero.nc')
-area   = xr.open_dataarray(ghome+'/Data_Analysis/o_area_avg6h_nanzero.nc') * 6.25
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+# area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
 predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/UVandWindShear/predicted.nc')
+    home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/predicted.nc')
 mlr_predicted = xr.open_dataarray(
-    ghome + '/ROME_Models/UVandWindShear/mlr_predicted.nc')
+    home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -26,7 +26,7 @@ if l_high_values:
 else:
     # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
     rome = rome.where(predicted.time)
-    area = area.where(predicted.time)
+    # area = area.where(predicted.time)
 
 # the plot of predicted versus true ROME values with Pope regimes in the background
 ds_pope = into_pope_regimes(rome, l_upsample=True, l_all=True)
@@ -40,20 +40,20 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-n_last = 400
-predicted_list = [predicted] # [mlr_predicted, predicted]
-legend_both = ['NN'] # ['MLR', 'NN']
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
-for i, ax in enumerate([axes]):
+n_last = 1200
+predicted_list = [mlr_predicted, predicted]
+legend_both = ['MLR', 'NN']
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
+for i, ax in enumerate(axes):
     ax.plot(rome             [-n_last:], color='white', lw=3  )
-    ax.plot(area             [-n_last:], color='red'  , lw=1.5)
+    # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
     ax.plot(predicted_list[i][-n_last:], color='black', lw=1.5)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
-    ax.legend(['ROME', 'Avg area', 'Earlier & same time '+legend_both[i]])
+    ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
-    ax.set_ylim(0, 442.8759794239834)
+    # ax.set_ylim(0, 442.8759794239834)
     ax.set_xlim(0, n_last)
 
     colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]

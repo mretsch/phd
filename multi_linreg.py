@@ -64,17 +64,17 @@ if __name__ == "__main__":
     ghome = home+'/Google Drive File Stream/My Drive'
 
     # assemble the large scale dataset
-    ds_ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    ds_ls = xr.open_dataset(home+'/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
     ls_vars = ['omega',
-               # 'T_adv_h',
-               # 'r_adv_h',
-               # 'dsdt',
-               # 'drdt',
+               'T_adv_h',
+               'r_adv_h',
+               'dsdt',
+               'drdt',
                'RH',
-               # 'u',
-               # 'v',
+               'u',
+               'v',
                'dwind_dz'
               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         levels = [215, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
 
-    l_eof_input = True
+    l_eof_input = False
     if l_eof_input:
         eof_predictor = xr.open_dataarray(ghome + '/Data/LargeScale/eof_pcseries_all.nc')
         predictor = eof_predictor.sel(number=list(range(20))).rename({'number': 'lev'}).T
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             log.append('H2O' in s.item())
         corr_select = corr_r[log]
 
-    l_load_model = True
+    l_load_model = False
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)
