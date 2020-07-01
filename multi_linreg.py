@@ -85,15 +85,24 @@ if __name__ == "__main__":
                                                        l_take_scalars=True,
                                                        large_scale_time=ls_times)
 
-    l_subselect = True
+    l_subselect = False
     if l_subselect:
         levels = [215, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
 
-    l_eof_input = False
+    l_eof_input = True
     if l_eof_input:
-        eof_predictor = xr.open_dataarray(ghome + '/Data/LargeScale/eof_pcseries_all.nc')
-        predictor = eof_predictor.sel(number=list(range(20))).rename({'number': 'lev'}).T
+        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
+        eof_late = pcseries.sel(number=list(range(20)),
+                                time=predictor.time).rename({'number': 'lev'}).T
+        eof_early = pcseries.sel(number=list(range(20)),
+                                 time=eof_late.time - np.timedelta64(6, 'h')).rename({'number': 'lev'}).T
+
+        predictor = xr.DataArray(np.zeros((eof_late.shape[0], eof_late.shape[1] * 2)),
+                                 coords=[eof_late['time'], np.concatenate([eof_late['lev'], eof_late['lev']], axis=0)],
+                                 dims=['time', 'lev'])
+
+        predictor[:, :] = np.concatenate([eof_early, eof_late], axis=1)
         predictor = predictor[target.notnull()]
         target = target[target.notnull()]
 
@@ -110,7 +119,7 @@ if __name__ == "__main__":
             log.append('H2O' in s.item())
         corr_select = corr_r[log]
 
-    l_load_model = False
+    l_load_model = True
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)
@@ -126,14 +135,14 @@ if __name__ == "__main__":
     else:
 
         # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-        mlr_coeff_bias = pd.read_csv(ghome+'/ROME_Models/PhysSelect/mlr_coeff.csv',
-                                     header=None, skiprows=11, skipfooter=7)
+        mlr_coeff_bias = pd.read_csv(home+'/Documents/Data/NN_Models/ROME_Models/PCSeries/mlr_coeff.csv',
+                                     header=None, skiprows=11, skipfooter=9) # skipfooter=7)
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
         mlr_coeff = mlr_coeff_bias.drop(index=0)
         mlr_coeff.index = list(range(mlr_coeff.shape[0]))
         mlr_coeff.rename({0: 'var', 1: 'coeff', 2: 'std_err', 3: 't', 4: 'P>|t|', 5: '[0.025', 6: '0.975]'},
                          axis='columns', inplace=True)
-        mlr_coeff['var'] = predictor['long_name'].values
+        # mlr_coeff['var'] = predictor['long_name'].values
 
         n_lev = len(mlr_coeff['var'])
 
@@ -225,28 +234,28 @@ if __name__ == "__main__":
                 # var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
                 var_to_plot_1 = list(range(n_profile_vars))
                 var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
+                if l_eof_input:
+                    var_to_plot = list(range(n_lev_onetime))
             else:
                 # var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
                 # var_to_plot_2 = [                        77, 83, 84, 93, 94]
-                var_to_plot_1 = list(range(n_lev//2                 , n_lev//2 + n_profile_vars))
-                var_to_plot_2 = list(range(n_lev//2 + n_profile_vars, n_lev                    ))
-            var_to_plot = var_to_plot_1 + var_to_plot_2
-            if l_eof_input:
-                var_to_plot = list(range(n_lev))
+                var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
+                var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
+                if l_eof_input:
+                    var_to_plot = list(range(n_lev_onetime, n_lev))
+            # var_to_plot = var_to_plot_1 + var_to_plot_2
 
             ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
 
             ax.axvline(x=0, color='r', lw=1.5)
 
-            label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                          zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-            label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                           zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-            label_list = label_list1 + label_list2
+            # label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
+            #               zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
+            # label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+            #                zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
+            # label_list = label_list1 + label_list2
             if l_eof_input:
-                var_to_plot.pop(0)
-                var_to_plot.append(n_lev_onetime)
-                label_list = var_to_plot
+                label_list = [integer + 1 for integer in var_to_plot]
 
             ax.set_yticks(list(range(len(var_to_plot))))
             if i == 0:
@@ -267,7 +276,7 @@ if __name__ == "__main__":
         xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
         for ax in axes:
             ax.set_xlim(xlim_low, xlim_upp)
-            ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+            ax.xaxis.set_major_locator(ticker.MultipleLocator(500))
             ax.grid(axis='x')
 
         plt.subplots_adjust(wspace=0.05)

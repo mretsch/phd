@@ -38,17 +38,26 @@ ls_times = 'same_and_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
-                                                   l_take_scalars=True,
+                                                   l_take_scalars=False,
                                                    large_scale_time=ls_times)
 
 l_subselect = False
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = False
+l_eof_input = True
 if l_eof_input:
-    eof_predictor = xr.open_dataarray(ghome+'/Data/LargeScale/eof_pcseries_all.nc')
-    predictor = eof_predictor.sel(number=list(range(20))).rename({'number': 'lev'}).T
+    pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
+    eof_late  = pcseries.sel(number=list(range(20)),
+                             time=predictor.time                        ).rename({'number': 'lev'}).T
+    eof_early = pcseries.sel(number=list(range(20)),
+                             time=eof_late.time - np.timedelta64(6, 'h')).rename({'number': 'lev'}).T
+
+    predictor = xr.DataArray(np.zeros((eof_late.shape[0], eof_late.shape[1]*2)),
+                             coords=[eof_late['time'], np.concatenate([eof_late['lev'], eof_late['lev']], axis=0)],
+                             dims=['time', 'lev'])
+
+    predictor[:, :] = np.concatenate([eof_early, eof_late], axis=1)
     predictor = predictor[target.notnull()]
     target    = target   [target.notnull()]
 
@@ -72,7 +81,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=30, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -94,7 +103,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -141,14 +150,16 @@ else:
             # var_to_plot_2 = [28, 34, 35, 44, 45]  # scalars
             var_to_plot_1 = list(range(n_profile_vars))
             var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
+            if l_eof_input:
+                var_to_plot = list(range(n_lev_onetime))
         else:
             # var_to_plot_1 = [50, 64, 66, 67, 69, 75]
             # var_to_plot_2 = [77, 83, 84, 93, 94]
-            var_to_plot_1 = list(range(n_lev//2                 , n_lev//2 + n_profile_vars))
-            var_to_plot_2 = list(range(n_lev//2 + n_profile_vars, n_lev                    ))
-        var_to_plot = var_to_plot_1 + var_to_plot_2
-        if l_eof_input:
-            var_to_plot = list(range(n_lev))
+            var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
+            var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
+            if l_eof_input:
+                var_to_plot = list(range(n_lev_onetime, n_lev))
+        # var_to_plot = var_to_plot_1 + var_to_plot_2
 
         plt.sca(ax)
         sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
@@ -162,20 +173,18 @@ else:
         p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
         p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
         spread = p75 - p25
-        high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+        high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]] # .long_name
 
-        # ax.set_xlim(-35, 35)
+        ax.set_xlim(-40, 40)
         ax.axvline(x=0, color='r', lw=1.5)
 
-        label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                      zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-        label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                       zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-        label_list = label_list1 + label_list2
+        # label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
+        #               zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
+        # label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+        #                zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
+        # label_list = label_list1 + label_list2
         if l_eof_input:
-            var_to_plot.pop(0)
-            var_to_plot.append(n_lev_onetime)
-            label_list = var_to_plot
+            label_list = [integer + 1 for integer in var_to_plot]
 
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
