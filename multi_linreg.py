@@ -11,6 +11,7 @@ from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predic
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from basic_stats import into_pope_regimes, root_mean_square_error
 from Plotscripts.colors_solarized import sol
+from Plotscripts.plot_contribution_whisker import contribution_whisker
 
 
 def gen_correlation(array):
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     ds_ls = xr.open_dataset(home+'/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
-    ls_vars = [#'omega',
+    ls_vars = ['omega',
                'T_adv_h',
                'r_adv_h',
                'dsdt',
@@ -133,9 +134,8 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-
-        # mlr_coeff = pd.read_csv(csv_path, header=10, skipfooter=9)
-        mlr_coeff_bias = pd.read_csv(home+'/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/mlr_coeff.csv',
+        model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+        mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
         mlr_coeff = mlr_coeff_bias.drop(index=0)
@@ -148,21 +148,43 @@ if __name__ == "__main__":
 
         # ===== plots ==========
 
-        l_percentage_plots = False
+        l_percentage_plots = True
         if l_percentage_plots:
+
+            predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
+
+            l_high_values = True
+            if l_high_values:
+                _, predicted = high_correct_predictions(target=metric, predictions=predicted,
+                                                        target_percentile=0.9, prediction_offset=0.3)
+
             input_percentages_list = []
-            for model_input in predictor.sel(time=target.time):
+            for model_input in predictor.sel(time=predicted.time):
                 input_percentages_list.append(mlr_coeff['coeff'] * model_input /
                                               (np.dot(mlr_coeff['coeff'], model_input) + mlr_bias) * 100)
 
-            input_percentages = xr.zeros_like(predictor.sel(time=target.time))
+            input_percentages       = xr.zeros_like(predictor.sel(time=predicted.time))
             input_percentages[:, :] = input_percentages_list
 
-            plt.rc('font', size=25)
+            plot = contribution_whisker(input_percentages=input_percentages,
+                                        levels=predictor.lev.values,
+                                        long_names=predictor['long_name'],
+                                        ls_times='same_and_earlier_time',
+                                        n_lev_total=n_lev,
+                                        n_profile_vars=23,
+                                        xlim=45,
+                                        # bg_color='mistyrose',
+                                        )
 
+            plot.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
+
+        else:
+            plt.rc('font', size=28)
+
+            n_profile_vars = 23 # 9 # 27 #
             if ls_times == 'same_and_earlier_time':
                 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
-                n_lev_onetime = n_lev//2
+                n_lev_onetime =  n_lev//2 #11 #
             else:
                 fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
                 axes = [axes]
@@ -171,116 +193,57 @@ if __name__ == "__main__":
             for i, ax in enumerate(axes):
 
                 if i == 0:
-                    # var_to_plot_1 = [1, 11, 13, 16, 18, 20                        ]
-                    # var_to_plot_2 = [                       25, 30, 34, 37, 41, 42]
-                    var_to_plot_1 = list(range(27))
-                    var_to_plot_2 = list(range(27, n_lev_onetime))
+                    # var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
+                    # var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
+                    var_to_plot_1 = list(range(n_profile_vars))
+                    var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
+                    if l_eof_input:
+                        var_to_plot = list(range(n_lev_onetime))
                 else:
-                    # var_to_plot_1 = [47, 57, 59, 62, 64, 66                        ]
-                    # var_to_plot_2 = [                        71, 76, 80, 83, 87, 88]
-                    var_to_plot_1 = list(range(n_lev//2     , n_lev//2 + 27))
-                    var_to_plot_2 = list(range(n_lev//2 + 27, n_lev        ))
-                var_to_plot = var_to_plot_1 + var_to_plot_2
+                    # var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
+                    # var_to_plot_2 = [                        77, 83, 84, 93, 94]
+                    var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
+                    var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
+                    if l_eof_input:
+                        var_to_plot = list(range(n_lev_onetime, n_lev))
+                if not l_eof_input:
+                    var_to_plot = var_to_plot_1 + var_to_plot_2
 
-                plt.sca(ax)
-                sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
-                            color='darksalmon', medianprops=dict(lw=3, color='dodgerblue'))
+                ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
 
                 ax.axvline(x=0, color='r', lw=1.5)
 
-                label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                               zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-                label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                               zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-                label_list = label_list1 + label_list2
+                if l_eof_input:
+                    label_list = [integer + 1 for integer in var_to_plot]
+                else:
+                    label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
+                                  zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
+                    label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+                                   zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
+                    label_list = label_list1 + label_list2
 
                 ax.set_yticks(list(range(len(var_to_plot))))
                 if i == 0:
                     ax.set_yticklabels(label_list)
-                    plt.text(0.75, 0.95, 'Same\ntime', transform=ax.transAxes,
+                    plt.text(0.75, 0.85, 'Same\ntime', transform=ax.transAxes,
                              bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
                 else:
                     ax.set_yticklabels([])
-                    plt.text(0.75, 0.95, '6 hours\nearlier', transform=ax.transAxes,
+                    plt.text(0.75, 0.85, '6 hours\nearlier', transform=ax.transAxes,
                              bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
 
-                ax.set_xlabel('Contribution to predicted value [%]')
+                ax.set_xlabel('Coefficients for MLR [km$^2$]')
+
+                ax.invert_yaxis()
+                ax.set_ylim(n_lev_onetime-0.5, -0.5)
 
             xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
             xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
             for ax in axes:
-                # ax.set_xlim(xlim_low, xlim_upp)
-                ax.set_xlim(-75, 75)
+                ax.set_xlim(xlim_low, xlim_upp)
+                # ax.xaxis.set_major_locator(ticker.MultipleLocator(500))
+                ax.grid(axis='x')
 
             plt.subplots_adjust(wspace=0.05)
 
-            plt.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
-
-        plt.rc('font', size=28)
-
-        n_profile_vars = 23 # 9 # 27 #
-        if ls_times == 'same_and_earlier_time':
-            fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
-            n_lev_onetime =  n_lev//2 #11 #
-        else:
-            fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
-            axes = [axes]
-            n_lev_onetime = n_lev
-
-        for i, ax in enumerate(axes):
-
-            if i == 0:
-                # var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
-                # var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
-                var_to_plot_1 = list(range(n_profile_vars))
-                var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
-                if l_eof_input:
-                    var_to_plot = list(range(n_lev_onetime))
-            else:
-                # var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
-                # var_to_plot_2 = [                        77, 83, 84, 93, 94]
-                var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
-                var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
-                if l_eof_input:
-                    var_to_plot = list(range(n_lev_onetime, n_lev))
-            if not l_eof_input:
-                var_to_plot = var_to_plot_1 + var_to_plot_2
-
-            ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
-
-            ax.axvline(x=0, color='r', lw=1.5)
-
-            if l_eof_input:
-                label_list = [integer + 1 for integer in var_to_plot]
-            else:
-                label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                              zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-                label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                               zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-                label_list = label_list1 + label_list2
-
-            ax.set_yticks(list(range(len(var_to_plot))))
-            if i == 0:
-                ax.set_yticklabels(label_list)
-                plt.text(0.75, 0.85, 'Same\ntime', transform=ax.transAxes,
-                         bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-            else:
-                ax.set_yticklabels([])
-                plt.text(0.75, 0.85, '6 hours\nearlier', transform=ax.transAxes,
-                         bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-
-            ax.set_xlabel('Coefficients for MLR [km$^2$]')
-
-            ax.invert_yaxis()
-            ax.set_ylim(n_lev_onetime-0.5, -0.5)
-
-        xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
-        xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
-        for ax in axes:
-            ax.set_xlim(xlim_low, xlim_upp)
-            # ax.xaxis.set_major_locator(ticker.MultipleLocator(500))
-            ax.grid(axis='x')
-
-        plt.subplots_adjust(wspace=0.05)
-
-        plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)
+            plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)

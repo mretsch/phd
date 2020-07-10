@@ -12,7 +12,15 @@ import keras.callbacks as kcallbacks
 from NeuralNet.backtracking import mlp_backtracking_maxnode, mlp_backtracking_percentage, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from basic_stats import into_pope_regimes, root_mean_square_error
+from Plotscripts.plot_contribution_whisker import contribution_whisker
 import pandas as pd
+
+
+def nth_percentile(x, p):
+    assert x.dims[0] == 'time'
+    assert (0 < p) & (p < 1)
+    return x[abs(x.rank(dim='time', pct=True) - p).argmin().item()].item()
+
 
 home = expanduser("~")
 start = timeit.default_timer()
@@ -103,102 +111,39 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = True
+    predicted = xr.open_dataarray(model_path + 'predicted.nc')
+
+    l_high_values = False
     if l_high_values:
-        predicted = xr.open_dataarray(model_path + 'predicted.nc')
-        metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
-                                                     target_percentile=0.9, prediction_offset=0.3)
-    else:
-        predicted = xr.open_dataarray(model_path + 'predicted.nc')
-        # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
-        metric = metric.where(predicted.time)
+        _, predicted = high_correct_predictions(target=metric, predictions=predicted,
+                                                target_percentile=0.9, prediction_offset=0.3)
 
     input_percentages_list = []
     for model_input in predictor.sel(time=predicted.time):
-
         node_contribution = mlp_backtracking_percentage(model, model_input)[0]
         input_percentages_list.append(node_contribution)
 
     input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
     input_percentages[:, :] = input_percentages_list
 
+    p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
+    p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
+    spread = p75 - p25
+    high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+
     # ===== Plots =====================
-    plt.rc('font', size=19)
 
-    n_profile_vars = 23 # 27 # 9 #
-    if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
-        n_lev_onetime = n_lev//2 # 11 #
-    else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
-        axes = [axes]
-        n_lev_onetime = n_lev
+    plot = contribution_whisker(input_percentages=input_percentages,
+                                levels=predictor.lev.values,
+                                long_names=predictor['long_name'],
+                                ls_times='same_and_earlier_time',
+                                n_lev_total=n_lev,
+                                n_profile_vars=27, #23, #9, #
+                                xlim=25,
+                                bg_color='mistyrose',
+                                )
 
-    for i, ax in enumerate(axes):
-
-        if i == 0:
-            # var_to_plot_1 = [1, 15, 17, 18, 20, 26]  # profile variables
-            # var_to_plot_2 = [28, 34, 35, 44, 45]  # scalars
-            var_to_plot_1 = list(range(n_profile_vars))
-            var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
-            if l_eof_input:
-                var_to_plot = list(range(n_lev_onetime))
-        else:
-            # var_to_plot_1 = [50, 64, 66, 67, 69, 75]
-            # var_to_plot_2 = [77, 83, 84, 93, 94]
-            var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
-            var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
-            if l_eof_input:
-                var_to_plot = list(range(n_lev_onetime, n_lev))
-        if not l_eof_input:
-            var_to_plot = var_to_plot_1 + var_to_plot_2
-
-        plt.sca(ax)
-        sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
-                    # color='mistyrose', medianprops=dict(lw=3, color='black'))
-                    color = 'lavender', medianprops = dict(lw=3, color='black'))
-        l75 = list(map(lambda x: x[abs(x.rank(dim='time', pct=True) - 0.75).argmin().item()].item(), input_percentages.T))
-
-        def nth_percentile(x, p):
-            assert x.dims[0] == 'time'
-            assert (0 < p) & (p < 1)
-            return x[abs(x.rank(dim='time', pct=True) - p).argmin().item()].item()
-        p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
-        p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
-        spread = p75 - p25
-        high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
-
-        ax.set_xlim(-25, 25)
-        ax.axvline(x=0, color='r', lw=1.5)
-
-        label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                      zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-        label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                       zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-        label_list = label_list1 + label_list2
-        if l_eof_input:
-            label_list = [integer + 1 for integer in var_to_plot]
-
-        ax.set_yticks(list(range(len(var_to_plot))))
-        if i == 0:
-            ax.set_yticklabels(label_list)
-            plt.text(0.8, 0.85, 'Same\ntime', transform=ax.transAxes,
-                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-        else:
-            ax.set_yticklabels([])
-            plt.text(0.7, 0.85, '6 hours\nearlier', transform=ax.transAxes,
-                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-
-        ax.set_xlabel('Contribution to predicted value [%]')
-
-    xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
-    xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
-    for ax in axes:
-        ax.set_xlim(xlim_low, xlim_upp)
-
-    plt.subplots_adjust(wspace=0.05)
-
-    plt.savefig(home + '/Desktop/whisker.pdf', bbox_inches='tight', transparent=True)
+    plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
 
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop-start))
