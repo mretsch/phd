@@ -23,7 +23,7 @@ ds_ls  = xr.open_dataset(home+
                          '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
-ls_vars = [#'omega',
+ls_vars = ['omega',
            'T_adv_h',
            'r_adv_h',
            'dsdt',
@@ -94,7 +94,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -103,7 +103,7 @@ else:
 
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
         predicted = xr.open_dataarray(model_path + 'predicted.nc')
         metric, predicted = high_correct_predictions(target=metric, predictions=predicted,
@@ -155,7 +155,8 @@ else:
 
         plt.sca(ax)
         sns.boxplot(data=input_percentages[:, var_to_plot], orient='h', fliersize=1.,
-                    color='darksalmon', medianprops=dict(lw=3, color='dodgerblue'))
+                    # color='mistyrose', medianprops=dict(lw=3, color='black'))
+                    color = 'lavender', medianprops = dict(lw=3, color='black'))
         l75 = list(map(lambda x: x[abs(x.rank(dim='time', pct=True) - 0.75).argmin().item()].item(), input_percentages.T))
 
         def nth_percentile(x, p):
@@ -167,7 +168,7 @@ else:
         spread = p75 - p25
         high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
 
-        ax.set_xlim(-40, 40)
+        ax.set_xlim(-25, 25)
         ax.axvline(x=0, color='r', lw=1.5)
 
         label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in

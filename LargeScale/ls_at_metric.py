@@ -31,8 +31,8 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'wspd_srf',
             'v_srf',
             'r_srf',
-            # 'lw_net_toa',   # without10important
-            # 'SH',           # without10important
+            'lw_net_toa',   # without10important
+            'SH',           # without10important
             'LWP',
 
             'LH',
@@ -46,15 +46,15 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'cld_mid',
             'cld_high',
             'cld_tot',
-            # 'dh2odt_col',   # without10important
-            # 'h2o_adv_col',  # without10important
+            'dh2odt_col',   # without10important
+            'h2o_adv_col',  # without10important
             # 'evap_srf',     # correlation to other variables too high (according to statsmodels)
             'dsdt_col',
             # 's_adv_col',    # correlation to other variables too high (according to statsmodels)
             # 'rad_heat_col', # correlation to other variables too high (according to statsmodels)
             # 'LH_col',       # correlation to other variables higher than 0.8
             # 'r_srf',        # correlation to other variables too high (according to statsmodels)
-            # 's_srf',        # without10important
+            's_srf',        # without10important
             'PW',
             # 'lw_up_srf',    # correlation to other variables higher than 0.8
             # 'lw_dn_srf',    # correlation to other variables too high (according to statsmodels)
@@ -184,8 +184,8 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         '10m wind speed',
         '10m V component',
         '2m water vapour mixing ratio',
-        # 'TOA LW flux, upward positive',
-        # 'Surface sensible heat flux, upward positive',
+        'TOA LW flux, upward positive',
+        'Surface sensible heat flux, upward positive',
         'MWR-measured cloud liquid water path',
 
         'Surface latent heat flux, upward positive',
@@ -199,15 +199,15 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Satellite-measured middle cloud',
         'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
-        # 'Column-integrated dH2O/dt',
-        # 'Column-integrated H2O advection',
+        'Column-integrated dH2O/dt',
+        'Column-integrated H2O advection',
         # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
         'Column d(dry static energy)/dt',
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
         # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
         # 'Column latent heating',                    # correlation to other variables higher than 0.8
         # '2m water vapour mixing ratio',             # correlation to other variables too high (according to statsmodels)
-        # '2m dry static energy',
+        '2m dry static energy',
         'MWR-measured column precipitable water',
         # 'Surface upwelling LW',                     # correlation to other variables higher than 0.8
         # 'Surface downwelling LW',                   # correlation to other variables too high (according to statsmodels)
@@ -221,8 +221,8 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         for profile_string in profiles:
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
-                if profile_string == 'Relative humidity':  # dont take 990hPa of RH for case without 10 most contributing
-                    levels = levels_in[:-1]
+                # if profile_string == 'Relative humidity':  # dont take 990hPa of RH for case without 10 most contributing
+                #     levels = levels_in[:-1]
             else:
                 levels = levels_in[:-1] + [965]
             ls_list.append(
@@ -239,8 +239,8 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         for profile_string in profiles:
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
-                if profile_string == 'Relative humidity':  # dont take 990hPa of RH for case without 10 most contributing
-                    levels = levels_in[:-1]
+                # if profile_string == 'Relative humidity':  # dont take 990hPa of RH for case without 10 most contributing
+                #     levels = levels_in[:-1]
             else:
                 levels = levels_in[:-1] + [965]
             ls_list.append(
