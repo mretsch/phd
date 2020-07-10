@@ -151,7 +151,9 @@ if __name__ == "__main__":
         l_percentage_plots = True
         if l_percentage_plots:
 
-            predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
+            # predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
+            # take the predictions of NN instead of MLR, to subselect high NN-predictions (apples to apples)
+            predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
             l_high_values = True
             if l_high_values:
