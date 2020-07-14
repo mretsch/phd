@@ -113,7 +113,7 @@ else:
 
     predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
         _, predicted = high_correct_predictions(target=metric, predictions=predicted,
                                                 target_percentile=0.9, prediction_offset=0.3)
@@ -140,7 +140,7 @@ else:
                                 n_lev_total=n_lev,
                                 n_profile_vars=27, #23, #9, #
                                 xlim=25,
-                                bg_color='mistyrose',
+                                bg_color='lavender', # 'mistyrose', #
                                 )
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)

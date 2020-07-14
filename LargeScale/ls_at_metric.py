@@ -25,7 +25,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         scalars = [
             'cin',
             'cape',
-            'd_cape',
+            # 'd_cape',       # correlation to other variables higher than 0.8
             'cld_low',
             'lw_dn_srf',
             'wspd_srf',
@@ -39,7 +39,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'p_srf_aver',
             'T_srf',
             # 'T_skin',       # correlation to other variables higher than 0.8
-            'RH_srf',
+            # 'RH_srf',       # correlation to other variables higher than 0.8
             'u_srf',
             # 'rad_net_srf',  # correlation to other variables higher than 0.8
             # 'sw_net_toa',   # correlation to other variables higher than 0.8
@@ -49,7 +49,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'dh2odt_col',   # without10important
             'h2o_adv_col',  # without10important
             # 'evap_srf',     # correlation to other variables too high (according to statsmodels)
-            'dsdt_col',
+            # 'dsdt_col',     # correlation to other variables higher than 0.8
             # 's_adv_col',    # correlation to other variables too high (according to statsmodels)
             # 'rad_heat_col', # correlation to other variables too high (according to statsmodels)
             # 'LH_col',       # correlation to other variables higher than 0.8
@@ -178,7 +178,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
     scalars = [
         'Convective Inhibition',
         'Convective Available Potential Energy',
-        '515 hPa Downward CAPE',
+        # '515 hPa Downward CAPE',                    # correlation to other variables higher than 0.8
         'Satellite-measured low cloud',
         'Surface downwelling LW',
         '10m wind speed',
@@ -192,7 +192,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Surface pressure averaged over the domain',
         '2m air temperature',
         # 'Surface skin temperature',                 # correlation to other variables higher than 0.8
-        '2m air relative humidity',
+        # '2m air relative humidity',                 # correlation to other variables higher than 0.8
         '10m U component',
         # 'Surface net radiation, downward positive', # correlation to other variables higher than 0.8
         # 'TOA net SW flux, downward positive',       # correlation to other variables higher than 0.8
@@ -202,7 +202,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Column-integrated dH2O/dt',
         'Column-integrated H2O advection',
         # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
-        'Column d(dry static energy)/dt',
+        # 'Column d(dry static energy)/dt',           # correlation to other variables higher than 0.8
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
         # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
         # 'Column latent heating',                    # correlation to other variables higher than 0.8

@@ -40,14 +40,14 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-n_last = 1200
+n_last = 400
 predicted_list = [mlr_predicted, predicted]
 legend_both = ['MLR', 'NN']
 fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
 for i, ax in enumerate(axes):
-    ax.plot(rome             [-n_last:], color='white', lw=3  )
+    ax.plot(rome             [-n_last:], color='white', lw=4.5  )
     # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
-    ax.plot(predicted_list[i][-n_last:], color='black', lw=1.5)
+    ax.plot(predicted_list[i][-n_last:], color='black', lw=3.5)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
     ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])

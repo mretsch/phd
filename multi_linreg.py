@@ -117,7 +117,7 @@ if __name__ == "__main__":
         high_corr = corr_r[abs(corr_r) > 0.8]
         log = []
         for s in corr_r['partner0'].values:
-            log.append('H2O' in s.item())
+            log.append('CAPE' in s.item())
         corr_select = corr_r[log]
 
     l_load_model = True
@@ -151,9 +151,9 @@ if __name__ == "__main__":
         l_percentage_plots = True
         if l_percentage_plots:
 
-            # predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
+            predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
             # take the predictions of NN instead of MLR, to subselect high NN-predictions (apples to apples)
-            predicted = xr.open_dataarray(model_path + 'predicted.nc')
+            # predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
             l_high_values = True
             if l_high_values:
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         else:
             plt.rc('font', size=28)
 
-            n_profile_vars = 23 # 9 # 27 #
+            n_profile_vars = 27 # 23 # 9 #
             if ls_times == 'same_and_earlier_time':
                 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
                 n_lev_onetime =  n_lev//2 #11 #
@@ -243,7 +243,7 @@ if __name__ == "__main__":
             xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
             for ax in axes:
                 ax.set_xlim(xlim_low, xlim_upp)
-                # ax.xaxis.set_major_locator(ticker.MultipleLocator(500))
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
                 ax.grid(axis='x')
 
             plt.subplots_adjust(wspace=0.05)
