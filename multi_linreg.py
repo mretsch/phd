@@ -68,14 +68,14 @@ if __name__ == "__main__":
     ds_ls = xr.open_dataset(home+'/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
-    ls_vars = [#'omega',
-               'T_adv_h',
-               'r_adv_h',
-               'dsdt',
-               'drdt',
+    ls_vars = ['omega',
+               #'T_adv_h',
+               #'r_adv_h',
+               #'dsdt',
+               #'drdt',
                'RH',
-               'u',
-               'v',
+               #'u',
+               #'v',
                'dwind_dz'
               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -120,7 +120,7 @@ if __name__ == "__main__":
             log.append('CAPE' in s.item())
         corr_select = corr_r[log]
 
-    l_load_model = True
+    l_load_model = False
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)

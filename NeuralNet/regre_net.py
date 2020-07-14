@@ -31,14 +31,14 @@ ds_ls  = xr.open_dataset(home+
                          '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
-ls_vars = [#'omega',
-           'T_adv_h',
-           'r_adv_h',
-           'dsdt',
-           'drdt',
+ls_vars = ['omega',
+           #'T_adv_h',
+           #'r_adv_h',
+           #'dsdt',
+           #'drdt',
            'RH',
-           'u',
-           'v',
+           #'u',
+           #'v',
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -89,7 +89,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=30, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -102,7 +102,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PhysSelect/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -113,7 +113,7 @@ else:
 
     predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
         _, predicted = high_correct_predictions(target=metric, predictions=predicted,
                                                 target_percentile=0.9, prediction_offset=0.3)
@@ -138,9 +138,9 @@ else:
                                 long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=23, #27, #9, #
+                                n_profile_vars=9, #23, #27, #
                                 xlim=25,
-                                bg_color='mistyrose',
+                                # bg_color='mistyrose',
                                 )
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
