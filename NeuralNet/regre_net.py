@@ -31,7 +31,7 @@ ds_ls  = xr.open_dataset(home+
                          '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
-ls_vars = ['omega',
+ls_vars = [#'omega',
            'T_adv_h',
            'r_adv_h',
            'dsdt',
@@ -102,7 +102,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -113,7 +113,7 @@ else:
 
     predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-    l_high_values = True
+    l_high_values = False
     if l_high_values:
         _, predicted = high_correct_predictions(target=metric, predictions=predicted,
                                                 target_percentile=0.9, prediction_offset=0.3)
@@ -138,9 +138,9 @@ else:
                                 long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=27, #23, #9, #
+                                n_profile_vars=23, #27, #9, #
                                 xlim=25,
-                                bg_color='lavender', # 'mistyrose', #
+                                bg_color='mistyrose',
                                 )
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
