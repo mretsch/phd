@@ -177,35 +177,35 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Convective Inhibition',
         'Convective Available Potential Energy',
         # '515 hPa Downward CAPE',                    # correlation to other variables higher than 0.8
-#        'Satellite-measured low cloud',
-#        'Surface downwelling LW',
-#        '10m wind speed',
-#        '10m V component',
-#        '2m water vapour mixing ratio',
-        # 'TOA LW flux, upward positive',                # without10important
-        # 'Surface sensible heat flux, upward positive', # without10important
-#        'MWR-measured cloud liquid water path',
+        'Satellite-measured low cloud',
+        'Surface downwelling LW',
+        '10m wind speed',
+        '10m V component',
+        '2m water vapour mixing ratio',
+        'TOA LW flux, upward positive',                # without10important
+        'Surface sensible heat flux, upward positive', # without10important
+        'MWR-measured cloud liquid water path',
 
-        # 'Surface latent heat flux, upward positive',   # without10important
-#        'Surface pressure averaged over the domain',
-#        '2m air temperature',
+        'Surface latent heat flux, upward positive',   # without10important
+        'Surface pressure averaged over the domain',
+        '2m air temperature',
         # 'Surface skin temperature',                 # correlation to other variables higher than 0.8
         # '2m air relative humidity',                 # correlation to other variables higher than 0.8
-#        '10m U component',
+        '10m U component',
         # 'Surface net radiation, downward positive', # correlation to other variables higher than 0.8
         # 'TOA net SW flux, downward positive',       # correlation to other variables higher than 0.8
-#        'Satellite-measured middle cloud',
-#        'Satellite-measured high cloud',
+        'Satellite-measured middle cloud',
+        'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
-        # 'Column-integrated dH2O/dt',                   # without10important
-        # 'Column-integrated H2O advection',             # without10important
+        'Column-integrated dH2O/dt',                   # without10important
+        'Column-integrated H2O advection',             # without10important
         # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
         # 'Column d(dry static energy)/dt',           # correlation to other variables higher than 0.8
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
         # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
         # 'Column latent heating',                    # correlation to other variables higher than 0.8
-#        '2m dry static energy',
-#        'MWR-measured column precipitable water',
+        '2m dry static energy',
+        'MWR-measured column precipitable water',
         # 'Surface upwelling LW',                     # correlation to other variables higher than 0.8
         # 'Surface downwelling SW',                   # has same long_name as sw_dn_srf (according to statsmodels)
         # 'Surface downwelling SW',                   # correlation to other variables higher than 0.8

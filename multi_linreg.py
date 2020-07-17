@@ -69,13 +69,13 @@ if __name__ == "__main__":
     metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
     ls_vars = ['omega',
-               #'T_adv_h',
-               #'r_adv_h',
-               #'dsdt',
-               #'drdt',
+               'T_adv_h',
+               'r_adv_h',
+               'dsdt',
+               'drdt',
                'RH',
-               #'u',
-               #'v',
+               'u',
+               'v',
                'dwind_dz'
               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -120,7 +120,7 @@ if __name__ == "__main__":
             log.append('CAPE' in s.item())
         corr_select = corr_r[log]
 
-    l_load_model = False
+    l_load_model = True
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-        model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
+        model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
         mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
@@ -148,14 +148,14 @@ if __name__ == "__main__":
 
         # ===== plots ==========
 
-        l_percentage_plots = False
+        l_percentage_plots = True
         if l_percentage_plots:
 
             # predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
             # take the predictions of NN instead of MLR, to subselect high NN-predictions (apples to apples)
             predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-            l_high_values = True
+            l_high_values = False
             if l_high_values:
                 _, predicted = high_correct_predictions(target=metric, predictions=predicted,
                                                         target_percentile=0.9, prediction_offset=0.3)
@@ -173,9 +173,10 @@ if __name__ == "__main__":
                                         long_names=predictor['long_name'],
                                         ls_times='same_and_earlier_time',
                                         n_lev_total=n_lev,
-                                        n_profile_vars=23,
+                                        n_profile_vars=27,
                                         xlim=45,
-                                        # bg_color='mistyrose',
+                                        bg_color='mistyrose',
+                                        l_eof_input=l_eof_input
                                         )
 
             plot.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
