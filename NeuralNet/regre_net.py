@@ -113,10 +113,11 @@ else:
 
     predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-    l_high_values = False
+    l_high_values = True
     if l_high_values:
-        _, predicted = high_correct_predictions(target=metric, predictions=predicted,
-                                                target_percentile=0.9, prediction_offset=0.3)
+        _, predicted_high = high_correct_predictions(target=metric, predictions=predicted,
+                                                     target_percentile=0.9, prediction_offset=0.3)
+        # predicted = predicted_high
 
     input_percentages_list = []
     for model_input in predictor.sel(time=predicted.time):
@@ -126,6 +127,10 @@ else:
     input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
     input_percentages[:, :] = input_percentages_list
 
+    if l_high_values:
+        input_percentages.coords['high_pred'] = ('time', np.full_like(input_percentages[:, 0], False, dtype='bool'))
+        input_percentages['high_pred'].loc[dict(time=predicted_high.time)] = True
+
     p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
     p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
     spread = p75 - p25
@@ -133,6 +138,7 @@ else:
 
     # ===== Plots =====================
 
+    l_violins = True and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values,
                                 long_names=predictor['long_name'],
@@ -141,7 +147,8 @@ else:
                                 n_profile_vars=27, #9, #23, #
                                 xlim=45,
                                 bg_color='mistyrose',
-                                l_eof_input=l_eof_input
+                                l_eof_input=l_eof_input,
+                                l_violins=l_violins,
                                 )
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
