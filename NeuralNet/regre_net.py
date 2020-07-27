@@ -46,14 +46,14 @@ ls_times = 'same_and_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
-                                                   l_take_scalars=True,
+                                                   l_take_scalars=False,
                                                    large_scale_time=ls_times)
 
 l_subselect = True
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = False
+l_eof_input = True
 if l_eof_input:
     pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
     eof_late  = pcseries.sel(number=list(range(20)),
@@ -102,7 +102,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -134,18 +134,19 @@ else:
     p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
     p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
     spread = p75 - p25
-    high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+    # high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
 
     # ===== Plots =====================
 
-    l_violins = True and l_high_values
+    l_violins = True \
+                and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values,
-                                long_names=predictor['long_name'],
+                                long_names=0,#predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=27, #9, #23, #
-                                xlim=45,
+                                n_profile_vars=9, #27, #23, #
+                                xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,

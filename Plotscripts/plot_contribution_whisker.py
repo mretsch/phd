@@ -13,7 +13,7 @@ def contribution_whisker(input_percentages, levels, long_names,
     plt.rc('font', size=19)
 
     if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))  # *(12/94. + 10/94.)
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 29))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
@@ -51,8 +51,9 @@ def contribution_whisker(input_percentages, levels, long_names,
             # get some data as pandas dataframe
             df = input_percentages[:, var_to_plot].to_pandas()
             # rename columns
-            df.columns = np.char.add(input_percentages[:, var_to_plot].long_name,
-                                     input_percentages[:, var_to_plot].lev.astype(str))
+            # df.columns = np.char.add(input_percentages[:, var_to_plot].long_name,
+            #                          input_percentages[:, var_to_plot].lev.astype(str))
+            df.columns = ['Pattern '+str(i) for i in range(1, len(var_to_plot) + 1)]
             # df.columns = input_percentages[:, var_to_plot].long_name
             # one series of data as type 'category'
             highpred_series = input_percentages[:, 0]['high_pred'].to_pandas().astype('category')
@@ -68,7 +69,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             dfsr['high_pred'] = highpred_series
 
             # Plot
-            sns.violinplot(x=dfsr[0], y=dfsr['level_1'], hue='high_pred', data=dfsr, split=True, scale='width',
+            sns.violinplot(x=0, y='level_1', hue='high_pred', data=dfsr, split=True, scale='width',
                            inner='quartile', palette='Set3', zorder=500)
 
         ax.set_xlim(-xlim, xlim)
