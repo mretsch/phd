@@ -8,10 +8,11 @@ home = expanduser("~")
 plt.rc('font', size=18)
 
 # ls = xr.open_dataset('/Users/mret0001/Data/LargeScaleState/CPOL_large-scale_forcing_cape_cin_rh_shear.nc')
-ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dir.nc')
+ls  = xr.open_dataset(home+
+                      '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
 # ROME is defined exactly at the LS time steps
-metric = xr.open_dataarray('/Users/mret0001/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h.nc')
+metric = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 metric_bins = []
 # i should be 2 at least
@@ -20,28 +21,28 @@ n_bins = 10
 p_edges = np.linspace(0., 1., n_bins + 1)
 metric_bins.append(metric.where(metric.percentile < p_edges[1], drop=True))
 for i in range(1, n_bins-1):
-    metric_bins.append(metric.where((p_edges[i] <= metric.percentile) & (metric.percentile < p_edges[i+1]), drop=True) )
+    metric_bins.append(metric.where((p_edges[i] <= metric.percentile) & (metric.percentile < p_edges[i+1]), drop=True))
 metric_bins.append(metric.where(p_edges[-2] <= metric.percentile, drop=True))
 
 var_strings = [
-#'T'
-# ,'r'
-# ,'s'
-# ,'u'
-# ,'v'
-'omega'
-# ,'div'
-# ,'T_adv_h'
-# ,'T_adv_v'
-# ,'r_adv_h'
-# ,'r_adv_v'
-# ,'s_adv_h'
-# ,'s_adv_v'
-# ,'dsdt'
-# 'drdt'
-# ,'RH'
+'T'
+,'r'
+,'s'
+,'u'
+,'v'
+,'omega'
+,'div'
+,'T_adv_h'
+,'T_adv_v'
+,'r_adv_h'
+,'r_adv_v'
+,'s_adv_h'
+,'s_adv_v'
+,'dsdt'
+,'drdt'
+,'RH'
 # 'dwind_dz'
-# 'wind_dir'
+# ,'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -49,7 +50,13 @@ for var in var_strings:
 
     for i in range(n_bins):
         print(var)
-        ls_sub = ls.where(metric_bins[i])
+        l_earlier_time = True
+        if not l_earlier_time:
+            ls_sub = ls.where(metric_bins[i])
+        else:
+            earlytime = (metric_bins[i].time - np.timedelta64(6, 'h')).values
+            is_in_ls = [True if time in ls.time else False for time in earlytime]
+            ls_sub = ls.sel(time=earlytime[is_in_ls])
         if var == 'wind_dir':
             u_mean = ls_sub['u'][:, :-1].mean(dim='time')
             v_mean = ls_sub['v'][:, :-1].mean(dim='time')
@@ -60,7 +67,8 @@ for var in var_strings:
             # once there was a change of direction .gt. 180, all values higher up in atmosphere are True also
             for j in range(len(l_diff_gt_180) - 1, 0, -1):
                 l_diff_gt_180[j - 1] = l_diff_gt_180[j] ^ l_diff_gt_180[j - 1]
-            direction.loc[40:965] = xr.where(l_diff_gt_180, direction.loc[40:965]+360., direction.loc[40:965])
+            # direction.loc[40:965] = xr.where(l_diff_gt_180, direction.loc[40:965]+360., direction.loc[40:965])
+            direction.loc[40:965] = xr.where(l_diff_gt_180, (direction.loc[40:965]+360.) % 540, direction.loc[40:965])
 
             speed = np.sqrt((u_mean**2 + v_mean**2))
             l_wind_speed = False
@@ -79,11 +87,12 @@ for var in var_strings:
 
     plt.gca().invert_yaxis()
     plt.ylabel('Pressure [hPa]')
-    plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
-    plt.legend(['1st decile', '2st decile', '3st decile',
-                '4st decile', '5st decile', '6st decile',
-                '7st decile', '8st decile', '9st decile',
-                '10st decile'], fontsize=9)
+    # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    plt.xlabel('Wind direction, [degrees]')
+    plt.legend(['1. decile', '2. decile', '3. decile',
+                '4. decile', '5. decile', '6. decile',
+                '7. decile', '8. decile', '9. decile',
+                '10. decile'], fontsize=9)
 
     plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight', transparent=True)
     plt.close()
