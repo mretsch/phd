@@ -51,9 +51,9 @@ def contribution_whisker(input_percentages, levels, long_names,
             # get some data as pandas dataframe
             df = input_percentages[:, var_to_plot].to_pandas()
             # rename columns
-            # df.columns = np.char.add(input_percentages[:, var_to_plot].long_name,
-            #                          input_percentages[:, var_to_plot].lev.astype(str))
-            df.columns = ['Pattern '+str(i) for i in range(1, len(var_to_plot) + 1)]
+            df.columns = np.char.add(input_percentages[:, var_to_plot].long_name,
+                                     input_percentages[:, var_to_plot].lev.astype(str))
+            # df.columns = ['Pattern '+str(i) for i in range(1, len(var_to_plot) + 1)]
             # df.columns = input_percentages[:, var_to_plot].long_name
             # one series of data as type 'category'
             highpred_series = input_percentages[:, 0]['high_pred'].to_pandas().astype('category')

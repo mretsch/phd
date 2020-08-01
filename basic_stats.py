@@ -56,6 +56,9 @@ def diurnal_cycle(series, group='time', frequency='10T', period=144, time_shift=
         del series['percentile']
     except KeyError:
         pass
+    # the second time of time.time groups by every unique timestamp per day --> daily cycle.
+    # other possibilities to group datetime-objects are
+    # https://xray.readthedocs.io/en/latest/api.html#datetimelike-properties
     day = series.groupby('time.'+group).mean()
 
     # create time objects for one (arbitrary) day

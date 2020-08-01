@@ -11,7 +11,7 @@ import keras.utils as kutils
 import keras.callbacks as kcallbacks
 from NeuralNet.backtracking import mlp_backtracking_maxnode, mlp_backtracking_percentage, high_correct_predictions
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
-from basic_stats import into_pope_regimes, root_mean_square_error
+from basic_stats import into_pope_regimes, root_mean_square_error, diurnal_cycle
 from Plotscripts.plot_contribution_whisker import contribution_whisker
 import pandas as pd
 
@@ -22,14 +22,42 @@ def nth_percentile(x, p):
     return x[abs(x.rank(dim='time', pct=True) - p).argmin().item()].item()
 
 
+def remove_diurnal(series, dailycycle):
+    if series['time'].dt.hour[0] == 0:
+        adjusted = series - dailycycle[0]
+    elif series['time'].dt.hour[0] == 6:
+        adjusted = series - dailycycle[1]
+    elif series['time'].dt.hour[0] == 12:
+        adjusted = series - dailycycle[2]
+    elif series['time'].dt.hour[0] == 18:
+        adjusted = series - dailycycle[3]
+    else:
+        raise ValueError('Timeseries to remove daily cycle from has no hour values of 0, 6, 12, or 18.')
+    return adjusted
+
+
 home = expanduser("~")
 start = timeit.default_timer()
 
 # assemble the large scale dataset
 ghome = home+'/Google Drive File Stream/My Drive'
-ds_ls  = xr.open_dataset(home+
-                         '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+ds_ls  = xr.open_dataset(home +
+                         '/Documents/Data/LargeScaleState/' +
+                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
+
+l_remove_diurnal_cycle = False
+if l_remove_diurnal_cycle:
+    for var in ds_ls:
+        if 'lev' in ds_ls[var].dims:
+            for i, timeseries in enumerate(ds_ls[var].T):
+                dailycycle = diurnal_cycle(timeseries, period=4, frequency='6h', time_shift=0)
+                without_cycle = timeseries.groupby(group='time.time').apply(remove_diurnal, dailycycle=dailycycle)
+                ds_ls[var][:, i] = without_cycle.values
+        else:
+            dailycycle = diurnal_cycle(ds_ls[var], period=4, frequency='6h', time_shift=0)
+            without_cycle = ds_ls[var].groupby(group='time.time').apply(remove_diurnal, dailycycle=dailycycle)
+            ds_ls[var][:] = without_cycle.values
 
 ls_vars = ['omega',
            'T_adv_h',
@@ -46,14 +74,14 @@ ls_times = 'same_and_earlier_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
-                                                   l_take_scalars=False,
+                                                   l_take_scalars=True,
                                                    large_scale_time=ls_times)
 
 l_subselect = True
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = True
+l_eof_input = False
 if l_eof_input:
     pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
     eof_late  = pcseries.sel(number=list(range(20)),
@@ -89,7 +117,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=30, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -102,7 +130,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
+    model_path = home + '/Desktop/'#'/Documents/Data/NN_Models/ROME_Models/PCSeries/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -142,10 +170,10 @@ else:
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values,
-                                long_names=0,#predictor['long_name'],
+                                long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=9, #27, #23, #
+                                n_profile_vars=27, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
