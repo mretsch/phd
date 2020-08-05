@@ -61,16 +61,28 @@ eigenvectors = eigenvectors[:, idx]
 variance_perc =  eigenvalues / eigenvalues.sum()
 
 # at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
-l_scale_vectors = True
+l_scale_vectors = False
 if l_scale_vectors:
     norm_orig = np.linalg.norm(eigenvectors, axis=0)
     # now scale each vector such that its l2-norm equals sqrt(eigenvalue).
     eigenvalues[eigenvalues < 0.] = 0
     scale_factor = np.sqrt(eigenvalues) / norm_orig
-    evec_scaled = scale_factor * eigenvectors
+    eigenvectors = scale_factor * eigenvectors
+
+# put n_add NaNs between each profile in the eigenvector
+n_add = 4
+add_length = (len(var_size) - 1) * n_add
+evec_long = np.full(shape=(eigenvectors.shape[0] + add_length,
+                           eigenvectors.shape[1]), fill_value=np.nan)
+for i, size in enumerate(var_size):
+    start_old  = sum(var_size[:i])
+    end_old    = start_old + size
+    start_long = start_old + i * n_add
+    end_long   = start_long + size
+    evec_long[start_long:end_long, :] = eigenvectors[start_old:end_old, :]
 
 # add dimensions to vectors
-evec = xr.DataArray(eigenvectors, #evec_scaled, #
+evec = xr.DataArray(eigenvectors,
                     coords={'level': predictor.lev.values,
                             'number': list(range(nlev)),
                             'quantity': ('level', predictor.long_name.values)},
@@ -97,17 +109,18 @@ plt.rc('font', size=15)
 fig, axes = plt.subplots(nrows=20, ncols=1, figsize=(15, 4*20))
 ymin, ymax = 1e10, -1e10
 for i, ax in enumerate(axes):
-    ax.plot(evec.isel(number=i)     , color='k', linestyle='-', lw=2.5)
+    # ax.plot(evec.isel(number=i)     , color='k', linestyle='-', lw=2.5)
+    ax.plot(evec_long[:, i]     , color='k', linestyle='-', lw=2.5)
     ax.axhline(0, color='r', lw=0.5)
     # colors = [sol['yellow'], sol['blue'], sol['orange'], sol['violet'], sol['magenta'], sol['cyan'], sol['red'],
     #           sol['green'], sol['base01'], sol['base1'], sol['base00'], sol['base0'],
     #           sol['base01'], sol['base1'], sol['base00'], sol['base0']]
     colors = [sol['base01'], sol['base1']] * 7
-    ax.set_xlim(0, evec.shape[0])
+    ax.set_xlim(0, evec_long.shape[0])
     tick_values = []
-    tick_1, tick_2 = 0, 0
     for i, length in enumerate(var_size):
-        tick_1, tick_2 = tick_2, tick_2 + length
+        tick_1 = sum(var_size[:i]) + i * n_add
+        tick_2 = tick_1 + length
         # plt.axvline(x=tick_2, color='red')
         ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[i], alpha=0.5)
         tick_values.append(0.5*(tick_1 + tick_2))
