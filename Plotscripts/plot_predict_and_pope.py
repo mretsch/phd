@@ -15,7 +15,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
 predicted = xr.open_dataarray(
-    home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/predicted.nc')
+    home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/predicted.nc')
 mlr_predicted = xr.open_dataarray(
     home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/mlr_predicted.nc')
 
@@ -40,27 +40,28 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-n_last = 1200
-predicted_list = [mlr_predicted, predicted]
+plot_length = 400
+plot_index = slice(-1200, -800)
+predicted_list = [predicted, predicted]
 legend_both = ['MLR', 'NN']
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
-for i, ax in enumerate(axes):
-    ax.plot(rome             [-n_last:], color='white', lw=3  )
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
+for i, ax in enumerate([axes]):
+    ax.plot(rome             [plot_index], color='white', lw=4.5)
     # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
-    ax.plot(predicted_list[i][-n_last:], color='black', lw=1.5)
+    ax.plot(predicted_list[i][plot_index], color='black', lw=3)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
     ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
     # ax.set_ylim(0, 442.8759794239834)
-    ax.set_xlim(0, n_last)
+    ax.set_xlim(0, plot_length)
 
     colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
     # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
 
     tick_1, tick_2 = -1.5, -0.5
-    for thistime in rome[-n_last:].time.values: #metric_high[correct_pred].time.values:
+    for thistime in rome[plot_index].time.values: #metric_high[correct_pred].time.values:
         tick_1, tick_2 = tick_2, tick_2 + 1
         ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
 

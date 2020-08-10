@@ -43,7 +43,7 @@ start = timeit.default_timer()
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')# _noDailyCycle.nc')
+                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')# _noDailyCycle.nc')
 metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
 
 l_remove_diurnal_cycle = False
@@ -130,7 +130,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -148,8 +148,8 @@ else:
         # predicted = predicted_high
 
     input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
-    l_input_positive  = xr.full_like(predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
-    for i, model_input in enumerate(predictor.sel(time=predicted.time)):
+    l_input_positive  = xr.full_like (predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
+    for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
         input_percentages[i, :] = mlp_backtracking_percentage(model, model_input)[0]
         l_input_positive [i, :] = (model_input > 0.).values
 
