@@ -186,7 +186,7 @@ if testing:
     if model_insight:
 
         model = kmodels.load_model(
-            ghome+'/Data/NN_Models/BasicUnderstanding/Multi_Model/multimodel.h5')
+            home+'/Documents/Data/NN_Models/BasicUnderstanding/SqrtandSqrt_Model/sqrtandsqrtmodel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)

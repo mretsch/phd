@@ -24,6 +24,10 @@ def high_correct_predictions(target, predictions, target_percentile, prediction_
     return target_sub, predictions_sub
 
 
+def softmax(x):
+    return np.exp(x) / (np.exp(x)).sum()
+
+
 def mlp_forward_pass(input_to_mlp=None, weight_list=None):
     """Computes a forward pass for an MLP given the input, weights list by keras.
     Returns all node values of the MLP as a list containing arrays."""
@@ -145,6 +149,9 @@ def mlp_backtracking_percentage(model, data_in):
             dot_plus_bias = contribution_to_node.sum() + weight_list[2 * i + 1][j]
 
             contributions_perc[:, j] = contribution_to_node / dot_plus_bias * node_percentages[-1][j]
+
+            # Try softmax. Results: not convincing. Cannot differentiate between different input nodes.
+            # contributions_perc[:, j] = softmax(contribution_to_node) * node_percentages[-1][j]
 
         # sum all contributions that went from each node in iput-layer to next layer
         node_percentages     .append(contributions_perc.sum(axis=1))
