@@ -12,14 +12,14 @@ start = timeit.default_timer()
 
 # assemble the large scale dataset
 ghome = home + '/Google Drive File Stream/My Drive'
-ds_ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
+ds_ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 # take only large ROME values and the according LS variables then in the subroutine
 # metric = metric[metric.percentile > 0.95]
 
 ls_vars = ['omega',
-           'T_adv_h',
+           's_adv_h',
            'r_adv_h',
            'dsdt',
            'drdt',
@@ -61,7 +61,7 @@ eigenvectors = eigenvectors[:, idx]
 variance_perc =  eigenvalues / eigenvalues.sum()
 
 # at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
-l_scale_vectors = False
+l_scale_vectors = True
 if l_scale_vectors:
     norm_orig = np.linalg.norm(eigenvectors, axis=0)
     # now scale each vector such that its l2-norm equals sqrt(eigenvalue).

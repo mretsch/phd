@@ -13,8 +13,27 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         raise ValueError("String large_scale_time to select large-scale time steps does not match or is not provided.")
 
     if chosen_vars is None:
-        chosen_vars = ['omega', 'div', 'T_adv_h', 'T_adv_v', 'r_adv_h', 'r_adv_v',
-                       's_adv_h', 's_adv_v', 'dsdt', 'drdt', 'RH', 'u', 'v', 'dwind_dz']
+        chosen_vars = [
+            'T',
+            'dTdt',
+            'T_adv_h',
+            'T_adv_v',
+            's',
+            'dsdt',
+            's_adv_h',
+            's_adv_v',
+            'r',
+            'drdt',
+            'r_adv_h',
+            'r_adv_v',
+            'omega',
+            'div',
+            'u',
+            'v',
+            'RH',
+            'dwind_dz',
+            ]
+
     # bottom level has redundant information and two bottom levels filled with NaN for dwind_dz
     var_list = [ds_largescale[var][:, :-1] if var != 'dwind_dz' else ds_largescale[var][:, :-2]
                 for var in chosen_vars ]

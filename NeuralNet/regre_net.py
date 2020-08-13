@@ -5,6 +5,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import seaborn as sns
+import keras.optimizers as koptimizers
 import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
@@ -43,8 +44,8 @@ start = timeit.default_timer()
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')# _noDailyCycle.nc')
-metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_km_avg6h_nanzero.nc')
+                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')# _noDailyCycle.nc')
+metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 l_remove_diurnal_cycle = False
 if l_remove_diurnal_cycle:
@@ -77,16 +78,18 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=True,
                                                    large_scale_time=ls_times)
 
-l_subselect = True
+l_subselect = False
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = False
+l_eof_input = True
 if l_eof_input:
-    pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
-    eof_late  = pcseries.sel(number=list(range(20)),
+    n_pattern_for_prediction = 10 #20 #
+    # pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
+    pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_sadvh_pcseries_all.nc')
+    eof_late  = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                              time=predictor.time                        ).rename({'number': 'lev'}).T
-    eof_early = pcseries.sel(number=list(range(20)),
+    eof_early = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                              time=eof_late.time - np.timedelta64(6, 'h')).rename({'number': 'lev'}).T
 
     predictor = xr.DataArray(np.zeros((eof_late.shape[0], eof_late.shape[1]*2)),
@@ -117,7 +120,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=30, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -130,7 +133,8 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/'
+    # model_path = home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/'
+    model_path = home + '/Desktop/PCSeries_only10patterns/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -175,7 +179,7 @@ else:
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values,
-                                long_names=predictor['long_name'],
+                                long_names=0,#predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
                                 n_profile_vars=27, #9, #23, #
