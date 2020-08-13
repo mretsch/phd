@@ -91,12 +91,13 @@ if __name__ == "__main__":
         levels = [215, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
 
-    l_eof_input = False
+    l_eof_input = True
     if l_eof_input:
-        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
-        eof_late = pcseries.sel(number=list(range(20)),
+        n_pattern_for_prediction = 20 # 10  #
+        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_sadvh_pcseries_all.nc')
+        eof_late = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                                 time=predictor.time).rename({'number': 'lev'}).T
-        eof_early = pcseries.sel(number=list(range(20)),
+        eof_early = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                                  time=eof_late.time - np.timedelta64(6, 'h')).rename({'number': 'lev'}).T
 
         predictor = xr.DataArray(np.zeros((eof_late.shape[0], eof_late.shape[1] * 2)),
@@ -134,7 +135,7 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-        model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+        model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
         mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
@@ -148,7 +149,7 @@ if __name__ == "__main__":
 
         # ===== plots ==========
 
-        l_percentage_plots = True
+        l_percentage_plots = False
         if l_percentage_plots:
 
             # predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
@@ -252,7 +253,7 @@ if __name__ == "__main__":
             xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
             for ax in axes:
                 ax.set_xlim(xlim_low, xlim_upp)
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(100))
                 ax.grid(axis='x')
 
             plt.subplots_adjust(wspace=0.05)

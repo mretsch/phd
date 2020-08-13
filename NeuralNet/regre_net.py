@@ -84,8 +84,7 @@ if l_subselect:
 
 l_eof_input = True
 if l_eof_input:
-    n_pattern_for_prediction = 10 #20 #
-    # pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
+    n_pattern_for_prediction = 20 #10 #
     pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_sadvh_pcseries_all.nc')
     eof_late  = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                              time=predictor.time                        ).rename({'number': 'lev'}).T

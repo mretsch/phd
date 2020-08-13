@@ -15,9 +15,9 @@ ghome = home+'/Google Drive File Stream/My Drive'
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
 predicted = xr.open_dataarray(
-    home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/predicted.nc')
+    home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/predicted.nc')
 mlr_predicted = xr.open_dataarray(
-    home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/mlr_predicted.nc')
+    home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:
@@ -41,11 +41,11 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 plt.rc('font', size=24)
 
 plot_length = 400
-plot_index = slice(-1200, -800)
-predicted_list = [predicted, predicted]
+plot_index = slice(None, 400)
+predicted_list = [mlr_predicted, predicted]
 legend_both = ['MLR', 'NN']
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
-for i, ax in enumerate([axes]):
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(36, 8), sharex=True, sharey=True)
+for i, ax in enumerate(axes):
     ax.plot(rome             [plot_index], color='white', lw=4.5)
     # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
     ax.plot(predicted_list[i][plot_index], color='black', lw=3)
