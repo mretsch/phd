@@ -5,6 +5,7 @@ import numpy as np
 import metpy.calc as mpcalc
 import metpy.constants as mpconsts
 from metpy.units import units
+import matplotlib.pyplot as plt
 
 # global R_d, g
 g = 9.81  # gravitational acceleration
@@ -268,8 +269,8 @@ def down_cape(p_start=None):
 
 if __name__ == '__main__':
     ghome = home + '/Google Drive File Stream/My Drive'
-    ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-    # ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing.nc')
+    # ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+    ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = False
@@ -325,7 +326,7 @@ if __name__ == '__main__':
 
         t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
 
-    # ls_new = vertical_wind_shear(ls.u, ls.v)
+    ls_new = vertical_wind_shear(ls.u, ls.v)
     # ls_new = wind_direction(ls.u, ls.v)
-    ls_new = down_cape(p_start=515)
+    # ls_new = down_cape(p_start=515)
 
