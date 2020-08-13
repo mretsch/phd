@@ -61,7 +61,7 @@ if l_remove_diurnal_cycle:
             ds_ls[var][:] = without_cycle.values
 
 ls_vars = ['omega',
-           'T_adv_h',
+           's_adv_h',
            'r_adv_h',
            'dsdt',
            'drdt',
@@ -132,8 +132,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    # model_path = home + '/Documents/Data/NN_Models/ROME_Models/NoDiurnalCycle/'
-    model_path = home + '/Desktop/PCSeries_only10patterns/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])

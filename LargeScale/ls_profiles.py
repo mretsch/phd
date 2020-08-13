@@ -38,11 +38,12 @@ var_strings = [
 ,'r_adv_v'
 ,'s_adv_h'
 ,'s_adv_v'
+,'dTdt'
 ,'dsdt'
 ,'drdt'
 ,'RH'
-# 'dwind_dz'
-# ,'wind_dir'
+,'dwind_dz'
+# 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -50,7 +51,7 @@ for var in var_strings:
 
     for i in range(n_bins):
         print(var)
-        l_earlier_time = True
+        l_earlier_time = False
         if not l_earlier_time:
             ls_sub = ls.where(metric_bins[i])
         else:
@@ -67,8 +68,15 @@ for var in var_strings:
             # once there was a change of direction .gt. 180, all values higher up in atmosphere are True also
             for j in range(len(l_diff_gt_180) - 1, 0, -1):
                 l_diff_gt_180[j - 1] = l_diff_gt_180[j] ^ l_diff_gt_180[j - 1]
-            # direction.loc[40:965] = xr.where(l_diff_gt_180, direction.loc[40:965]+360., direction.loc[40:965])
-            direction.loc[40:965] = xr.where(l_diff_gt_180, (direction.loc[40:965]+360.) % 540, direction.loc[40:965])
+            direction.loc[40:965] = xr.where(l_diff_gt_180, (direction.loc[40:965]+360.) % 540., direction.loc[40:965])
+
+            # manual adjustments
+            if i==4: # and l_earlier_time:
+                direction.loc[40:440] = direction.loc[40:440] + 360.
+            if i==6 and not l_earlier_time:
+                direction.loc[40:815] = direction.loc[40:815] -  360.
+            ## if i==4 and not l_earlier_time:
+            ##     direction.loc[465:540] = direction.loc[465:540] - 180
 
             speed = np.sqrt((u_mean**2 + v_mean**2))
             l_wind_speed = False
@@ -78,17 +86,21 @@ for var in var_strings:
                 plot_var = direction
             plt.plot(plot_var, ls_sub.lev[:-1], color=sol[colours[i]])
             if not l_wind_speed:
-                tick_degrees = np.arange(0, 540, 45)
-                tick_labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
+                tick_degrees = np.arange(-45, 540, 45)
+                tick_labels = ['NW', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
                 plt.axes().set_xticks(tick_degrees)
                 plt.axes().set_xticklabels(tick_labels)
         else:
             plt.plot(ls_sub[var][:, :-1].mean(dim='time'), ls_sub.lev[:-1], color=sol[colours[i]])
 
     plt.gca().invert_yaxis()
+    if l_earlier_time:
+        plt.title('6 hours before prediction')
+    else:
+        plt.title('Same time as prediction')
     plt.ylabel('Pressure [hPa]')
-    # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
-    plt.xlabel('Wind direction, [degrees]')
+    plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    # plt.xlabel('Wind direction, [degrees]')
     plt.legend(['1. decile', '2. decile', '3. decile',
                 '4. decile', '5. decile', '6. decile',
                 '7. decile', '8. decile', '9. decile',
