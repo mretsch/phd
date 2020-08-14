@@ -69,15 +69,16 @@ if __name__ == "__main__":
     metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
     ls_vars = ['omega',
-               'T_adv_h',
+               'u',
+               'v',
+               's',
+               'RH',
+               's_adv_h',
                'r_adv_h',
                'dsdt',
                'drdt',
-               'RH',
-               'u',
-               'v',
                'dwind_dz'
-              ]
+               ]
     long_names = [ds_ls[var].long_name for var in ls_vars]
     ls_times = 'same_and_earlier_time'
     predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
@@ -91,10 +92,10 @@ if __name__ == "__main__":
         levels = [215, 515, 990]
         predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
 
-    l_eof_input = True
+    l_eof_input = False
     if l_eof_input:
         n_pattern_for_prediction = 20 # 10  #
-        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_sadvh_pcseries_all.nc')
+        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
         eof_late = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                                 time=predictor.time).rename({'number': 'lev'}).T
         eof_early = pcseries.sel(number=list(range(n_pattern_for_prediction)),
@@ -135,7 +136,7 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-        model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
+        model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
         mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
@@ -193,12 +194,12 @@ if __name__ == "__main__":
         else:
             plt.rc('font', size=28)
 
-            n_profile_vars = 23 # 27 # 9 #
+            n_profile_vars = 30 # 23 # 9 #
             if ls_times == 'same_and_earlier_time':
-                fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 24))
+                fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 29))
                 n_lev_onetime =  n_lev//2 #11 #
             else:
-                fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
+                fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 29))
                 axes = [axes]
                 n_lev_onetime = n_lev
 
@@ -253,7 +254,7 @@ if __name__ == "__main__":
             xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
             for ax in axes:
                 ax.set_xlim(xlim_low, xlim_upp)
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(100))
+                ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
                 ax.grid(axis='x')
 
             plt.subplots_adjust(wspace=0.05)

@@ -14,10 +14,9 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
-predicted = xr.open_dataarray(
-    home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/predicted.nc')
-mlr_predicted = xr.open_dataarray(
-    home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/mlr_predicted.nc')
+model_path = '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
+mlr_predicted = xr.open_dataarray(home + model_path + 'mlr_predicted.nc')
 
 l_high_values = False
 if l_high_values:

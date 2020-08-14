@@ -61,13 +61,14 @@ if l_remove_diurnal_cycle:
             ds_ls[var][:] = without_cycle.values
 
 ls_vars = ['omega',
+           'u',
+           'v',
+           's',
+           'RH',
            's_adv_h',
            'r_adv_h',
            'dsdt',
            'drdt',
-           'RH',
-           'u',
-           'v',
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
@@ -78,14 +79,14 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    l_take_scalars=True,
                                                    large_scale_time=ls_times)
 
-l_subselect = False
+l_subselect = True
 if l_subselect:
     predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
 
-l_eof_input = True
+l_eof_input = False
 if l_eof_input:
     n_pattern_for_prediction = 20 #10 #
-    pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_sadvh_pcseries_all.nc')
+    pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
     eof_late  = pcseries.sel(number=list(range(n_pattern_for_prediction)),
                              time=predictor.time                        ).rename({'number': 'lev'}).T
     eof_early = pcseries.sel(number=list(range(n_pattern_for_prediction)),
@@ -119,7 +120,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=30, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -132,7 +133,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/PCSeries/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -177,10 +178,10 @@ else:
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values,
-                                long_names=0,#predictor['long_name'],
+                                long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=27, #9, #23, #
+                                n_profile_vars=30, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,

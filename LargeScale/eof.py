@@ -18,16 +18,18 @@ metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons
 # take only large ROME values and the according LS variables then in the subroutine
 # metric = metric[metric.percentile > 0.95]
 
-ls_vars = ['omega',
-           's_adv_h',
-           'r_adv_h',
-           'dsdt',
-           'drdt',
-           'RH',
-           'u',
-           'v',
-           'dwind_dz'
-           ]
+ls_vars = [
+    'omega',
+    'u',
+    'v',
+    's',
+    'RH',
+    's_adv_h',
+    'r_adv_h',
+    'dsdt',
+    'drdt',
+    'dwind_dz'
+    ]
 predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                      timeseries=metric,
                                                      l_normalise_input=False,
