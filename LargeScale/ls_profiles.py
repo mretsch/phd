@@ -25,30 +25,31 @@ for i in range(1, n_bins-1):
 metric_bins.append(metric.where(p_edges[-2] <= metric.percentile, drop=True))
 
 var_strings = [
-'T'
-,'r'
-,'s'
-,'u'
-,'v'
-,'omega'
-,'div'
-,'T_adv_h'
-,'T_adv_v'
-,'r_adv_h'
-,'r_adv_v'
-,'s_adv_h'
-,'s_adv_v'
-,'dTdt'
-,'dsdt'
-,'drdt'
-,'RH'
-,'dwind_dz'
+# 'T'
+# ,'r'
+'s'
+# ,'u'
+# ,'v'
+# ,'omega'
+# ,'div'
+# ,'T_adv_h'
+# ,'T_adv_v'
+# ,'r_adv_h'
+# ,'r_adv_v'
+# ,'s_adv_h'
+# ,'s_adv_v'
+# ,'dTdt'
+# ,'dsdt'
+# ,'drdt'
+# ,'RH'
+# ,'dwind_dz'
 # 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
 for var in var_strings:
 
+    ref_profile = ls[var].mean(dim='time')
     for i in range(n_bins):
         print(var)
         l_earlier_time = False
@@ -91,7 +92,9 @@ for var in var_strings:
                 plt.axes().set_xticks(tick_degrees)
                 plt.axes().set_xticklabels(tick_labels)
         else:
-            plt.plot(ls_sub[var][:, :-1].mean(dim='time'), ls_sub.lev[:-1], color=sol[colours[i]])
+            # profile_to_plot =  ls_sub[var][:, :-1].mean(dim='time')
+            profile_to_plot = (ls_sub[var][:, :-1].mean(dim='time') / ref_profile) - 1
+            plt.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
 
     plt.gca().invert_yaxis()
     if l_earlier_time:
@@ -99,7 +102,8 @@ for var in var_strings:
     else:
         plt.title('Same time as prediction')
     plt.ylabel('Pressure [hPa]')
-    plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    plt.xlabel(ls_sub[var].long_name+' deviation from average, [K/K]')
     # plt.xlabel('Wind direction, [degrees]')
     plt.legend(['1. decile', '2. decile', '3. decile',
                 '4. decile', '5. decile', '6. decile',
