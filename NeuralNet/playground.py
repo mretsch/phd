@@ -186,7 +186,7 @@ if testing:
     if model_insight:
 
         model = kmodels.load_model(
-            home+'/Documents/Data/NN_Models/BasicUnderstanding/SqrtandSqrt_Model/sqrtandsqrtmodel.h5')
+            home+'/Documents/Data/NN_Models/BasicUnderstanding/Point7_plus_Point3_Model/point7point3model.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -233,12 +233,18 @@ if testing:
                     # percentage_input[:, index] = percentage_input_full[-1][0]
                     index += 1
 
-        sns.boxplot(data=percentage_input .T)
+        plt.rc('font', size=19)
+        fig, ax = plt.subplots(figsize=(4, 8))
+        # plt.plot(figsize=(4, 8))
+        sns.boxplot(data=percentage_input .T, palette='Set2')
         # plt.ylim(90, 110)
-        plt.title('Backtracking (target is node1*node2).')
-        plt.xlabel('# input node')
-        plt.ylabel('Contributing percentage [%]')
-        plt.savefig(home + '/Desktop/backtrack_net.pdf', bbox_inches='tight')
+        ax.set_title('Target is 0.7*y + 0.3*z')
+        # ax.set_title('Contribution distribution')
+        # ax.text(0.75, 0.25, 'Target is 0.7*y + 0.3*z')
+        ax.set_xlabel('Input node')
+        ax.set_ylabel('Contributing percentage [%]')
+        ax.set_xticklabels(['x', 'y', 'z'])
+        plt.savefig(home + '/Desktop/backtrack_net.png', transparent=True, bbox_inches='tight')
         # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
 
     plotting_model = False
