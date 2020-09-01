@@ -10,7 +10,7 @@ import keras.layers as klayers
 import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
-from NeuralNet.backtracking import mlp_backtracking_maxnode, mlp_backtracking_percentage, high_correct_predictions
+import NeuralNet.backtracking as bcktrck
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from basic_stats import into_pope_regimes, root_mean_square_error, diurnal_cycle
 from Plotscripts.plot_contribution_whisker import contribution_whisker
@@ -60,7 +60,8 @@ if l_remove_diurnal_cycle:
             without_cycle = ds_ls[var].groupby(group='time.time').apply(remove_diurnal, dailycycle=dailycycle)
             ds_ls[var][:] = without_cycle.values
 
-ls_vars = ['omega',
+ls_vars = [
+           #'omega',
            'u',
            'v',
            's',
@@ -133,7 +134,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -146,14 +147,14 @@ else:
 
     l_high_values = True
     if l_high_values:
-        _, predicted_high = high_correct_predictions(target=metric, predictions=predicted,
-                                                     target_percentile=0.9, prediction_offset=0.3)
+        _, predicted_high = bcktrck.high_correct_predictions(target=metric, predictions=predicted,
+                                                             target_percentile=0.9, prediction_offset=0.3)
         # predicted = predicted_high
 
     input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
     l_input_positive  = xr.full_like (predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
     for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
-        input_percentages[i, :] = mlp_backtracking_percentage(model, model_input)[0]
+        input_percentages[i, :] = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
         l_input_positive [i, :] = (model_input > 0.).values
 
     positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
@@ -170,7 +171,7 @@ else:
     p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
     p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
     spread = p75 - p25
-    # high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+    high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
 
     # ===== Plots =====================
 
@@ -181,7 +182,7 @@ else:
                                 long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=30, #9, #23, #
+                                n_profile_vars=26, #30, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,

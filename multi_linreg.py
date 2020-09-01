@@ -68,7 +68,8 @@ if __name__ == "__main__":
     ds_ls = xr.open_dataset(home+'/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
-    ls_vars = ['omega',
+    ls_vars = [
+               # 'omega',
                'u',
                'v',
                's',
@@ -136,7 +137,7 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-        model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+        model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
         mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
@@ -194,7 +195,7 @@ if __name__ == "__main__":
         else:
             plt.rc('font', size=28)
 
-            n_profile_vars = 30 # 23 # 9 #
+            n_profile_vars = 26 # 30 # 23 # 9 #
             if ls_times == 'same_and_earlier_time':
                 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 29))
                 n_lev_onetime =  n_lev//2 #11 #

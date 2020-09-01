@@ -228,8 +228,7 @@ if testing:
             for l in range(1, 51):
                 for m in range(1, 51):
                     x = [k, l, m]
-                    percentage_input[:, index] = bcktrck.mlp_backtracking_relevance(model=model, data_in=x,
-                                                                                    alpha=1, beta=0)[0]
+                    percentage_input[:, index] = bcktrck.mlp_backtracking_percentage(model=model, data_in=x)[0]
                     # percentage_input_full.append(mlp_backtracking_percentage(model=model, data_in=x))
                     # percentage_input[:, index] = percentage_input_full[-1][0]
                     index += 1
@@ -243,8 +242,8 @@ if testing:
         # ax.set_title('Contribution distribution')
         # ax.text(0.75, 0.25, 'Target is 0.7*y + 0.3*z')
         ax.set_xlabel('Input node')
-        # ax.set_ylabel('Contributing percentage [%]')
-        ax.set_ylabel('Relevance [1]')
+        ax.set_ylabel('Contributing percentage [%]')
+        # ax.set_ylabel('Relevance [1]')
         ax.set_xticklabels(['x', 'y', 'z'])
         plt.savefig(home + '/Desktop/backtrack_net.png', transparent=True, bbox_inches='tight')
         # np.unravel_index(maximum_nodes.argmax(), shape=maximum_nodes.shape)
