@@ -69,7 +69,7 @@ if __name__ == "__main__":
     metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
     ls_vars = [
-               # 'omega',
+               'omega',
                'u',
                'v',
                's',
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             log.append('CAPE' in s.item())
         corr_select = corr_r[log]
 
-    l_load_model = True
+    l_load_model = False
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)
