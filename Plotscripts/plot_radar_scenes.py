@@ -13,17 +13,24 @@ start = timeit.default_timer()
 plt.rc('font'  , size=16)     # 22 # 18
 plt.rc('legend', fontsize=16) # 22 # 18
 
-metric_1   = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
-metric_2   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/iorg.nc')
-metric_3   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
-metric_4   = metric_1 # xr.open_dataarray(home+'/Data/Analysis/No_Boundary/scai.nc')
-ds_steiner = xr.open_mfdataset(home+'/Data/Steiner/*season*', chunks=40)
+metric_1   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+# delta_prox
+metric_2   = metric_1 - \
+             xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25
+# delta_size
+metric_3   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
+             xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+ds_steiner = xr.open_mfdataset(home+'/Documents/Data/Steiner_Earlier/*season*', chunks=40)
 
 timeselect = True
 contiguous = True
 if timeselect:
-    start_date = '2015-11-10T03:00:00' # '2006-01-09T09:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
-    end_date   = '2015-11-10T06:10:00' # '2006-01-09T14:50' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
+    # start_date = '2015-11-10T03:00:00' # '2006-01-09T09:00' # '2017-03-30T14:50:00' # '2009-12-07T09:10:00'
+    # end_date   = '2015-11-10T06:10:00' # '2006-01-09T14:50' # '2017-03-30T18:00:00' # '2009-12-07T12:20:00'
+    start_date = '2003-03-13T15:10:00' # '2004-11-14T03:10:00' # '2015-03-14T21:10:00' # '2004-12-12T03:10:00' #
+    end_date   = '2003-03-13T21:00:00' # '2004-11-14T09:00:00' # '2015-03-15T03:00:00' # '2004-12-12T09:00:00' #
+    # start_date = '2007-03-02T09:10:00' # '2007-01-30T09:10:00' # '2003-12-19T09:10:00' # '2006-01-19T21:10' #
+    # end_date   = '2007-03-02T15:00:00' # '2007-01-30T15:00:00' # '2003-12-19T15:00:00' # '2006-01-20T03:00' #
     if contiguous:
         times = slice(start_date, end_date)
     else:
@@ -38,7 +45,6 @@ if timeselect:
     metric1_select = metric_1.sel(time=times)
     metric2_select = metric_2.sel(time=times)
     metric3_select = metric_3.sel(time=times)
-    metric4_select = metric_4.sel(time=times)
 
 else:
     steiner = ds_steiner.steiner_echo_classification
@@ -137,7 +143,8 @@ for i, ax in enumerate(p.axes.flat):
         # ax.text(x=129.8, y=-11.0, s=str(alphabet_numbered[i]) + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         # ax.text(x=129.8, y=-11.0, s=alphabet[i] + ')', verticalalignment='top', fontdict={'fontsize': fontsize})
         ax.set_title(str(alphabet_numbered[i]) + ')   ' + title_numbers[i])
-    l_print_time = False
+
+    l_print_time = True
     if l_print_time:
         ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
                 , fontdict={'fontsize': 16})
@@ -171,10 +178,12 @@ if percentiles:
 print1 = metric1_select
 print2 = metric2_select
 
-print_numbers = False
+print_numbers = True
 if print_numbers:
     for i, ax in enumerate(p.axes.flat):
-        ax.annotate('ROME: {:5.1f}'.format(print1[i].item()), (131.78, -11.2), color='blue')
+        ax.annotate('ROME: {:5.1f}'        .format(metric1_select[i].item()), (131.73, -13.5 ), color='blue',  fontsize=12)
+        ax.annotate('$\Delta$prox: {:5.1f}'.format(metric2_select[i].item()), (129.8 , -13.5 ), color='green', fontsize=12)
+        ax.annotate('$\Delta$size: {:5.1f}'.format(metric3_select[i].item()), (129.8 , -11.05), color='red',   fontsize=12)
         if percentiles:
             ax.annotate('ROM: {:3.0f}%\n'
                         'SIC: {:3.0f}%'.format(perct1[i].item(),

@@ -508,12 +508,12 @@ if __name__ == '__main__':
 
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rom_limod': False, 'rom_el': False,
-              'iorg': False, 'scai': False, 'rom': True, 'basics': True,
+              'iorg': False, 'scai': False, 'rom': False, 'basics': True,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Data/Steiner/*0802*")
+                            file=home+"/Documents/Data/Steiner_Earlier/*season*")
 
     # save metrics as netcdf-files
     save = False

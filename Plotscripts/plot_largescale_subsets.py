@@ -5,134 +5,241 @@ import matplotlib.cm as cm
 import matplotlib_venn as plt_venn
 import numpy as np
 import metpy.calc as mpcalc
+import seaborn as sns
 from Plotscripts.colors_solarized import sol
 home = expanduser("~")
 plt.rc('font', size=18)
 
-ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
-                      'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
-# ROME is defined exactly at the LS time steps
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2):
 
-# What percentiles?
-percentile_rome = rome.percentile
-percentile_w515 = ls.omega.sel(lev=515).rank(dim='time', pct=True)
-# What percentiles?
-percentiles = abs(percentile_w515 - 1)
+    # rome
+    metric_1   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    # delta_prox
+    metric_2   = metric_1 - \
+                 xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25
+    # metric_3 = metric_2
+    # delta_size
+    metric_3   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
+                 xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    # metric_3 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
 
-bins = []
-# should be 2 at least
-n_bins = 10
-# the percentile-separating numbers
-p_edges = np.linspace(0., 1., n_bins + 1)
+    fig, ax = plt.subplots(figsize=(15, 4))
 
-# always taking rome-values into the bin-list is okay, later we only use the time information, not the values itself.
-bins.append(rome.where(percentiles < p_edges[1], drop=True))
-for i in range(1, n_bins-1):
-    bins.append(rome.where((p_edges[i] <= percentiles) & (percentiles < p_edges[i + 1]), drop=True))
-bins.append(rome.where(p_edges[-2] <= percentiles, drop=True))
+    # High ROME and HIGH RH
 
-rome_top_w             = bins[-1][bins[-1].notnull()].where(ls.time, drop=True)
-rome_top_decile        = rome[rome.percentile > 0.9]
-rome_top_w_sorted      = rome_top_w.sortby(rome_top_w)
-rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile)[-len(rome_top_w):]
+    list_all = []
+    for start, end in zip(start_date_1, end_date_1):
+        times = slice(start, end)
+        metric1_select = metric_1.sel(time=times)
+        metric2_select = metric_2.sel(time=times)
+        metric3_select = metric_3.sel(time=times)
 
-omega_in_rome = np.array([t.time.values in rome_top_decile.time for t in rome_top_w])
-# the same
-# rome_in_omega = np.array([t.time.values in rome_top_w.time for t in rome_top_decile])
-plt_venn.venn2(subsets=(len(rome_top_decile), len(rome_top_w), omega_in_rome.sum()),
-               set_labels=('Top ROME decile', 'Top w decile'))
+        area_mean = metric1_select - metric2_select - metric3_select
+        size_relative = metric_3 / area_mean
+        prox_relative = metric_2 / area_mean
 
-l_plot_divers = False
-if l_plot_divers:
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.plot(rome_top_decile_sorted, rome_top_w_sorted, ls='', marker='+')
-    ax.set_ylim((0, 600))
-    ax.set_xlim((0, 600))
-    ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
-    ax.set_ylabel('ROME in highest omega-decile')
-    ax.set_xlabel('Highest ROME-decile')
-    plt.show()
+        list_all.append(area_mean)
 
-    rome_w = rome.where(ls.percentile_w515.notnull() & rome.notnull(), drop=True)
-    rome_w_sorted = rome_w.sortby(abs(rome_w.percentile_w515 - 1))
-    rome_sorted = rome.sortby(rome).where(rome.notnull(), drop=True)[-len(rome_w_sorted):]
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.plot(rome_sorted, rome_w_sorted, ls='', marker='+')
-    ax.set_ylabel('ROME sorted by omega-percentiles')
-    ax.set_xlabel('ROME sorted ascending')
-    plt.show()
+        # ax.plot(range(len(size_relative)), size_relative, ls='--', color='b')
+        # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='b')
+        # ax.plot(range(len(prox_relative)), area_mean, ls='-', color='b')
+        # plt.plot(range(len(prox_relative)), size_relative + prox_relative, ls='-', color='b')
+        # plt.plot(range(len(prox_relative)), metric3_select, ls='', marker='x', lw=2, color='b', alpha=0.4)
 
-    rome = rome.where(rome.notnull(), drop=True)
-    omega = ls.omega.sel(lev=515).where(ls.omega.sel(lev=515).notnull(), drop=True)
-    plt.plot(rome.where(omega), omega.where(rome), ls='', marker='+')
+    metric_high_all = xr.concat(list_all, dim='time')
 
-    fig, ax = plt.subplots(figsize=(15, 5))
-    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
-    ax.plot(range(len(rome_top_w)), rh500.sortby(rome_top_w), ls='', marker='*')
-    ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
-    ax.set_ylabel('Relative humidity at 515 hPa')
-    ax.set_xlabel('Ranks of ROME ascending')
-    plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
+    # High ROME and LOW RH
 
-var_strings = [
-    'T'
-    ,'r'
-    ,'s'
-    ,'u'
-    ,'v'
-    ,'omega'
-    ,'div'
-    ,'T_adv_h'
-    ,'T_adv_v'
-    ,'r_adv_h'
-    ,'r_adv_v'
-    ,'s_adv_h'
-    ,'s_adv_v'
-    ,'dTdt'
-    ,'dsdt'
-    ,'drdt'
-    ,'RH'
-    ,'dwind_dz'
-    # 'wind_dir'
-]
+    list_all = []
+    for start, end in zip(start_date_2, end_date_2):
+        times = slice(start, end)
+        metric1_select = metric_1.sel(time=times)
+        metric2_select = metric_2.sel(time=times)
+        metric3_select = metric_3.sel(time=times)
 
-for var in ['omega']:# var_strings:
-    ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
-    daily_cycle = ls[var].where(rome.notnull(), drop=True)[:, :-1].groupby(group='time.time').mean(dim='time')
-    del daily_cycle['percentile']
+        area_mean = metric1_select - metric2_select - metric3_select
+        size_relative = metric_3 / area_mean
+        prox_relative = metric_2 / area_mean
 
-    quantity = ls[var][:5, :-1]
-    quantity[0, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values).mean(dim='time')
-    quantity[1, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(6, 'h')).mean(dim='time')
-    quantity[2, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(12, 'h')).mean(dim='time')
-    quantity[3, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(18, 'h')).mean(dim='time')
-    quantity[4, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(24, 'h')).mean(dim='time')
-    l_relative_profiles = False
-    if l_relative_profiles:
-        quantity -= quantity[0, :]
-        daily_cycle -= daily_cycle.mean(dim='time')
-    colormap = cm.BuGn
-    # for i, q in enumerate(quantity[::-1]):
-    #     plt.plot(q, q.lev, lw=2, color=colormap(i * 60 + 60))
-    plt.plot(quantity[4], quantity.lev, lw=2, color=colormap(0 * 60 + 60))
-    plt.plot(quantity[3], quantity.lev, lw=2, color=colormap(1 * 60 + 50))
-    plt.plot(quantity[2], quantity.lev, lw=2, color=colormap(2 * 60 + 40))
-    plt.plot(quantity[1], quantity.lev, lw=2, color=colormap(3 * 60 + 30))
-    plt.plot(quantity[0], quantity.lev, lw=2, color='k'                  )
-    # plt.plot(ref_profile, q.lev, color='k', ls='--')
-    colormap = cm.Purples
-    plt.plot(daily_cycle[0], daily_cycle.lev, lw=1, ls='-', color=colormap(1 * 60 + 60))
-    plt.plot(daily_cycle[1], daily_cycle.lev, lw=1, ls='--', color=colormap(1 * 60 + 60))
-    plt.plot(daily_cycle[2], daily_cycle.lev, lw=1, ls='-.', color=colormap(1 * 60 + 60))
-    plt.plot(daily_cycle[3], daily_cycle.lev, lw=1, ls='dotted', color=colormap(1 * 60 + 60))
-    plt.legend([
-        '-24 h', '-18 h', '-12 h', '-6 h', 't=0',
-        '9:30 h', '15:30 h', '21:30 h', '3:30 h', ])
+        list_all.append(area_mean)
 
-    plt.gca().invert_yaxis()
-    plt.ylabel('Pressure [hPa]')
-    plt.xlabel(quantity.long_name+', ['+quantity.units+']')
-    plt.savefig('/Users/mret0001/Desktop/P/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
-    plt.close()
+        # ax.plot(range(len(size_relative)), size_relative, ls='--', color='r')
+        # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='r')
+        # ax.plot(range(len(prox_relative)), area_mean, ls='-', color='r')
+        # plt.plot(range(len(prox_relative)), size_relative + prox_relative, ls='-', color='r')
+        # plt.plot(range(len(prox_relative)), metric3_select, ls='', marker='x', lw=2, color='r', alpha=0.4)
+
+    metric_low_all = xr.concat(list_all, dim='time')
+
+    return metric_high_all, metric_low_all # ax
+
+
+if __name__ == '__main__':
+    ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
+                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+
+    # ROME is defined exactly at the LS time steps
+    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+
+    # What percentiles?
+    percentile_rome = rome.percentile
+    percentile_w515 = ls.omega.sel(lev=515).rank(dim='time', pct=True)
+    # What percentiles?
+    percentiles = abs(percentile_w515 - 1)
+
+    bins = []
+    # should be 2 at least
+    n_bins = 10
+    # the percentile-separating numbers
+    p_edges = np.linspace(0., 1., n_bins + 1)
+
+    # always taking rome-values into the bin-list is okay, later we only use the time information, not the values itself.
+    bins.append(rome.where(percentiles < p_edges[1], drop=True))
+    for i in range(1, n_bins-1):
+        bins.append(rome.where((p_edges[i] <= percentiles) & (percentiles < p_edges[i + 1]), drop=True))
+    bins.append(rome.where(p_edges[-2] <= percentiles, drop=True))
+
+    rome_top_w             = bins[-1][bins[-1].notnull()].where(ls.time, drop=True)
+    rome_top_decile        = rome[rome.percentile > 0.9]
+    rome_top_w_sorted      = rome_top_w.sortby(rome_top_w)
+    rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile)[-len(rome_top_w):]
+
+    omega_in_rome = np.array([t.time.values in rome_top_decile.time for t in rome_top_w])
+    # the same
+    # rome_in_omega = np.array([t.time.values in rome_top_w.time for t in rome_top_decile])
+
+    l_plot_divers = True
+    if l_plot_divers:
+
+        plt_venn.venn2(subsets=(len(rome_top_decile), len(rome_top_w), omega_in_rome.sum()),
+                       set_labels=('Lowest ROME decile', 'Lowest w decile'))
+        plt.savefig(home+'/Desktop/omega_highest_venn.pdf', bbox_inches='tight')
+
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.plot(rome_top_decile_sorted, rome_top_w_sorted, ls='', marker='+')
+        ax.set_ylim((0, 600))
+        ax.set_xlim((0, 600))
+        ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
+        ax.set_ylabel('ROME in highest omega-decile')
+        ax.set_xlabel('Highest ROME-decile')
+        # plt.show()
+        # plt.close()
+
+        rome = rome.where(rome.notnull(), drop=True)
+        omega = ls.omega.sel(lev=515).where(ls.omega.sel(lev=515).notnull(), drop=True)
+        plt.plot(rome.where(omega), omega.where(rome), ls='', marker='+')
+        # plt.show()
+        # plt.close()
+
+        fig, ax = plt.subplots(figsize=(15, 5))
+        rh500 = ls.RH.sel(lev=515).where(rome_top_w)
+        rh500_wrome_sorted = rh500.sortby(rome_top_w)
+        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted, ls='', marker='*')
+        ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
+        # ax.set_title('Lowest decile of omega_515.')
+        ax.set_ylabel('Relative humidity at 515 hPa')
+        ax.set_xlabel('Ranks of ROME ascending')
+
+        # Choose how many of the last (highest) ROME values to take
+        n = 220
+        rh_at_highROME = ls.RH.sel(lev=515, time=rome_top_w_sorted.time[-n:].time.values)
+        rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
+
+        # logical array masking ROME values which are not at top or low end of the sorted array
+        m = 40
+        l_rh_high = [v in rh_at_highROME_sorted[-m:].time.values for v in rh500_wrome_sorted.time.values]
+        l_rh_low  = [v in rh_at_highROME_sorted[:m ].time.values for v in rh500_wrome_sorted.time.values]
+
+
+        # again plot the non-masked ROME values in the previous figure-axes
+        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted.where(l_rh_high), ls='', marker='*', color='g')
+        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted.where(l_rh_low ), ls='', marker='*', color='r')
+
+        plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
+
+        # time slices for high and low RH values at high ROME values in highest w-decile
+        start_highRH = rh_at_highROME_sorted[-m:].time - np.timedelta64(170, 'm')
+        stop_highRH  = rh_at_highROME_sorted[-m:].time + np.timedelta64(3, 'h')
+
+        # interesting points (high ROME and low RH) look like southern cross
+        southerncross_time = rh_at_highROME_sorted[:4].time
+
+        start_lowRH = rh_at_highROME_sorted[:m].time - np.timedelta64(170, 'm')
+        stop_lowRH  = rh_at_highROME_sorted[:m].time + np.timedelta64(3, 'h')
+
+        set_a, set_b = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH)
+        plt.figure(figsize=(10, 5))
+        sns.distplot(set_a, bins=np.arange(0, 600, 20), kde=False)#, kde_kws=dict(cut=0) bins=20,
+        sns.distplot(set_b, bins=np.arange(0, 600, 20), kde=False)#, kde_kws=dict(cut=0) bins=20,
+        plt.legend(['High RH', 'Low RH'])
+        plt.ylabel('Count')
+        plt.xlabel('Avg. object area in radar scene')
+        # plt.xlim(0, 600)
+        plt.title('Radar scenes with high ROME in top $\omega$-decile.')
+        plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
+
+
+
+    var_strings = [
+        'T'
+        ,'r'
+        ,'s'
+        ,'u'
+        ,'v'
+        ,'omega'
+        ,'div'
+        ,'T_adv_h'
+        ,'T_adv_v'
+        ,'r_adv_h'
+        ,'r_adv_v'
+        ,'s_adv_h'
+        ,'s_adv_v'
+        ,'dTdt'
+        ,'dsdt'
+        ,'drdt'
+        ,'RH'
+        ,'dwind_dz'
+        # 'wind_dir'
+    ]
+
+    l_plot_profiles = False
+    if l_plot_profiles:
+        for var in ['omega']:# var_strings:
+            ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
+            daily_cycle = ls[var].where(rome.notnull(), drop=True)[:, :-1].groupby(group='time.time').mean(dim='time')
+            del daily_cycle['percentile']
+
+            quantity = ls[var][:5, :-1]
+            quantity[0, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values).mean(dim='time')
+            quantity[1, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(6, 'h')).mean(dim='time')
+            quantity[2, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(12, 'h')).mean(dim='time')
+            quantity[3, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(18, 'h')).mean(dim='time')
+            quantity[4, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(24, 'h')).mean(dim='time')
+            l_relative_profiles = False
+            if l_relative_profiles:
+                quantity -= quantity[0, :]
+                daily_cycle -= daily_cycle.mean(dim='time')
+            colormap = cm.BuGn
+            # for i, q in enumerate(quantity[::-1]):
+            #     plt.plot(q, q.lev, lw=2, color=colormap(i * 60 + 60))
+            plt.plot(quantity[4], quantity.lev, lw=2, color=colormap(0 * 60 + 60))
+            plt.plot(quantity[3], quantity.lev, lw=2, color=colormap(1 * 60 + 50))
+            plt.plot(quantity[2], quantity.lev, lw=2, color=colormap(2 * 60 + 40))
+            plt.plot(quantity[1], quantity.lev, lw=2, color=colormap(3 * 60 + 30))
+            plt.plot(quantity[0], quantity.lev, lw=2, color='k'                  )
+            # plt.plot(ref_profile, q.lev, color='k', ls='--')
+            colormap = cm.Purples
+            plt.plot(daily_cycle[0], daily_cycle.lev, lw=1, ls='-', color=colormap(1 * 60 + 60))
+            plt.plot(daily_cycle[1], daily_cycle.lev, lw=1, ls='--', color=colormap(1 * 60 + 60))
+            plt.plot(daily_cycle[2], daily_cycle.lev, lw=1, ls='-.', color=colormap(1 * 60 + 60))
+            plt.plot(daily_cycle[3], daily_cycle.lev, lw=1, ls='dotted', color=colormap(1 * 60 + 60))
+            plt.legend([
+                '-24 h', '-18 h', '-12 h', '-6 h', 't=0',
+                '9:30 h', '15:30 h', '21:30 h', '3:30 h', ])
+
+            plt.gca().invert_yaxis()
+            plt.ylabel('Pressure [hPa]')
+            plt.xlabel(quantity.long_name+', ['+quantity.units+']')
+            plt.savefig('/Users/mret0001/Desktop/P/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
+            plt.close()
