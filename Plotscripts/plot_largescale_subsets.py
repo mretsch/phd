@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
         plt_venn.venn2(subsets=(len(rome_top_decile), len(rome_top_w), omega_in_rome.sum()),
                        set_labels=('Lowest ROME decile', 'Lowest w decile'))
-        plt.savefig(home+'/Desktop/omega_highest_venn.pdf', bbox_inches='tight')
+        # plt.savefig(home+'/Desktop/omega_highest_venn.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.plot(rome_top_decile_sorted, rome_top_w_sorted, ls='', marker='+')
@@ -124,37 +124,38 @@ if __name__ == '__main__':
         ax.set_ylabel('ROME in highest omega-decile')
         ax.set_xlabel('Highest ROME-decile')
         # plt.show()
-        # plt.close()
+        plt.close()
 
         rome = rome.where(rome.notnull(), drop=True)
         omega = ls.omega.sel(lev=515).where(ls.omega.sel(lev=515).notnull(), drop=True)
-        plt.plot(rome.where(omega), omega.where(rome), ls='', marker='+')
+        # plt.plot(rome.where(omega), omega.where(rome), ls='', marker='+')
         # plt.show()
         # plt.close()
 
         fig, ax = plt.subplots(figsize=(15, 5))
-        rh500 = ls.RH.sel(lev=515).where(rome_top_w)
-        rh500_wrome_sorted = rh500.sortby(rome_top_w)
-        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted, ls='', marker='*')
-        ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
+        rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
+        rh500_sorted = rh500.sortby(rome_top_decile)
+        ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
+        ax.set_title('Highest decile of ROME.')
+        # ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
         # ax.set_title('Lowest decile of omega_515.')
         ax.set_ylabel('Relative humidity at 515 hPa')
         ax.set_xlabel('Ranks of ROME ascending')
 
         # Choose how many of the last (highest) ROME values to take
-        n = 220
-        rh_at_highROME = ls.RH.sel(lev=515, time=rome_top_w_sorted.time[-n:].time.values)
+        n = 700
+        rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
         rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
         # logical array masking ROME values which are not at top or low end of the sorted array
         m = 40
-        l_rh_high = [v in rh_at_highROME_sorted[-m:].time.values for v in rh500_wrome_sorted.time.values]
-        l_rh_low  = [v in rh_at_highROME_sorted[:m ].time.values for v in rh500_wrome_sorted.time.values]
+        l_rh_high = [v in rh_at_highROME_sorted[-m:].time.values for v in rh500_sorted.time.values]
+        l_rh_low  = [v in rh_at_highROME_sorted[:m ].time.values for v in rh500_sorted.time.values]
 
 
         # again plot the non-masked ROME values in the previous figure-axes
-        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted.where(l_rh_high), ls='', marker='*', color='g')
-        ax.plot(range(len(rome_top_w)), rh500_wrome_sorted.where(l_rh_low ), ls='', marker='*', color='r')
+        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
+        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low), ls='', marker='*', color='r')
 
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
 
@@ -163,7 +164,7 @@ if __name__ == '__main__':
         stop_highRH  = rh_at_highROME_sorted[-m:].time + np.timedelta64(3, 'h')
 
         # interesting points (high ROME and low RH) look like southern cross
-        southerncross_time = rh_at_highROME_sorted[:4].time
+        # southerncross_time = rh_at_highROME_sorted[:4].time
 
         start_lowRH = rh_at_highROME_sorted[:m].time - np.timedelta64(170, 'm')
         stop_lowRH  = rh_at_highROME_sorted[:m].time + np.timedelta64(3, 'h')
@@ -176,7 +177,7 @@ if __name__ == '__main__':
         plt.ylabel('Count')
         plt.xlabel('Avg. object area in radar scene')
         # plt.xlim(0, 600)
-        plt.title('Radar scenes with high ROME in top $\omega$-decile.')
+        plt.title('Radar scenes with highest ROME-decile.')
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
 
 
