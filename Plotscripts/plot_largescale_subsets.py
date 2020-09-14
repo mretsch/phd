@@ -133,29 +133,34 @@ if __name__ == '__main__':
         # plt.close()
 
         fig, ax = plt.subplots(figsize=(15, 5))
-        rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
-        rh500_sorted = rh500.sortby(rome_top_decile)
-        ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
-        ax.set_title('Highest decile of ROME.')
-        # ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
-        # ax.set_title('Lowest decile of omega_515.')
+        rh500 = ls.RH.sel(lev=515).where(rome_top_w)
+        rh500_sorted = rh500.sortby(rome_top_w)
+        # ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
+        ax.plot(rome_top_w, rh500, ls='', marker='*')
+        # ax.set_title('Highest decile of ROME.')
+        ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
         ax.set_ylabel('Relative humidity at 515 hPa')
-        ax.set_xlabel('Ranks of ROME ascending')
+        # ax.set_xlabel('Ranks of ROME ascending')
+        ax.set_xlabel('ROME [km$^2$]')
 
         # Choose how many of the last (highest) ROME values to take
-        n = 700
+        n = 220
         rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
         rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
         # logical array masking ROME values which are not at top or low end of the sorted array
         m = 40
-        l_rh_high = [v in rh_at_highROME_sorted[-m:].time.values for v in rh500_sorted.time.values]
-        l_rh_low  = [v in rh_at_highROME_sorted[:m ].time.values for v in rh500_sorted.time.values]
+        l_rh_high = [(v in rh_at_highROME_sorted[-m:].time.values) for v in rh500_sorted.time.values]
+        l_rh_low  = [(v in rh_at_highROME_sorted[:m ].time.values) for v in rh500_sorted.time.values]
 
 
         # again plot the non-masked ROME values in the previous figure-axes
-        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
-        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low), ls='', marker='*', color='r')
+        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
+        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low), ls='', marker='*', color='r')
+        ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
+                rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='*', color='g')
+        ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
+                rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='*', color='r')
 
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
 
@@ -177,7 +182,7 @@ if __name__ == '__main__':
         plt.ylabel('Count')
         plt.xlabel('Avg. object area in radar scene')
         # plt.xlim(0, 600)
-        plt.title('Radar scenes with highest ROME-decile.')
+        plt.title('Radar scenes with high ROME in top $\omega$-decile.')
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
 
 
