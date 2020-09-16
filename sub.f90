@@ -144,7 +144,8 @@ SUBROUTINE histogram_2d(xseries, yseries, length, &
 
 END SUBROUTINE histogram_2d
 
-SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, length, bin_values)
+SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, length, &
+                      l_probability, upper_bound, lower_bound, bin_values)
     USE ieee_arithmetic
 
     INTEGER      :: mn                   ! dimension size of flattened 2d-histogram
@@ -155,15 +156,20 @@ SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, len
     REAL(KIND=8) :: overlay  (length)    !  IN
     REAL(KIND=8) :: overlay_x(length)    !  IN
     REAL(KIND=8) :: overlay_y(length)    !  IN
+    REAL(KIND=8) :: upper_bound          !  IN
+    REAL(KIND=8) :: lower_bound          !  IN
     REAL(KIND=8) :: bin_values(mn)       !  OUT
 
+    LOGICAL      :: l_probability        !  IN
+
     !f2py intent(in  )                   :: indices1, indices2, overlay, overlay_x, overlay_y
+    !f2py intent(in  )                   :: upper_bound, lower_bound, l_probability
     !f2py intent(hide), depend(indices1) :: mn
     !f2py intent(hide), depend(overlay ) :: length
     !f2py intent( out)                   :: bin_values
 
-    LOGICAL      :: l_1(length), l_2(length), l_12(length), l_hit_nans(length)
-    INTEGER      :: i_12(length), total(mn)
+    LOGICAL      :: l_1(length), l_2(length), l_12(length), l_hit_nans(length), l_in_bounds(length)
+    INTEGER      :: i_12(length), total(mn), i_in_bounds(length), n_in_bounds(mn)
     REAL(KIND=8) :: hit_values(length), hit_value_sum(mn)
 
     DO i=1, mn
@@ -176,16 +182,31 @@ SUBROUTINE phasespace(indices1, indices2, mn, overlay, overlay_x, overlay_y, len
         ! if hit_values contain NaNs, also set them to zero
         l_hit_nans = IEEE_IS_NAN(hit_values)
         hit_values = MERGE(0.d0, hit_values, l_hit_nans)
-        ! logical converted to integer of indices that survived filtering
+        ! integer converted from logical of indices that survived filtering
         i_12 = l_12 .AND. (.NOT. l_hit_nans)
+
+        IF (l_probability) THEN
+            ! check for values to be inside boundaries
+            l_in_bounds = (lower_bound .LE. hit_values) .AND. (hit_values .LE. upper_bound)
+            i_in_bounds = l_12 .AND. (l_in_bounds)
+
+            ! total number of values inside the boundaries
+            n_in_bounds(i) = sum(i_in_bounds)
+        END IF
 
         total(i)         = sum(i_12)
         hit_value_sum(i) = sum(hit_values)
     END DO
 
-    ! compute the average value of survived values
-    ! Fortran-NaNs are converted to 0. in python, so choose a special value to check against in python
-    bin_values = MERGE(-9999999999.d0, hit_value_sum / total, total .EQ. 0)
+    IF (l_probability) THEN
+        ! compute the percentage of values inside bounds to number of survived values
+        ! Fortran-NaNs are converted to 0. in python, so choose a special value to check against in python
+        bin_values = MERGE(-9999999999.d0, REAL(n_in_bounds, KIND=8) / total, total .EQ. 0)
+    ELSE
+        ! compute the average value of survived values
+        ! Fortran-NaNs are converted to 0. in python, so choose a special value to check against in python
+        bin_values = MERGE(-9999999999.d0, hit_value_sum / total, total .EQ. 0)
+    END IF
 
     WRITE(*,*) "Hello from lovely FORTRAN again."
 END SUBROUTINE phasespace

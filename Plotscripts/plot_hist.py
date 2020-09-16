@@ -138,7 +138,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=2)
+                                                         l_cut_off=True, cut_off=10)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -206,7 +206,8 @@ if __name__ == '__main__':
 
     hist_2d = True
     if hist_2d:
-        # ls = xr.open_dataset(home+'/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
+        ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
+                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
         subselect = False
         if subselect:
@@ -215,13 +216,13 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        # var1 = ls.omega.sel(lev=515)
-        # var2 = ls.RH.sel(lev=515)
-        var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_number.nc')
+        var1 = ls.omega.sel(lev=515)
+        var2 = ls.RH.sel(lev=515)
+        # var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_area_kilometres.nc')
+        # var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/o_number.nc')
         # var1 = var1.where(var2)
 
-        l_no_singlepixel = True
+        l_no_singlepixel = False
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
@@ -231,9 +232,9 @@ if __name__ == '__main__':
             # var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=35,
-                                      x_label= 'Object mean area [km$^2$]',      # var1.long_name+' ['+var1.units+']', #
-                                      y_label= 'Number of objects [1]', # var2.long_name+' ['+var2.units+']', #
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=17,
+                                      x_label= var1.long_name+' ['+var1.units+']', #'Object mean area [km$^2$]', #
+                                      y_label= var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)
         fig_h_2d.show()
