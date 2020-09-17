@@ -43,11 +43,11 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
             prox_relative = metric_2 / area_mean
 
             if metric=='area':
-                list_all.append(area_mean)
+                list_all.append(area_mean[metric1_select==metric1_select.max()])
             elif metric=='number':
-                list_all.append(metric4_select)
+                list_all.append(metric4_select[metric1_select==metric1_select.max()])
             else:
-                list_all.append(metric3_select)
+                list_all.append(metric3_select[metric1_select==metric1_select.max()])
 
             # ax.plot(range(len(size_relative)), size_relative, ls='--', color='b')
             # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='b')
@@ -90,11 +90,11 @@ if __name__ == '__main__':
     rome_top_w_sorted      = rome_top_w.sortby(rome_top_w)
     rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile)[-len(rome_top_w):]
 
-    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
-    rh500_sorted = rh500.sortby(rome_top_w)
+    rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
+    rh500_sorted = rh500.sortby(rome_top_decile)
 
     # Choose how many of the last (highest) ROME values to take
-    n = 220
+    n = 700 # 220 #
     rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
     rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = False
+    l_plot_phasespace = True
     if l_plot_phasespace:
         high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
                                                                 metric='area')

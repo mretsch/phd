@@ -10,10 +10,11 @@ home = expanduser("~")
 
 def return_phasespace_plot():
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
+    # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
     ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
-    ds    = ls.RH.sel(lev=515).resample(time='10min').interpolate('linear')
+    ds    = ls.omega.sel(lev=515).resample(time='10min').interpolate('linear')
     # ds    = xr.open_dataset(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
     # ds    = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
 
@@ -62,14 +63,15 @@ def return_phasespace_plot():
     plt.rc('legend', fontsize=18)
     # plt.style.use('dark_background')
 
-    the_plot = ps_overlay.T.plot(cmap='coolwarm_r') # (robust=True)  # (cmap='gnuplot2', 'gnuplot2', 'tab20c')
+    the_plot = ps_overlay.T.plot(cmap='gnuplot2', # (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
+                                 vmin=ps_overlay.min(), vmax=ps_overlay.max())
     # plt.plot(np.array([100, 150]), np.array([20, 40]), ls='', marker='*', color='r')
     # plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
     # plt.ylabel('RH at 515 hPa [1]')
     # the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
     plt.xlabel('Object mean area [km$^2$]')
     plt.ylabel('Number of objects [1]')
-    the_plot.colorbar.set_label('RH at 515 hPa [1]')
+    the_plot.colorbar.set_label('$\omega$ at 515 hPa [hPa/h]')
 
     return the_plot
 

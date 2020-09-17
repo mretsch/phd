@@ -226,7 +226,7 @@ if __name__ == '__main__':
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
-            var1 = var1[var1 < 600.]
+            var1 = var1[var1 < 800.]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
             # var1 = var1.where(var2)
