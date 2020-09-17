@@ -7,72 +7,57 @@ import numpy as np
 import metpy.calc as mpcalc
 import seaborn as sns
 from Plotscripts.colors_solarized import sol
+from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
 
-def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2):
+def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, metric='1'):
 
     # rome
     metric_1   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
     # delta_prox
     metric_2   = metric_1 - \
                  xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25
-    # metric_3 = metric_2
     # delta_size
     metric_3   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
                  xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
-    # metric_3 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
+    metric_4 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
 
-    fig, ax = plt.subplots(figsize=(15, 4))
+    # fig, ax = plt.subplots(figsize=(15, 4))
 
-    # High ROME and HIGH RH
+    metric_highlow_all = []
 
-    list_all = []
-    for start, end in zip(start_date_1, end_date_1):
-        times = slice(start, end)
-        metric1_select = metric_1.sel(time=times)
-        metric2_select = metric_2.sel(time=times)
-        metric3_select = metric_3.sel(time=times)
+    for dates in [(start_date_1, end_date_1), (start_date_2, end_date_2)]:
 
-        area_mean = metric1_select - metric2_select - metric3_select
-        size_relative = metric_3 / area_mean
-        prox_relative = metric_2 / area_mean
+        list_all = []
+        for start, end in zip(dates[0], dates[1]):
+            times = slice(start, end)
+            metric1_select = metric_1.sel(time=times)
+            metric2_select = metric_2.sel(time=times)
+            metric3_select = metric_3.sel(time=times)
+            metric4_select = metric_4.sel(time=times)
 
-        list_all.append(area_mean)
+            area_mean = metric1_select - metric2_select - metric3_select
+            size_relative = metric_3 / area_mean
+            prox_relative = metric_2 / area_mean
 
-        # ax.plot(range(len(size_relative)), size_relative, ls='--', color='b')
-        # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='b')
-        # ax.plot(range(len(prox_relative)), area_mean, ls='-', color='b')
-        # plt.plot(range(len(prox_relative)), size_relative + prox_relative, ls='-', color='b')
-        # plt.plot(range(len(prox_relative)), metric3_select, ls='', marker='x', lw=2, color='b', alpha=0.4)
+            if metric=='area':
+                list_all.append(area_mean)
+            elif metric=='number':
+                list_all.append(metric4_select)
+            else:
+                list_all.append(metric3_select)
 
-    metric_high_all = xr.concat(list_all, dim='time')
+            # ax.plot(range(len(size_relative)), size_relative, ls='--', color='b')
+            # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='b')
+            # ax.plot(range(len(prox_relative)), area_mean, ls='-', color='b')
+            # plt.plot(range(len(prox_relative)), size_relative + prox_relative, ls='-', color='b')
+            # plt.plot(range(len(prox_relative)), metric3_select, ls='', marker='x', lw=2, color='b', alpha=0.4)
 
-    # High ROME and LOW RH
+        metric_highlow_all.append(xr.concat(list_all, dim='time'))
 
-    list_all = []
-    for start, end in zip(start_date_2, end_date_2):
-        times = slice(start, end)
-        metric1_select = metric_1.sel(time=times)
-        metric2_select = metric_2.sel(time=times)
-        metric3_select = metric_3.sel(time=times)
-
-        area_mean = metric1_select - metric2_select - metric3_select
-        size_relative = metric_3 / area_mean
-        prox_relative = metric_2 / area_mean
-
-        list_all.append(area_mean)
-
-        # ax.plot(range(len(size_relative)), size_relative, ls='--', color='r')
-        # ax.plot(range(len(prox_relative)), prox_relative, ls='-', color='r')
-        # ax.plot(range(len(prox_relative)), area_mean, ls='-', color='r')
-        # plt.plot(range(len(prox_relative)), size_relative + prox_relative, ls='-', color='r')
-        # plt.plot(range(len(prox_relative)), metric3_select, ls='', marker='x', lw=2, color='r', alpha=0.4)
-
-    metric_low_all = xr.concat(list_all, dim='time')
-
-    return metric_high_all, metric_low_all # ax
+    return metric_highlow_all[0], metric_highlow_all[1]
 
 
 if __name__ == '__main__':
@@ -105,17 +90,34 @@ if __name__ == '__main__':
     rome_top_w_sorted      = rome_top_w.sortby(rome_top_w)
     rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile)[-len(rome_top_w):]
 
-    omega_in_rome = np.array([t.time.values in rome_top_decile.time for t in rome_top_w])
-    # the same
-    # rome_in_omega = np.array([t.time.values in rome_top_w.time for t in rome_top_decile])
+    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
+    rh500_sorted = rh500.sortby(rome_top_w)
 
-    l_plot_divers = True
-    if l_plot_divers:
+    # Choose how many of the last (highest) ROME values to take
+    n = 220
+    rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
+    rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
+    # logical array masking ROME values which are not at top or low end of the sorted array
+    m = 40
+    l_rh_high = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
+    l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
+
+    # time slices for high and low RH values at high ROME values in highest w-decile
+    start_highRH = rh_at_highROME_sorted[-m:].time - np.timedelta64(170, 'm')
+    stop_highRH  = rh_at_highROME_sorted[-m:].time + np.timedelta64(3, 'h')
+    start_lowRH  = rh_at_highROME_sorted[:m ].time - np.timedelta64(170, 'm')
+    stop_lowRH   = rh_at_highROME_sorted[:m ].time + np.timedelta64(3, 'h')
+
+    l_plot_venn= False
+    if l_plot_venn:
+        omega_in_rome = rome_top_w.time.isin(rome_top_decile.time)
         plt_venn.venn2(subsets=(len(rome_top_decile), len(rome_top_w), omega_in_rome.sum()),
                        set_labels=('Lowest ROME decile', 'Lowest w decile'))
-        # plt.savefig(home+'/Desktop/omega_highest_venn.pdf', bbox_inches='tight')
+        plt.savefig(home+'/Desktop/omega_highest_venn.pdf', bbox_inches='tight')
 
+    l_plot_rome_vs_rome = False
+    if l_plot_rome_vs_rome:
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.plot(rome_top_decile_sorted, rome_top_w_sorted, ls='', marker='+')
         ax.set_ylim((0, 600))
@@ -123,57 +125,31 @@ if __name__ == '__main__':
         ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
         ax.set_ylabel('ROME in highest omega-decile')
         ax.set_xlabel('Highest ROME-decile')
-        # plt.show()
+        plt.show()
         plt.close()
 
-        rome = rome.where(rome.notnull(), drop=True)
-        omega = ls.omega.sel(lev=515).where(ls.omega.sel(lev=515).notnull(), drop=True)
-        # plt.plot(rome.where(omega), omega.where(rome), ls='', marker='+')
-        # plt.show()
-        # plt.close()
-
+    l_plot_scatter = False
+    if l_plot_scatter:
         fig, ax = plt.subplots(figsize=(15, 5))
-        rh500 = ls.RH.sel(lev=515).where(rome_top_w)
-        rh500_sorted = rh500.sortby(rome_top_w)
-        # ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
-        ax.plot(rome_top_w, rh500, ls='', marker='*')
+        ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
+        # ax.plot(rome_top_w, rh500, ls='', marker='*')
         # ax.set_title('Highest decile of ROME.')
         ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
+        ax.set_xlabel('Ranks of ROME ascending')
+        # ax.set_xlabel('ROME [km$^2$]')
         ax.set_ylabel('Relative humidity at 515 hPa')
-        # ax.set_xlabel('Ranks of ROME ascending')
-        ax.set_xlabel('ROME [km$^2$]')
-
-        # Choose how many of the last (highest) ROME values to take
-        n = 220
-        rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
-        rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
-
-        # logical array masking ROME values which are not at top or low end of the sorted array
-        m = 40
-        l_rh_high = [(v in rh_at_highROME_sorted[-m:].time.values) for v in rh500_sorted.time.values]
-        l_rh_low  = [(v in rh_at_highROME_sorted[:m ].time.values) for v in rh500_sorted.time.values]
-
 
         # again plot the non-masked ROME values in the previous figure-axes
-        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
-        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low), ls='', marker='*', color='r')
-        ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
-                rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='*', color='g')
-        ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
-                rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='*', color='r')
-
+        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
+        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low), ls='', marker='*', color='r')
+        # ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
+        #         rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='*', color='g')
+        # ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
+        #         rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='*', color='r')
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
 
-        # time slices for high and low RH values at high ROME values in highest w-decile
-        start_highRH = rh_at_highROME_sorted[-m:].time - np.timedelta64(170, 'm')
-        stop_highRH  = rh_at_highROME_sorted[-m:].time + np.timedelta64(3, 'h')
-
-        # interesting points (high ROME and low RH) look like southern cross
-        # southerncross_time = rh_at_highROME_sorted[:4].time
-
-        start_lowRH = rh_at_highROME_sorted[:m].time - np.timedelta64(170, 'm')
-        stop_lowRH  = rh_at_highROME_sorted[:m].time + np.timedelta64(3, 'h')
-
+    l_plot_histo = False
+    if l_plot_histo:
         set_a, set_b = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH)
         plt.figure(figsize=(10, 5))
         sns.distplot(set_a, bins=np.arange(0, 600, 20), kde=False)#, kde_kws=dict(cut=0) bins=20,
@@ -184,6 +160,27 @@ if __name__ == '__main__':
         # plt.xlim(0, 600)
         plt.title('Radar scenes with high ROME in top $\omega$-decile.')
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
+        plt.close()
+
+    l_plot_phasespace = False
+    if l_plot_phasespace:
+        high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+                                                                metric='area')
+        high_rh_number, low_rh_number = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+                                                                metric='number')
+
+        phasespace_plot = return_phasespace_plot()
+        plt.plot(low_rh_area,  low_rh_number,  ls='', marker='*', color=sol['yellow'], alpha=0.3)
+        plt.plot(high_rh_area, high_rh_number, ls='', marker='*', color='w', alpha=0.7)
+        plt.legend(['Low RH', 'High RH'])
+
+        save = True
+        if save:
+            plt.savefig(home+'/Desktop/phase_space_annotate.pdf', transparent=True, bbox_inches='tight')
+            plt.show()
+        else:
+            plt.show()
+
 
 
 
