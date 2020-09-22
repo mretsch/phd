@@ -216,13 +216,13 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        # var1 = ls.omega.sel(lev=515)
-        # var2 = ls.RH.sel(lev=515)
-        var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
-        var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
+        var1 = ls.omega.sel(lev=515)
+        var2 = ls.RH.sel(lev=515)
+        # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+        # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = var1.where(var2)
 
-        l_no_singlepixel = True
+        l_no_singlepixel = False
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
@@ -233,8 +233,8 @@ if __name__ == '__main__':
             var2 = var2.where(var1)
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=35,
-                                      x_label= 'Object mean area [km$^2$]', # var1.long_name+' ['+var1.units+']', #
-                                      y_label= 'Number of objects [1]', #     var2.long_name+' ['+var2.units+']', #
+                                      x_label= var1.long_name+' ['+var1.units+']', # 'Object mean area [km$^2$]', #
+                                      y_label= var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)
         fig_h_2d.show()

@@ -90,11 +90,11 @@ if __name__ == '__main__':
     rome_top_w_sorted      = rome_top_w.sortby(rome_top_w)
     rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile)[-len(rome_top_w):]
 
-    rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
-    rh500_sorted = rh500.sortby(rome_top_decile)
+    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
+    rh500_sorted = rh500.sortby(rome_top_w)
 
     # Choose how many of the last (highest) ROME values to take
-    n = 700 # 220 #
+    n = 220 # 700 #
     rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
     rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
@@ -164,10 +164,15 @@ if __name__ == '__main__':
 
     l_plot_phasespace = True
     if l_plot_phasespace:
-        high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-                                                                metric='area')
-        high_rh_number, low_rh_number = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-                                                                metric='number')
+        # high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+        #                                                         metric='area')
+        # high_rh_number, low_rh_number = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+        #                                                         metric='number')
+
+        low_rh_area   = ls.omega.sel(lev=515, time=rh_at_highROME_sorted[:m ].time.values)
+        low_rh_number = ls.RH   .sel(lev=515, time=rh_at_highROME_sorted[:m ].time.values)
+        high_rh_area   = ls.omega.sel(lev=515, time=rh_at_highROME_sorted[-m:].time.values)
+        high_rh_number = ls.RH   .sel(lev=515, time=rh_at_highROME_sorted[-m:].time.values)
 
         phasespace_plot = return_phasespace_plot()
         plt.plot(low_rh_area,  low_rh_number,  ls='', marker='*', color=sol['yellow'], alpha=0.3)
