@@ -162,7 +162,7 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = True
+    l_plot_phasespace = False
     if l_plot_phasespace:
         # high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='area')
@@ -211,20 +211,30 @@ if __name__ == '__main__':
         # 'wind_dir'
     ]
 
-    l_plot_profiles = False
+    l_plot_profiles = True
     if l_plot_profiles:
-        for var in ['omega']:# var_strings:
+        for var in var_strings: # ['omega']:#
             ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
             daily_cycle = ls[var].where(rome.notnull(), drop=True)[:, :-1].groupby(group='time.time').mean(dim='time')
             del daily_cycle['percentile']
 
+            # allocate proper array
             quantity = ls[var][:5, :-1]
-            quantity[0, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values).mean(dim='time')
-            quantity[1, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(6, 'h')).mean(dim='time')
-            quantity[2, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(12, 'h')).mean(dim='time')
-            quantity[3, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(18, 'h')).mean(dim='time')
-            quantity[4, :] = ls[var].sel(lev=slice(None, 990), time=rome_top_w.time.values - np.timedelta64(24, 'h')).mean(dim='time')
-            l_relative_profiles = False
+
+            # fill array
+            times = rome_top_decile.time
+            quantity[0, :] = ls[var].sel(lev=slice(None, 990),
+                                         time=times.where(
+                                             times.isin(ls.time), drop=True
+                                         ).values).mean(dim='time')
+
+            for i, hours in enumerate([6, 12, 18, 24]):
+                times = rome_top_decile.time - np.timedelta64(hours, 'h')
+                quantity[i+1, :] = ls[var].sel(lev=slice(None, 990), time=times.where(
+                                                 times.isin(ls.time), drop=True
+                                             ).values).mean(dim='time')
+
+            l_relative_profiles = True
             if l_relative_profiles:
                 quantity -= quantity[0, :]
                 daily_cycle -= daily_cycle.mean(dim='time')
