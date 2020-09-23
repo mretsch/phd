@@ -169,17 +169,17 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = True
+    l_plot_phasespace = False
     if l_plot_phasespace:
-        # high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-        #                                                         metric='area')
-        # high_rh_number, low_rh_number = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-        #                                                         metric='number')
+        high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+                                                                metric='area')
+        high_rh_yaxis, low_rh_yaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+                                                                metric='number')
 
-        low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
-        low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
-        high_rh_xaxis = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_high, drop=True).time.values)
-        high_rh_yaxis = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        # low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        # low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        # high_rh_xaxis = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        # high_rh_yaxis = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
 
         phasespace_plot = return_phasespace_plot()
         plt.plot(low_rh_xaxis, low_rh_yaxis, ls='', marker='*', color=sol['blue'], alpha=0.7)
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         # 'wind_dir'
     ]
 
-    l_plot_profiles = False
+    l_plot_profiles = True
     if l_plot_profiles:
         for var in var_strings: # ['omega']:#
             ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
@@ -241,10 +241,11 @@ if __name__ == '__main__':
                                                  times.isin(ls.time), drop=True
                                              ).values).mean(dim='time')
 
-            l_relative_profiles = True
+            l_relative_profiles = False
             if l_relative_profiles:
                 quantity -= quantity[0, :]
                 daily_cycle -= daily_cycle.mean(dim='time')
+
             colormap = cm.BuGn
             # for i, q in enumerate(quantity[::-1]):
             #     plt.plot(q, q.lev, lw=2, color=colormap(i * 60 + 60))

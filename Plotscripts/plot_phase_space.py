@@ -11,13 +11,13 @@ home = expanduser("~")
 def return_phasespace_plot():
 
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515omega_all_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
-    da    = ls.omega.sel(lev=515) #.resample(time='10min').interpolate('linear')
+    da    = ls.omega.sel(lev=515).resample(time='10min').interpolate('linear')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
@@ -70,12 +70,14 @@ def return_phasespace_plot():
 
     the_plot = ps_overlay.T.plot(cmap='inferno',#'gist_yarg_r', # (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
-    # plt.plot(np.array([100, 150]), np.array([20, 40]), ls='', marker='*', color='r')
+
     # plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
+    # plt.xlabel('Dry static energy, 990 hPa [K]')
+    plt.xlabel('Object area [km$^2$]')
     # plt.ylabel('RH at 515 hPa [1]')
+    # plt.ylabel('TWP advection [mm/h]')
+    plt.ylabel('Number of objects [1]')
     # the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
-    plt.xlabel('Dry static energy, 990 hPa [K]')
-    plt.ylabel('TWP advection [mm/h]')
     the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
 
     return the_plot
