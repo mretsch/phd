@@ -101,13 +101,20 @@ if __name__ == '__main__':
     # logical array masking ROME values which are not at top or low end of the sorted array
     m = 40
     l_rh_high = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
-    l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
+    l_subselect_low_rh = False
+    if l_subselect_low_rh:
+        l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
+    else:
+        # do the subselecting again, but for high RH but at the lowest ROMEs in the top w-decile
+        rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[:n].time.values)
+        rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
+        l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
 
     # time slices for high and low RH values at high ROME values in highest w-decile
-    start_highRH = rh_at_highROME_sorted[-m:].time - np.timedelta64(170, 'm')
-    stop_highRH  = rh_at_highROME_sorted[-m:].time + np.timedelta64(3, 'h')
-    start_lowRH  = rh_at_highROME_sorted[:m ].time - np.timedelta64(170, 'm')
-    stop_lowRH   = rh_at_highROME_sorted[:m ].time + np.timedelta64(3, 'h')
+    start_highRH = rh500_sorted.where(l_rh_high, drop=True).time - np.timedelta64(170, 'm')
+    stop_highRH  = rh500_sorted.where(l_rh_high, drop=True).time + np.timedelta64(3, 'h')
+    start_lowRH  = rh500_sorted.where(l_rh_low,  drop=True).time - np.timedelta64(170, 'm')
+    stop_lowRH   = rh500_sorted.where(l_rh_low,  drop=True).time + np.timedelta64(3, 'h')
 
     l_plot_venn= False
     if l_plot_venn:
@@ -162,22 +169,22 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = False
+    l_plot_phasespace = True
     if l_plot_phasespace:
         # high_rh_area, low_rh_area     = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='area')
         # high_rh_number, low_rh_number = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='number')
 
-        low_rh_area   = ls.omega.sel(lev=515, time=rh_at_highROME_sorted[:m ].time.values)
-        low_rh_number = ls.RH   .sel(lev=515, time=rh_at_highROME_sorted[:m ].time.values)
-        high_rh_area   = ls.omega.sel(lev=515, time=rh_at_highROME_sorted[-m:].time.values)
-        high_rh_number = ls.RH   .sel(lev=515, time=rh_at_highROME_sorted[-m:].time.values)
+        low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        high_rh_xaxis = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        high_rh_yaxis = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
 
         phasespace_plot = return_phasespace_plot()
-        plt.plot(low_rh_area,  low_rh_number,  ls='', marker='*', color=sol['yellow'], alpha=0.3)
-        plt.plot(high_rh_area, high_rh_number, ls='', marker='*', color='w', alpha=0.7)
-        plt.legend(['Low RH', 'High RH'])
+        plt.plot(low_rh_xaxis, low_rh_yaxis, ls='', marker='*', color=sol['blue'], alpha=0.7)
+        plt.plot(high_rh_xaxis, high_rh_yaxis, ls='', marker='*', color=sol['green'], alpha=0.9)
+        plt.legend(['Low ROME', 'High ROME'])
 
         save = True
         if save:
@@ -211,7 +218,7 @@ if __name__ == '__main__':
         # 'wind_dir'
     ]
 
-    l_plot_profiles = True
+    l_plot_profiles = False
     if l_plot_profiles:
         for var in var_strings: # ['omega']:#
             ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')

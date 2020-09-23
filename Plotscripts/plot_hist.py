@@ -216,8 +216,8 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.omega.sel(lev=515)
-        var2 = ls.RH.sel(lev=515)
+        var1 = ls.s.sel(lev=990)
+        var2 = ls.h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = var1.where(var2)
