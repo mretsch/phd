@@ -508,7 +508,7 @@ if __name__ == '__main__':
 
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rom_limod': False, 'rom_el': False,
-              'iorg': False, 'scai': False, 'rom': False, 'basics': True,
+              'iorg': False, 'scai': True, 'rom': False, 'basics': False,
               'boundary': False}
 
     # compute the metrics
@@ -516,7 +516,7 @@ if __name__ == '__main__':
                             file=home+"/Documents/Data/Steiner_Earlier/*season*")
 
     # save metrics as netcdf-files
-    save = False
+    save = True
     if save:
         for var in ds_metric.variables:
             xr.Dataset({var: ds_metric[var]}).to_netcdf('/Users/mret0001/Desktop/'+var+'_new.nc')

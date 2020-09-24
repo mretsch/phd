@@ -16,8 +16,8 @@ home = expanduser("~")
 ghome = home+'/Google Drive File Stream/My Drive'
 start = timeit.default_timer()
 
-testing = True
-manual_sampling = False
+testing = False
+manual_sampling = True
 
 if testing:
     convolving = False
@@ -271,7 +271,7 @@ if testing:
 if manual_sampling:
     l_resample = True
     if l_resample:
-        metric = xr.open_dataarray(ghome+'/Data_Analysis/rom_kilometres.nc')
+        metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/scai.nc')
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
         # the averaging period. Thus the labels are aligned to the large scale data set.
         # For reasons unknown, averages crossing a day of no data, not even NaN, into a normal day have wrongly
