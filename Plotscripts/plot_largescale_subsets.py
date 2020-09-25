@@ -15,13 +15,13 @@ plt.rc('font', size=18)
 def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, metric='1'):
 
     # rome
-    metric_1   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    metric_1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
     # delta_prox
-    metric_2   = metric_1 - \
-                 xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25
+    metric_2 = metric_1 - \
+               xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25
     # delta_size
-    metric_3   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
-                 xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    metric_3 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
+               xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
     metric_4 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
 
     # fig, ax = plt.subplots(figsize=(15, 4))
@@ -95,11 +95,11 @@ if __name__ == '__main__':
     rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile, ascending=l_sort_ascending)[-len(rome_top_w):]
 
     # Take large-scale variable based on a subset
-    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
-    rh500_sorted =      rh500.sortby(rome_top_w, ascending=l_sort_ascending)
+    rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
+    rh500_sorted =      rh500.sortby(rome_top_decile, ascending=l_sort_ascending)
 
     # Choose how many of the last (highest) ROME values to take
-    n = 220 # 700 #
+    n = 700 # 220 #
     rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
     rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     l_rh_high = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
     l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
 
-    l_subselect_low_org = True
+    l_subselect_low_org = False
     if l_subselect_low_org:
         # do the subselecting again, but for high RH but at the lowest ROMEs in the top w-decile
         rh_at_lowROME = ls.RH.sel(lev=515, time=rh500_sorted.time[:n].time.values)
@@ -120,8 +120,8 @@ if __name__ == '__main__':
     stop_highRH  = rh500_sorted.where(l_rh_high, drop=True).time + np.timedelta64(3, 'h')
     start_lowRH  = rh500_sorted.where(l_rh_low,  drop=True).time - np.timedelta64(170, 'm')
     stop_lowRH   = rh500_sorted.where(l_rh_low,  drop=True).time + np.timedelta64(3, 'h')
-    start_lowOrg = rh500_sorted.where(l_org_low, drop=True).time - np.timedelta64(170, 'm')
-    stop_lowOrg  = rh500_sorted.where(l_org_low, drop=True).time + np.timedelta64(3, 'h')
+    # start_lowOrg = rh500_sorted.where(l_org_low, drop=True).time - np.timedelta64(170, 'm')
+    # stop_lowOrg  = rh500_sorted.where(l_org_low, drop=True).time + np.timedelta64(3, 'h')
 
     ####### PLOTS ########
 
@@ -187,10 +187,10 @@ if __name__ == '__main__':
         high_rh_yaxis, low_rh_yaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
                                                                 metric='number')
 
-        low_org_xaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-                                                              metric='area')
-        low_org_yaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-                                                              metric='number')
+        # low_org_xaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+        #                                                       metric='area')
+        # low_org_yaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+        #                                                       metric='number')
 
         # low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
         # low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
@@ -200,8 +200,9 @@ if __name__ == '__main__':
         phasespace_plot = return_phasespace_plot()
         plt.plot(low_rh_xaxis,  low_rh_yaxis,  ls='', marker='*', color='w', alpha=0.9)
         plt.plot(high_rh_xaxis, high_rh_yaxis, ls='', marker='*', color=sol['green'], alpha=0.9)
-        plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='*', color=sol['blue'], alpha=0.9)
-        plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'])
+        # plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='*', color=sol['blue'], alpha=0.9)
+        # plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'])
+        plt.legend(['Low RH, high ROME', 'High RH, high ROME'])
 
         save = True
         if save:
