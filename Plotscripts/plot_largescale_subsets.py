@@ -95,11 +95,11 @@ if __name__ == '__main__':
     rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile, ascending=l_sort_ascending)[-len(rome_top_w):]
 
     # Take large-scale variable based on a subset
-    rh500 = ls.RH.sel(lev=515).where(rome_top_decile)
-    rh500_sorted =      rh500.sortby(rome_top_decile, ascending=l_sort_ascending)
+    rh500 = ls.RH.sel(lev=515).where(rome_top_w)
+    rh500_sorted =      rh500.sortby(rome_top_w, ascending=l_sort_ascending)
 
     # Choose how many of the last (highest) ROME values to take
-    n = 700 # 220 #
+    n = 220 # 700 #
     rh_at_highROME = ls.RH.sel(lev=515, time=rh500_sorted.time[-n:].time.values)
     rh_at_highROME_sorted = rh_at_highROME.sortby(rh_at_highROME)
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     l_rh_high = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
     l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
 
-    l_subselect_low_org = False
+    l_subselect_low_org = True
     if l_subselect_low_org:
         # do the subselecting again, but for high RH but at the lowest ROMEs in the top w-decile
         rh_at_lowROME = ls.RH.sel(lev=515, time=rh500_sorted.time[:n].time.values)
@@ -120,8 +120,9 @@ if __name__ == '__main__':
     stop_highRH  = rh500_sorted.where(l_rh_high, drop=True).time + np.timedelta64(3, 'h')
     start_lowRH  = rh500_sorted.where(l_rh_low,  drop=True).time - np.timedelta64(170, 'm')
     stop_lowRH   = rh500_sorted.where(l_rh_low,  drop=True).time + np.timedelta64(3, 'h')
-    # start_lowOrg = rh500_sorted.where(l_org_low, drop=True).time - np.timedelta64(170, 'm')
-    # stop_lowOrg  = rh500_sorted.where(l_org_low, drop=True).time + np.timedelta64(3, 'h')
+    if l_subselect_low_org:
+        start_lowOrg = rh500_sorted.where(l_org_low, drop=True).time - np.timedelta64(170, 'm')
+        stop_lowOrg  = rh500_sorted.where(l_org_low, drop=True).time + np.timedelta64(3, 'h')
 
     ####### PLOTS ########
 
@@ -146,25 +147,40 @@ if __name__ == '__main__':
 
     l_plot_scatter = False
     if l_plot_scatter:
+
+        l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
+        if l_subselect_low_org:
+            l_neither_subset = np.logical_and(l_neither_subset, np.logical_not(l_org_low))
+
         fig, ax = plt.subplots(figsize=(15, 5))
-        ax.plot(range(len(rh500)), rh500_sorted, ls='', marker='*')
-        # ax.plot(rome_top_w, rh500, ls='', marker='*')
+        # ax.plot(range(len(rh500)), rh500_sorted.where(l_neither_subset),
+        #         ls='', marker='x', mew=2, color=sol['cyan'])
+
+        ax.plot(rome_top_w_sorted, rh500_sorted.where(l_neither_subset),
+                ls='', marker='x', mew=2, color=sol['cyan'])
+
         # ax.set_title('Highest decile of ROME.')
         ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
-        ax.set_xlabel('Ranks of ROME ascending')
-        # ax.set_xlabel('ROME [km$^2$]')
+        # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
+        ax.set_xlabel('ROME [km$^2$]')
         ax.set_ylabel('Relative humidity at 515 hPa')
 
         # again plot the non-masked ROME values in the previous figure-axes
-        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='*', color='g')
-        ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low) , ls='', marker='*', color='r')
-        ax.plot(range(len(rh500)), rh500_sorted.where(l_org_low), ls='', marker='*', color='y')
+        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='^', color=sol['magenta'])
+        # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_low) , ls='', marker='s', color=sol['violet'])
+        # if l_subselect_low_org:
+        #     ax.plot(range(len(rh500)), rh500_sorted.where(l_org_low), ls='', marker='o', color=sol['yellow'])
 
-        # ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
-        #         rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='*', color='g')
-        # ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
-        #         rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='*', color='r')
+        ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
+                rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='^', color=sol['magenta'])
+        ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
+                rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='s', color=sol['violet'])
+        if l_subselect_low_org:
+            ax.plot(rome_top_w.where(rh_at_lowROME_sorted.time[-m:]),
+                    rh500.     where(rh_at_lowROME_sorted.time[-m:]), ls='', marker='o', color=sol['yellow'])
+
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
+        # plt.show()
 
     l_plot_histo = False
     if l_plot_histo:
@@ -187,10 +203,11 @@ if __name__ == '__main__':
         high_rh_yaxis, low_rh_yaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
                                                                 metric='number')
 
-        # low_org_xaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-        #                                                       metric='area')
-        # low_org_yaxis, _            = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-        #                                                       metric='number')
+        if l_subselect_low_org:
+            low_org_xaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+                                                       metric='area')
+            low_org_yaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+                                                       metric='number')
 
         # low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
         # low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
@@ -198,11 +215,12 @@ if __name__ == '__main__':
         # high_rh_yaxis = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
 
         phasespace_plot = return_phasespace_plot()
-        plt.plot(low_rh_xaxis,  low_rh_yaxis,  ls='', marker='*', color='w', alpha=0.9)
-        plt.plot(high_rh_xaxis, high_rh_yaxis, ls='', marker='*', color=sol['green'], alpha=0.9)
-        # plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='*', color=sol['blue'], alpha=0.9)
-        # plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'])
+        plt.plot(low_rh_xaxis,  low_rh_yaxis,  ls='', marker='s', color=sol['violet'], alpha=1.0)
+        plt.plot(high_rh_xaxis, high_rh_yaxis, ls='', marker='^', color=sol['magenta'], alpha=1.0)
         plt.legend(['Low RH, high ROME', 'High RH, high ROME'])
+        if l_subselect_low_org:
+            plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='o', color=sol['yellow'], alpha=1.0)
+            plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'])
 
         save = True
         if save:

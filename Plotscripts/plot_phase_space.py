@@ -68,7 +68,7 @@ def return_phasespace_plot():
     plt.rc('legend', fontsize=18)
     # plt.style.use('dark_background')
 
-    the_plot = ps_overlay.T.plot(cmap='inferno',#'gist_yarg_r', # (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
+    the_plot = ps_overlay.T.plot(cmap='gray_r', #'inferno',#'gist_yarg_r', # (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
 
     # plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
