@@ -11,16 +11,16 @@ home = expanduser("~")
 def return_phasespace_plot():
 
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515omega_all_hist.nc')
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
-    # da    = ls.omega.sel(lev=515).resample(time='10min').interpolate('linear')
+    da    = ls.RH.sel(lev=515).resample(time='10min').interpolate('linear')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
-    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25 \
-          * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
+    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25 \
+    #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
 
     subselect = True
     if subselect:
@@ -72,14 +72,14 @@ def return_phasespace_plot():
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
 
     # plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
-    # plt.xlabel('Dry static energy, 990 hPa [K]')
-    plt.xlabel('Object area [km$^2$]')
+    # plt.xlabel('Object area [km$^2$]')
+    plt.xlabel('Dry static energy, 990 hPa [K]')
     # plt.ylabel('RH at 515 hPa [1]')
-    # plt.ylabel('TWP advection [mm/h]')
-    plt.ylabel('Number of objects [1]')
+    # plt.ylabel('Number of objects [1]')
+    plt.ylabel('TWP advection [mm/h]')
     # the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
-    # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
-    the_plot.colorbar.set_label('Total conv. area [km$^2$]')
+    the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
+    # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
 
     return the_plot
 

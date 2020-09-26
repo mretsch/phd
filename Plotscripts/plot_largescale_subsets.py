@@ -198,21 +198,23 @@ if __name__ == '__main__':
 
     l_plot_phasespace = True
     if l_plot_phasespace:
-        high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-                                                                metric='area')
-        high_rh_yaxis, low_rh_yaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
-                                                                metric='number')
+        # high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+        #                                                         metric='area')
+        # high_rh_yaxis, low_rh_yaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
+        #                                                         metric='number')
+        #
+        # if l_subselect_low_org:
+        #     low_org_xaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+        #                                                metric='area')
+        #     low_org_yaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
+        #                                                metric='number')
 
-        if l_subselect_low_org:
-            low_org_xaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-                                                       metric='area')
-            low_org_yaxis, _ = metrics_at_two_timesets(start_lowOrg, stop_lowOrg, start_lowOrg, stop_lowOrg,
-                                                       metric='number')
-
-        # low_rh_xaxis  = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
-        # low_rh_yaxis  = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
-        # high_rh_xaxis = ls.s.sel(lev=990, time=rh500_sorted.where(l_rh_high, drop=True).time.values)
-        # high_rh_yaxis = ls.h2o_adv_col   .sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        low_rh_xaxis  = ls.s. sel(lev=990, time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        low_rh_yaxis  = ls.h2o_adv_col.sel(time=rh500_sorted.where(l_rh_low, drop=True).time.values)
+        high_rh_xaxis = ls.s. sel(lev=990, time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        high_rh_yaxis = ls.h2o_adv_col.sel(time=rh500_sorted.where(l_rh_high, drop=True).time.values)
+        low_org_xaxis = ls.s. sel(lev=990, time=rh500_sorted.where(l_org_low, drop=True).time.values)
+        low_org_yaxis = ls.h2o_adv_col.sel(time=rh500_sorted.where(l_org_low, drop=True).time.values)
 
         phasespace_plot = return_phasespace_plot()
         plt.plot(low_rh_xaxis,  low_rh_yaxis,  ls='', marker='s', color=sol['violet'], alpha=1.0)
@@ -220,7 +222,7 @@ if __name__ == '__main__':
         plt.legend(['Low RH, high ROME', 'High RH, high ROME'])
         if l_subselect_low_org:
             plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='o', color=sol['yellow'], alpha=1.0)
-            plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'])
+            plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'], fontsize=14)
 
         save = True
         if save:
