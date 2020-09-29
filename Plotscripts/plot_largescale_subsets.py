@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib_venn as plt_venn
 import numpy as np
+import pandas as pd
 import metpy.calc as mpcalc
 import seaborn as sns
 from Plotscripts.colors_solarized import sol
@@ -145,7 +146,7 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
 
-    l_plot_scatter = False
+    l_plot_scatter = True
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -182,6 +183,36 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
         # plt.show()
 
+        # df = pd.DataFrame(
+        #     [rome_top_w_sorted[:240].values, rome_top_w_sorted[240:480].values, rome_top_w_sorted[480:].values])
+        dummy = rh500_sorted.copy(deep=True)
+        subset = dummy.to_dataframe('quantity')
+        cat = dummy.values
+        cat[:240] = 1
+        cat[240:480] = 2
+        cat[480:] = 3
+        subset['category'] = cat
+        sns.violinplot(x=subset['category'], y=subset['quantity'], data=subset)
+
+        rh = ls.RH.sel(lev=515).where(rome)
+        rh = rh[rh.notnull()]
+
+        ds_long = rh.to_pandas()
+        longset = ds_long.to_frame()
+        # cat_long = subset.reindex_like(longset)
+        longset.columns = ['rh']
+        longset['category'] = 0.
+        longset.loc[[np.datetime64('2001-11-02T12:00:00'), np.datetime64('2001-11-02T18:00:00')]]
+        idx = longset[longset.index.isin(dummy[   :240].time.values)].index
+        longset.loc[idx, 'category'] = 1
+        idx = longset[longset.index.isin(dummy[240:480].time.values)].index
+        longset.loc[idx, 'category'] = 2
+        idx = longset[longset.index.isin(dummy[480:   ].time.values)].index
+        longset.loc[idx, 'category'] = 3
+        sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
+
+
+
     l_plot_histo = False
     if l_plot_histo:
         set_a, set_b = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH)
@@ -196,7 +227,7 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = True
+    l_plot_phasespace = False
     if l_plot_phasespace:
         # high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='area')
