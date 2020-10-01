@@ -17,6 +17,79 @@ from Plotscripts.plot_contribution_whisker import contribution_whisker
 import pandas as pd
 
 
+def add_variable_symbol_string(dataset):
+    assert type(dataset) == xr.core.dataset.Dataset
+
+    quantity_symbol = [
+        'T',
+        'r',
+        'u',
+        'v',
+        'w',
+        'div(U)',
+        'adv(T)',
+        'conv(T)',
+        'adv(r)',
+        'conv(r)',
+        's',
+        'adv(s)',
+        'conv(s)',
+        'dsdt',
+        'dTdt',
+        'drdt',
+        'xxx',
+        'xxx',
+        'C',
+        'P',
+        'Q_h_sfc',
+        'Q_s_sfc',
+        'p',
+        'p_centre',
+        'T_2m',
+        'T_skin',
+        'RH_2m',
+        'Speed_10m',
+        'u_10m',
+        'v_10m',
+        'rad_sfc',
+        'LW_toa',
+        'SW_toa',
+        'SW_dn_toa',
+        'c_low',
+        'c_mid',
+        'c_high',
+        'c_total',
+        'c_thick',
+        'c_top',
+        'LWP',
+        'dTWPdt',
+        'adv(TWP)',
+        'E',
+        'dsdt_col',
+        'adv(s)_col',
+        'Q_rad',
+        'Q_lat',
+        'w_sfc',
+        'r_2m',
+        's_2m',
+        'PW',
+        'LW_up_sfc',
+        'LW_dn_sfc',
+        'SW_up_sfc',
+        'SW_dn_sfc',
+        'RH',
+        'dUdz',
+        'CAPE',
+        'CIN',
+        'D-CAPE',
+    ]
+
+    for i, var in enumerate(dataset):
+        print(i)
+        dataset[var].attrs['symbol'] = quantity_symbol[i]
+
+    return dataset
+
 def nth_percentile(x, p):
     assert x.dims[0] == 'time'
     assert (0 < p) & (p < 1)
@@ -46,6 +119,10 @@ ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')# _noDailyCycle.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+
+# add quantity symbols to large-scale dataset
+ds_ls = add_variable_symbol_string(ds_ls)
+
 
 l_remove_diurnal_cycle = False
 if l_remove_diurnal_cycle:
@@ -176,18 +253,27 @@ else:
 
     l_sort_input_percentage = True
     if l_sort_input_percentage:
-        input_percentages = input_percentages[:, np.unique(spread, return_index=True)[1]]
+        # sort the first time step, which is first half of data. Reverse index because I want descending order.
+        first_half_order = np.unique(spread[:(n_lev // 2)], return_index=True)[1][::-1]
+        # apply same order to second time step, which is in second half of data
+        second_half_order = first_half_order + (n_lev // 2)
+        sort_index = np.concatenate((first_half_order, second_half_order))
+        input_percentages = input_percentages[:, sort_index]
+
+        # change the long_names to be printed
+
+
 
     # ===== Plots =====================
 
     l_violins = True \
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
-                                levels=predictor.lev.values,
-                                long_names=predictor['long_name'],
+                                levels=predictor.lev.values[sort_index],
+                                long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=30, #26, #9, #23, #
+                                n_profile_vars=50, #30, #26, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,

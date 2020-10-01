@@ -83,7 +83,7 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
 
     # give c1 another coordinate to look up 'easily' which values in concatenated array correspond to which variables
     # Also count how long that variable is in the resulting array.
-    names_list, variable_size = [], []
+    names_list, symbl_list, variable_size = [], [], []
     for var_string in chosen_vars:
         if var_string != 'dwind_dz':
             last_index = -1
@@ -92,14 +92,19 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         # add extra length to variable name, such that additional info can be added later
         names_list.extend([ds_largescale[var_string].long_name + '            ' for
                            _ in range(len(ds_largescale[var_string][:, :last_index].lev))])
+        symbl_list.extend([ds_largescale[var_string].symbol    + '            ' for
+                           _ in range(len(ds_largescale[var_string][:, :last_index].lev))])
         variable_size.append(len(names_list) - sum(variable_size))
 
     c1.coords['long_name'] = ('lev', names_list)
+    c1.coords['symbol']    = ('lev', symbl_list)
 
     if l_take_scalars:
         c2_r = c2.rename({'concat_dims': 'lev'})
         c2_r.coords['lev'] = np.arange(len(c2))
+        symbl_list = [ds_largescale[scalar].symbol    + '            ' for scalar in scalars]
         names_list = [ds_largescale[scalar].long_name + '            ' for scalar in scalars]
+        c2_r.coords['symbol']    = ('lev', symbl_list)
         c2_r.coords['long_name'] = ('lev', names_list)
 
         var = xr.concat([c1, c2_r], dim='lev')

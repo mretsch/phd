@@ -146,7 +146,7 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
 
-    l_plot_scatter = True
+    l_plot_scatter = False
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -211,8 +211,6 @@ if __name__ == '__main__':
         longset.loc[idx, 'category'] = 3
         sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
 
-
-
     l_plot_histo = False
     if l_plot_histo:
         set_a, set_b = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH)
@@ -227,7 +225,7 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = False
+    l_plot_phasespace = True
     if l_plot_phasespace:
         # high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='area')

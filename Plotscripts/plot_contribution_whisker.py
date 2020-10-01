@@ -80,12 +80,23 @@ def contribution_whisker(input_percentages, levels, long_names,
         if l_eof_input:
             label_list = [integer + 1 for integer in var_to_plot]
         else:
-            label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for
-                           element1, element2 in
-                           zip(long_names[var_to_plot_1].values, levels[var_to_plot_1])]
-            label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                           zip(long_names[var_to_plot_2].values, levels)]
-            label_list = label_list1 + label_list2
+            label_list = []
+            for element1, element2 in zip(long_names.values, levels):
+                # the profile-input to NN only has pressure down to 215hPa. And scalars got 'levels' below 100 earlier.
+                if element2 > 100.:
+                    label_list.append(
+                        element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa '
+                    )
+                else:
+                    label_list.append(
+                        element1.replace('            ', '') + ' '
+                    )
+            # label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for
+            #                element1, element2 in
+            #                zip(long_names[var_to_plot_1].values, levels[var_to_plot_1])]
+            # label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
+            #                zip(long_names[var_to_plot_2].values, levels)]
+            # label_list = label_list1 + label_list2
 
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
