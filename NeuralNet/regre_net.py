@@ -61,7 +61,7 @@ if l_remove_diurnal_cycle:
             ds_ls[var][:] = without_cycle.values
 
 ls_vars = [
-           #'omega',
+           'omega',
            'u',
            'v',
            's',
@@ -134,7 +134,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -171,7 +171,12 @@ else:
     p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
     p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
     spread = p75 - p25
+    # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
     high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+
+    l_sort_input_percentage = True
+    if l_sort_input_percentage:
+        input_percentages = input_percentages[:, np.unique(spread, return_index=True)[1]]
 
     # ===== Plots =====================
 
@@ -182,7 +187,7 @@ else:
                                 long_names=predictor['long_name'],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=26, #30, #9, #23, #
+                                n_profile_vars=30, #26, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
