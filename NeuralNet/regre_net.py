@@ -85,7 +85,6 @@ def add_variable_symbol_string(dataset):
     ]
 
     for i, var in enumerate(dataset):
-        print(i)
         dataset[var].attrs['symbol'] = quantity_symbol[i]
 
     return dataset
@@ -259,10 +258,6 @@ else:
         second_half_order = first_half_order + (n_lev // 2)
         sort_index = np.concatenate((first_half_order, second_half_order))
         input_percentages = input_percentages[:, sort_index]
-
-        # change the long_names to be printed
-
-
 
     # ===== Plots =====================
 

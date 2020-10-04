@@ -146,7 +146,7 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
 
-    l_plot_scatter = False
+    l_plot_scatter = True
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -180,6 +180,8 @@ if __name__ == '__main__':
             ax.plot(rome_top_w.where(rh_at_lowROME_sorted.time[-m:]),
                     rh500.     where(rh_at_lowROME_sorted.time[-m:]), ls='', marker='o', color=sol['yellow'])
 
+        ax.axvline(x=67, color='gray', ls='--', lw=1.5)
+        ax.axvline(x=199, color='gray', ls='--', lw=1.5)
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
         # plt.show()
 
@@ -225,7 +227,7 @@ if __name__ == '__main__':
         plt.savefig(home+'/Desktop/x_highROME_highW_diffRH.pdf', bbox_inches='tight')
         plt.close()
 
-    l_plot_phasespace = True
+    l_plot_phasespace = False
     if l_plot_phasespace:
         # high_rh_xaxis, low_rh_xaxis = metrics_at_two_timesets(start_highRH, stop_highRH, start_lowRH, stop_lowRH,
         #                                                         metric='area')
