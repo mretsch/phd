@@ -23,6 +23,7 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
     # delta_size
     metric_3 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
                xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    # number of objects
     metric_4 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
 
     # fig, ax = plt.subplots(figsize=(15, 4))
@@ -67,12 +68,15 @@ if __name__ == '__main__':
 
     # ROME is defined exactly at the LS time steps
     rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    totalarea = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     # Percentiles used for the decile-binning
-    percentile_rome = rome.percentile
-    percentile_w515 = ls.omega.sel(lev=515).rank(dim='time', pct=True)
+    percentile_rome      = rome.percentile
+    percentile_w515      = ls.omega.sel(lev=515).rank(dim='time', pct=True)
+    percentile_totalarea = totalarea.rank(dim='time', pct=True)
+
     # What percentiles?
-    percentiles = abs(percentile_w515 - 1)
+    percentiles = percentile_totalarea # abs(percentile_w515 - 1) #
 
     bins = []
     # should be 2 at least
@@ -81,6 +85,7 @@ if __name__ == '__main__':
     p_edges = np.linspace(0., 1., n_bins + 1)
 
     # taking rome-values into the bins is okay, sometimes we use the time information only, sometimes the values itself.
+    # The binning itself is still done based on 'percentile' as assigned above.
     bins.append(rome.where(percentiles < p_edges[1], drop=True))
     for i in range(1, n_bins-1):
         bins.append(rome.where((p_edges[i] <= percentiles) & (percentiles < p_edges[i + 1]), drop=True))
@@ -109,7 +114,7 @@ if __name__ == '__main__':
     l_rh_high = rh500_sorted.time.isin(rh_at_highROME_sorted.time[-m:])
     l_rh_low  = rh500_sorted.time.isin(rh_at_highROME_sorted.time[:m ])
 
-    l_subselect_low_org = True
+    l_subselect_low_org = False
     if l_subselect_low_org:
         # do the subselecting again, but for high RH but at the lowest ROMEs in the top w-decile
         rh_at_lowROME = ls.RH.sel(lev=515, time=rh500_sorted.time[:n].time.values)
@@ -161,10 +166,11 @@ if __name__ == '__main__':
                 ls='', marker='x', mew=2, color=sol['cyan'])
 
         # ax.set_title('Highest decile of ROME.')
-        ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
+        ax.set_title('Highest decile of total convective area.')
+        # ax.set_title('Highest decile of omega_515. Less than -6.6 hPa/hour.')
         # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
         ax.set_xlabel('ROME [km$^2$]')
-        ax.set_ylabel('Relative humidity at 515 hPa')
+        ax.set_ylabel('Relative humidity at 515 hPa [1]')
 
         # again plot the non-masked ROME values in the previous figure-axes
         # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='^', color=sol['magenta'])
@@ -180,38 +186,41 @@ if __name__ == '__main__':
             ax.plot(rome_top_w.where(rh_at_lowROME_sorted.time[-m:]),
                     rh500.     where(rh_at_lowROME_sorted.time[-m:]), ls='', marker='o', color=sol['yellow'])
 
-        ax.axvline(x=67, color='gray', ls='--', lw=1.5)
-        ax.axvline(x=199, color='gray', ls='--', lw=1.5)
+        # ax.axvline(x=67, color='gray', ls='--', lw=1.5, zorder=0)
+        # ax.axvline(x=199, color='gray', ls='--', lw=1.5, zorder=0)
         plt.savefig(home+'/Desktop/omega_rh.pdf', bbox_inches='tight')
         # plt.show()
 
-        # df = pd.DataFrame(
-        #     [rome_top_w_sorted[:240].values, rome_top_w_sorted[240:480].values, rome_top_w_sorted[480:].values])
-        dummy = rh500_sorted.copy(deep=True)
-        subset = dummy.to_dataframe('quantity')
-        cat = dummy.values
-        cat[:240] = 1
-        cat[240:480] = 2
-        cat[480:] = 3
-        subset['category'] = cat
-        sns.violinplot(x=subset['category'], y=subset['quantity'], data=subset)
+        # Christian's plot of violins in each ROME-bin of the plot above
+        l_christians_violins = False
+        if l_christians_violins:
+            # df = pd.DataFrame(
+            #     [rome_top_w_sorted[:240].values, rome_top_w_sorted[240:480].values, rome_top_w_sorted[480:].values])
+            dummy = rh500_sorted.copy(deep=True)
+            subset = dummy.to_dataframe('quantity')
+            cat = dummy.values
+            cat[:240] = 1
+            cat[240:480] = 2
+            cat[480:] = 3
+            subset['category'] = cat
+            sns.violinplot(x=subset['category'], y=subset['quantity'], data=subset)
 
-        rh = ls.RH.sel(lev=515).where(rome)
-        rh = rh[rh.notnull()]
+            rh = ls.RH.sel(lev=515).where(rome)
+            rh = rh[rh.notnull()]
 
-        ds_long = rh.to_pandas()
-        longset = ds_long.to_frame()
-        # cat_long = subset.reindex_like(longset)
-        longset.columns = ['rh']
-        longset['category'] = 0.
-        longset.loc[[np.datetime64('2001-11-02T12:00:00'), np.datetime64('2001-11-02T18:00:00')]]
-        idx = longset[longset.index.isin(dummy[   :240].time.values)].index
-        longset.loc[idx, 'category'] = 1
-        idx = longset[longset.index.isin(dummy[240:480].time.values)].index
-        longset.loc[idx, 'category'] = 2
-        idx = longset[longset.index.isin(dummy[480:   ].time.values)].index
-        longset.loc[idx, 'category'] = 3
-        sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
+            ds_long = rh.to_pandas()
+            longset = ds_long.to_frame()
+            # cat_long = subset.reindex_like(longset)
+            longset.columns = ['rh']
+            longset['category'] = 0.
+            longset.loc[[np.datetime64('2001-11-02T12:00:00'), np.datetime64('2001-11-02T18:00:00')]]
+            idx = longset[longset.index.isin(dummy[   :240].time.values)].index
+            longset.loc[idx, 'category'] = 1
+            idx = longset[longset.index.isin(dummy[240:480].time.values)].index
+            longset.loc[idx, 'category'] = 2
+            idx = longset[longset.index.isin(dummy[480:   ].time.values)].index
+            longset.loc[idx, 'category'] = 3
+            sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
 
     l_plot_histo = False
     if l_plot_histo:

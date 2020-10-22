@@ -138,7 +138,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=8)
+                                                         l_cut_off=False, cut_off=8)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -216,24 +216,24 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.omega.sel(lev=515)#s.sel(lev=990)
+        # var1 = ls.omega.sel(lev=515)#s.sel(lev=990)
         var2 = ls.RH.sel(lev=515)#h2o_adv_col
-        # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+        var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = var1.where(var2)
 
-        l_no_singlepixel = False
+        l_no_singlepixel = True
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
-            var1 = var1[var1 < 800.]
+            # var1 = var1[var1 < 800.]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
-            # var1 = var1.where(var2)
+            var1 = var1.where(var2)
             var2 = var2.where(var1)
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=17,
-                                      x_label= var1.long_name+' ['+var1.units+']', # 'Object mean area [km$^2$]', #
+                                      x_label='Total conv. area [km$^2$]', #
                                       y_label= var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)

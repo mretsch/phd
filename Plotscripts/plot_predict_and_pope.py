@@ -39,30 +39,30 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-plot_length = 400
-plot_index = slice(None, 400)
-predicted_list = [mlr_predicted, predicted]
-legend_both = ['MLR', 'NN']
-fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(48, 8), sharex=True, sharey=True)
-for i, ax in enumerate(axes):
-    ax.plot(rome             [plot_index], color='white', lw=4.5)
+plot_length = 200
+plot_index = slice(-1200, -1000)
+predicted_list = [predicted, mlr_predicted]
+legend_both = ['NN', 'MLR']
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(36, 4), sharex=True, sharey=True)
+colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
+for i, ax in enumerate([axes]):
+    ax.plot(rome             [plot_index], color='k', lw=3)
     # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
-    ax.plot(predicted_list[i][plot_index], color='black', lw=3)
+    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=4.5)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
-    ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
+
+    # ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
+    ax.legend(['ROME', 'R$_\mathrm{NN}$'])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
     # ax.set_ylim(0, 442.8759794239834)
     ax.set_xlim(0, plot_length)
 
-    colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
-    # colors = [sol['violet'], sol['red'], sol['cyan'], sol['green'], sol['yellow']]
-
-    tick_1, tick_2 = -1.5, -0.5
-    for thistime in rome[plot_index].time.values: #metric_high[correct_pred].time.values:
-        tick_1, tick_2 = tick_2, tick_2 + 1
-        ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
+    # tick_1, tick_2 = -1.5, -0.5
+    # for thistime in rome[plot_index].time.values: #metric_high[correct_pred].time.values:
+    #     tick_1, tick_2 = tick_2, tick_2 + 1
+        # ax.axvspan(xmin=tick_1, xmax=tick_2, facecolor=colors[int(p_regime.sel(time=thistime)) - 1], alpha=0.5)
 
     # ax.text(x=-50, y=300, s='(Pope 1, DE)', verticalalignment='top', color=colors[0], fontdict={'fontsize': 16})
     # ax.text(x=-50, y=250, s=' Pope 2, DW ', verticalalignment='top', color=colors[1], fontdict={'fontsize': 16})
