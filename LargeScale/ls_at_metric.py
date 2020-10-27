@@ -221,7 +221,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Satellite-measured middle cloud',
         'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
-        'Column-integrated dH2O/dt',                  # without10important
+        # 'Column-integrated dH2O/dt',                  # without10important; leave out TWP stuff
         # 'Column-integrated H2O advection',            # without10important; dont understand its calculation so leave out
         # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
         # 'Column d(dry static energy)/dt',           # correlation to other variables higher than 0.8

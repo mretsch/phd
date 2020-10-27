@@ -141,7 +141,7 @@ ls_vars = [
            'u',
            'v',
            's',
-           'r',
+           #'r',
            'RH',
            's_adv_h',
            'r_adv_h',
@@ -211,7 +211,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_Withr_NoadvTWP/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_advTWPdTWPdt/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -269,7 +269,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 50, #12,#30, #26, #9, #23, #
+                                n_profile_vars= 48,# 50, #12,#30, #26, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
