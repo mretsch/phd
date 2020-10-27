@@ -206,7 +206,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         '10m wind speed',
         '10m V component',
         '2m water vapour mixing ratio',
-        'TOA LW flux, upward positive',                # without10important
+        'TOA LW flux, upward positive',                # without10important; OLR is just chicken-egg so leave out
         'Surface sensible heat flux, upward positive', # without10important
         'MWR-measured cloud liquid water path',
 
@@ -222,7 +222,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
         'Column-integrated dH2O/dt',                  # without10important
-        'Column-integrated H2O advection',            # without10important
+        # 'Column-integrated H2O advection',            # without10important; dont understand its calculation so leave out
         # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
         # 'Column d(dry static energy)/dt',           # correlation to other variables higher than 0.8
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)

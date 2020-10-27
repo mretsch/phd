@@ -12,6 +12,8 @@ from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
+colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+
 
 def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, metric='1'):
 
@@ -76,7 +78,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = percentile_totalarea # abs(percentile_w515 - 1) #
+    percentiles = percentile_rome # percentile_totalarea # abs(percentile_w515 - 1) #
 
     bins = []
     # should be 2 at least
@@ -151,7 +153,7 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
 
-    l_plot_scatter = True
+    l_plot_scatter = False
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -275,24 +277,24 @@ if __name__ == '__main__':
 
 
     var_strings = [
-        'T'
-        ,'r'
-        ,'s'
-        ,'u'
-        ,'v'
-        ,'omega'
-        ,'div'
-        ,'T_adv_h'
-        ,'T_adv_v'
-        ,'r_adv_h'
-        ,'r_adv_v'
-        ,'s_adv_h'
-        ,'s_adv_v'
-        ,'dTdt'
-        ,'dsdt'
-        ,'drdt'
-        ,'RH'
-        ,'dwind_dz'
+        # 'T'
+        # ,'r'
+        # ,'s'
+        # ,'u'
+        # ,'v'
+        # ,'omega'
+        # ,'div'
+        # ,'T_adv_h'
+        # ,'T_adv_v'
+        # ,'r_adv_h'
+        # ,'r_adv_v'
+        # ,'s_adv_h'
+        # ,'s_adv_v'
+        # ,'dTdt'
+        # ,'dsdt'
+        # ,'drdt'
+         'RH'
+        # ,'dwind_dz'
         # 'wind_dir'
     ]
 
@@ -345,5 +347,53 @@ if __name__ == '__main__':
             plt.gca().invert_yaxis()
             plt.ylabel('Pressure [hPa]')
             plt.xlabel(quantity.long_name+', ['+quantity.units+']')
-            plt.savefig('/Users/mret0001/Desktop/P/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
+            plt.savefig('/Users/mret0001/Desktop/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
+            plt.close()
+
+    l_plot_scalars = True
+    if l_plot_scalars:
+        for var in ['lw_net_toa']:
+            for j in range(len(bins)):
+                ref_profile = ls[var].where(rome.notnull(), drop=True).mean(dim='time')
+                daily_cycle = ls[var].where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
+                del daily_cycle['percentile']
+
+                # allocate proper array
+                quantity = ls[var][:9]
+
+                # fill array
+                # times = rome_top_decile.time
+                times = bins[j].time
+                quantity[4] = ls[var].sel(time=times.where(
+                                              times.isin(ls.time), drop=True
+                                          ).values).mean(dim='time')
+
+                for i, hours in enumerate([6, 12, 18, 24]):
+                    # times before the high-ROME time -> '-'
+                    times = bins[j].time - np.timedelta64(hours, 'h')
+                    quantity[3-i] = ls[var].sel(time=times.where(
+                        times.isin(ls.time), drop=True
+                    ).values).mean(dim='time')
+
+                    # times after the high-ROME time -> '+'
+                    times = bins[j].time + np.timedelta64(hours, 'h')
+                    quantity[5+i] = ls[var].sel(time=times.where(
+                        times.isin(ls.time), drop=True
+                    ).values).mean(dim='time')
+
+                l_relative_profiles = False
+                if l_relative_profiles:
+                    quantity -= quantity[4]
+                    daily_cycle -= daily_cycle.mean(dim='time')
+
+                colormap = cm.BuGn
+                plt.plot(quantity, lw=2, color=sol[colours[j]])
+                # plt.plot(ref_profile, q.lev, color='k', ls='--')
+            colormap = cm.Purples
+            plt.plot(daily_cycle, lw=1, ls='-', color=colormap(1 * 60 + 60))
+            plt.legend(['Before and after ROME', 'Daily'])
+
+            plt.ylabel('OLR')
+            plt.xlabel('Time')
+            plt.savefig('/Users/mret0001/Desktop/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()

@@ -13,7 +13,7 @@ def contribution_whisker(input_percentages, levels, long_names,
     plt.rc('font', size=19)
 
     if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42))  # *(12/94. + 10/94.)
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42))# * 12/50.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))
@@ -37,7 +37,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             if l_eof_input:
                 var_to_plot = list(range(n_lev_onetime, n_lev_total))
         if not l_eof_input:
-            var_to_plot = var_to_plot_1 + var_to_plot_2
+            var_to_plot = var_to_plot_1 # + var_to_plot_2
 
         plt.sca(ax)
 
@@ -101,14 +101,20 @@ def contribution_whisker(input_percentages, levels, long_names,
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
             ax.set_yticklabels(label_list)
-            plt.text(0.8, 0.85, 'Same\ntime', transform=ax.transAxes,
-                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+            # plt.text(0.8, 0.85, 'Same\ntime', transform=ax.transAxes,
+            #          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+            ax.axes.set_title('Time of R$_\mathrm{NN}$')
         else:
             ax.set_yticklabels([])
-            plt.text(0.7, 0.85, '6 hours\nearlier', transform=ax.transAxes,
-                     bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+            # plt.text(0.7, 0.85, '6 hours\nearlier', transform=ax.transAxes,
+            #          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
+            ax.axes.set_title('6 hours before')
 
         ax.set_xlabel('Contribution to predicted value [%]', fontdict={'fontsize': 16})
+        ax.set_ylabel('')
+
+        legend = ax.legend()
+        legend.remove()
 
     xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
     xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])

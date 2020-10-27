@@ -41,8 +41,8 @@ def add_variable_symbol_string(dataset):
         'xxx',
         'C',
         'P',
-        'Q_h_sfc',
-        'Q_s_sfc',
+        'LH', #"'Q_h_sfc',
+        'SH', #'Q_s_sfc',
         'p',
         'p_centre',
         'T_2m',
@@ -52,7 +52,7 @@ def add_variable_symbol_string(dataset):
         'u_10m',
         'v_10m',
         'rad_sfc',
-        'LW_toa',
+        'OLR', #'LW_toa',
         'SW_toa',
         'SW_dn_toa',
         'c_low',
@@ -141,6 +141,7 @@ ls_vars = [
            'u',
            'v',
            's',
+           'r',
            'RH',
            's_adv_h',
            'r_adv_h',
@@ -210,7 +211,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/KitchenSink/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_Withr_NoadvTWP/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -268,7 +269,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=50, #30, #26, #9, #23, #
+                                n_profile_vars= 50, #12,#30, #26, #9, #23, #
                                 xlim=30,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
