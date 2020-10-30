@@ -216,9 +216,9 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        # var1 = ls.omega.sel(lev=515)#s.sel(lev=990)
-        var2 = ls.RH.sel(lev=515)#h2o_adv_col
-        var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+        var1 = ls.omega.sel(lev=515)#s.sel(lev=990)
+        var2 = ls.PW#RH.sel(lev=515)#h2o_adv_col
+        # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = var1.where(var2)
 
@@ -233,8 +233,8 @@ if __name__ == '__main__':
             var2 = var2.where(var1)
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=17,
-                                      x_label='Total conv. area [km$^2$]', #
-                                      y_label= var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
+                                      x_label= var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
+                                      y_label= 'Precipitable water ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
                                       l_same_axis_length=False)
         fig_h_2d.show()

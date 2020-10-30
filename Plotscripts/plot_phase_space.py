@@ -14,7 +14,7 @@ def return_phasespace_plot():
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515omega_hist_gt8.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_totalarea_hist.nc')
+    ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')#/Documents/Plots/Phase_Space/PW_w515_gt8_hist.nc')
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
@@ -73,12 +73,12 @@ def return_phasespace_plot():
     the_plot = ps_overlay.T.plot(cmap='rainbow', # 'gist_yarg_r', #'gray_r', #'inferno',# (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
 
-    # plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
-    plt.xlabel('Total conv. area [km$^2$]')
+    plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
+    # plt.xlabel('Total conv. area [km$^2$]')
     # plt.xlabel('Dry static energy, 990 hPa [K]')
-    plt.ylabel('RH at 515 hPa [1]')
+    # plt.ylabel('RH at 215 hPa [1]')
     # plt.ylabel('Number of objects [1]')
-    # plt.ylabel('TWP advection [mm/h]')
+    plt.ylabel('Precipitable water [cm]')
     the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
