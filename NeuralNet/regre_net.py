@@ -269,8 +269,8 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 48,# 50, #12,#30, #26, #9, #23, #
-                                xlim=30,
+                                n_profile_vars=13,# 48,# 50, #30, #26, #9, #23, #
+                                xlim=35,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,

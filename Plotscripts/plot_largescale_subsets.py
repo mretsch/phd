@@ -300,7 +300,7 @@ if __name__ == '__main__':
 
     l_plot_profiles = True
     if l_plot_profiles:
-        for var in ['omega']:# var_strings: #
+        for var in ['RH']:# var_strings: #
 
             ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
 
@@ -310,12 +310,16 @@ if __name__ == '__main__':
             # allocate proper array
             quantity = ls[var][:9, :-1]
 
-            plt.plot(daily_cycle[0], daily_cycle.lev, lw=1.5, ls=(0, (1, 1))            , color='darkgrey', label='9:30 h')
-            plt.plot(daily_cycle[1], daily_cycle.lev, lw=1.5, ls='-.'                   , color='darkgrey', label='15:30 h')
-            plt.plot(daily_cycle[2], daily_cycle.lev, lw=1.5, ls='-'                    , color='darkgrey', label='21:30 h')
-            plt.plot(daily_cycle[3], daily_cycle.lev, lw=1.5, ls=(0, (3, 1, 1, 1, 1, 1)), color='darkgrey', label='3:30 h')
+            fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(6.4, 4.8*2))
 
-            for j, selecting_var in enumerate([l_rh_high]):#, l_rh_low]):
+            for j, (ax, selecting_var) in enumerate(zip(axes, [l_rh_low, l_rh_high])):
+
+                # if j==0:
+                ax.plot(daily_cycle[0], daily_cycle.lev, lw=1.5, ls=(0, (1, 1))            , color='darkgrey', label='9:30 h')
+                ax.plot(daily_cycle[1], daily_cycle.lev, lw=1.5, ls='-.'                   , color='darkgrey', label='15:30 h')
+                ax.plot(daily_cycle[2], daily_cycle.lev, lw=1.5, ls='-'                    , color='darkgrey', label='21:30 h')
+                ax.plot(daily_cycle[3], daily_cycle.lev, lw=1.5, ls=(0, (3, 1, 1, 1, 1, 1)), color='darkgrey', label='3:30 h')
+
                 # fill array
                 basetime = rh500_sorted.where(selecting_var, drop=True).time # rome_top_decile.time
                 times = basetime
@@ -340,41 +344,44 @@ if __name__ == '__main__':
                     daily_cycle -= daily_cycle.mean(dim='time')
 
                 colormap = cm.BuGn
-                plt.plot(quantity[0], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='-24 h')
+                ax.plot(quantity[0], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='-24 h')
                 colormap = cm.YlOrBr
-                plt.plot(quantity[8], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='+24 h')
+                ax.plot(quantity[8], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='+24 h')
 
                 colormap = cm.BuGn
-                plt.plot(quantity[1], quantity.lev, lw=2.8, color=colormap(1 * 60 + 50), label='-18 h')
+                ax.plot(quantity[1], quantity.lev, lw=2.8, color=colormap(1 * 60 + 50), label='-18 h')
                 colormap = cm.YlOrBr
-                plt.plot(quantity[7], quantity.lev, lw=2.8, color=colormap(1 * 60 + 40), label='+18 h')
+                ax.plot(quantity[7], quantity.lev, lw=2.8, color=colormap(1 * 60 + 40), label='+18 h')
 
                 colormap = cm.BuGn
-                plt.plot(quantity[2], quantity.lev, lw=2  , color=colormap(2 * 60 + 40), label='-12 h')
+                ax.plot(quantity[2], quantity.lev, lw=2  , color=colormap(2 * 60 + 40), label='-12 h')
                 colormap = cm.YlOrBr
-                plt.plot(quantity[6], quantity.lev, lw=2  , color=colormap(2 * 60 + 50), label='+12 h')
+                ax.plot(quantity[6], quantity.lev, lw=2  , color=colormap(2 * 60 + 50), label='+12 h')
 
                 colormap = cm.BuGn
-                plt.plot(quantity[3], quantity.lev, lw=2  , color=colormap(3 * 60 + 30), label='-6 h')
+                ax.plot(quantity[3], quantity.lev, lw=2  , color=colormap(3 * 60 + 30), label='-6 h')
                 colormap = cm.YlOrBr
-                plt.plot(quantity[5], quantity.lev, lw=2  , color=colormap(3 * 60 + 60), label='+6 h')
+                ax.plot(quantity[5], quantity.lev, lw=2  , color=colormap(3 * 60 + 60), label='+6 h')
 
-                plt.plot(quantity[4], quantity.lev, lw=2  , color='k', ls='--', label='t(ROME)' )
+                ax.plot(quantity[4], quantity.lev, lw=2  , color='k', ls='--', label='t(ROME)' )
+
+                order = [4, 6, 8, 10, 12, 11, 9, 7, 5, 0, 1, 2, 3]
 
                 if j==0:
-                    handles, labels = plt.gca().get_legend_handles_labels()
+                    handles, labels = ax.get_legend_handles_labels()
+                    # ax.legend([handles[idx] for idx in order], [labels[idx] for idx in order], fontsize=12)
 
-            order = [4, 6, 8, 10, 12, 11, 9, 7, 5, 0, 1, 2, 3]
-            # plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], fontsize=12)
+                ax.invert_yaxis()
 
-            plt.gca().invert_yaxis()
-            plt.ylabel('Pressure [hPa]')
-            plt.xlabel(quantity.long_name+' [1]')
-            plt.axes().spines['top'  ].set_visible(False)
-            plt.axes().spines['right'].set_visible(False)
-            plt.axes().tick_params(left=False)
-            plt.axes().tick_params(axis='x', direction='in')
+                ax.set_ylabel('Pressure [hPa]')
+                ax.axes.spines['top'  ].set_visible(False)
+                ax.axes.spines['right'].set_visible(False)
+                ax.axes.tick_params(left=False)
+                ax.axes.tick_params(axis='x', direction='in')
+
             # plt.axes().set_xlim((-17.97, 2.09)) # set for low-RH omega plot
+            ax.set_xlabel(quantity.long_name+' [1]')#' ['+quantity.units+']')
+            plt.subplots_adjust(hspace=0.05)
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
