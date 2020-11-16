@@ -12,7 +12,8 @@ from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
-colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+# colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+colours = ['violet', 'magenta']
 
 
 def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, metric='1'):
@@ -300,7 +301,7 @@ if __name__ == '__main__':
 
     l_plot_profiles = True
     if l_plot_profiles:
-        for var in ['RH']:# var_strings: #
+        for var in ['s']:# var_strings: #
 
             ref_profile = ls[var].where(rome.notnull(), drop=True)[:, :-1].mean(dim='time')
 
@@ -310,9 +311,14 @@ if __name__ == '__main__':
             # allocate proper array
             quantity = ls[var][:9, :-1]
 
-            fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(6.4, 4.8*2))
+            fig, axes = plt.subplots(nrows=1, ncols=1, sharex=True, figsize=(6.4, 4.8*1))
 
-            for j, (ax, selecting_var) in enumerate(zip(axes, [l_rh_low, l_rh_high])):
+            # for j, (ax, selecting_var) in enumerate(zip(axes, [l_rh_low, l_rh_high])):
+            for j, ax in enumerate([axes]):
+
+                l_relative_profiles = True
+                if l_relative_profiles:
+                    daily_cycle -= daily_cycle.mean(dim='time')
 
                 # if j==0:
                 ax.plot(daily_cycle[0], daily_cycle.lev, lw=1.5, ls=(0, (1, 1))            , color='darkgrey', label='9:30 h')
@@ -321,7 +327,7 @@ if __name__ == '__main__':
                 ax.plot(daily_cycle[3], daily_cycle.lev, lw=1.5, ls=(0, (3, 1, 1, 1, 1, 1)), color='darkgrey', label='3:30 h')
 
                 # fill array
-                basetime = rh500_sorted.where(selecting_var, drop=True).time # rome_top_decile.time
+                basetime = rome_top_decile.time # rh500_sorted.where(selecting_var, drop=True).time #
                 times = basetime
                 quantity[4, :] = ls[var].sel(lev=slice(None, 990),
                                              time=times.where(
@@ -338,38 +344,37 @@ if __name__ == '__main__':
                                                        times.isin(ls.time), drop=True
                                                    ).values).mean(dim='time')
 
-                l_relative_profiles = False
                 if l_relative_profiles:
                     quantity -= quantity[4, :]
-                    daily_cycle -= daily_cycle.mean(dim='time')
 
-                colormap = cm.BuGn
-                ax.plot(quantity[0], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='-24 h')
+                # colormap = cm.BuGn
+                # ax.plot(quantity[0], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='-24 h')
                 colormap = cm.YlOrBr
                 ax.plot(quantity[8], quantity.lev, lw=3.5, color=colormap(0 * 60 + 60), label='+24 h')
 
-                colormap = cm.BuGn
-                ax.plot(quantity[1], quantity.lev, lw=2.8, color=colormap(1 * 60 + 50), label='-18 h')
+                # colormap = cm.BuGn
+                # ax.plot(quantity[1], quantity.lev, lw=2.8, color=colormap(1 * 60 + 50), label='-18 h')
                 colormap = cm.YlOrBr
                 ax.plot(quantity[7], quantity.lev, lw=2.8, color=colormap(1 * 60 + 40), label='+18 h')
 
-                colormap = cm.BuGn
-                ax.plot(quantity[2], quantity.lev, lw=2  , color=colormap(2 * 60 + 40), label='-12 h')
+                # colormap = cm.BuGn
+                # ax.plot(quantity[2], quantity.lev, lw=2  , color=colormap(2 * 60 + 40), label='-12 h')
                 colormap = cm.YlOrBr
                 ax.plot(quantity[6], quantity.lev, lw=2  , color=colormap(2 * 60 + 50), label='+12 h')
 
-                colormap = cm.BuGn
-                ax.plot(quantity[3], quantity.lev, lw=2  , color=colormap(3 * 60 + 30), label='-6 h')
+                # colormap = cm.BuGn
+                # ax.plot(quantity[3], quantity.lev, lw=2  , color=colormap(3 * 60 + 30), label='-6 h')
                 colormap = cm.YlOrBr
                 ax.plot(quantity[5], quantity.lev, lw=2  , color=colormap(3 * 60 + 60), label='+6 h')
 
                 ax.plot(quantity[4], quantity.lev, lw=2  , color='k', ls='--', label='t(ROME)' )
 
-                order = [4, 6, 8, 10, 12, 11, 9, 7, 5, 0, 1, 2, 3]
+                # order = [4, 6, 8, 10, 12, 11, 9, 7, 5, 0, 1, 2, 3]
+                order = [8, 7, 6, 5, 4, 0, 1, 2, 3]
 
                 if j==0:
                     handles, labels = ax.get_legend_handles_labels()
-                    # ax.legend([handles[idx] for idx in order], [labels[idx] for idx in order], fontsize=12)
+                    ax.legend([handles[idx] for idx in order], [labels[idx] for idx in order], fontsize=12)
 
                 ax.invert_yaxis()
 
@@ -380,7 +385,7 @@ if __name__ == '__main__':
                 ax.axes.tick_params(axis='x', direction='in')
 
             # plt.axes().set_xlim((-17.97, 2.09)) # set for low-RH omega plot
-            ax.set_xlabel(quantity.long_name+' [1]')#' ['+quantity.units+']')
+            ax.set_xlabel('$\Delta$('+quantity.long_name+') [K]')#' ['+quantity.units+']')
             plt.subplots_adjust(hspace=0.05)
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
@@ -388,30 +393,38 @@ if __name__ == '__main__':
     l_plot_scalars = False
     if l_plot_scalars:
         for var in ['lw_net_toa']:
-            for j in range(len(bins)):
+
+            # for j in range(len(bins)):
+            for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
+
                 ref_profile = ls[var].where(rome.notnull(), drop=True).mean(dim='time')
                 daily_cycle = ls[var].where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
                 del daily_cycle['percentile']
+
+                plt.plot(daily_cycle, color='k')
 
                 # allocate proper array
                 quantity = ls[var][:9]
 
                 # fill array
-                # times = rome_top_decile.time
-                times = bins[j].time
+                # basetime = rome_top_decile.time
+                # basetime = bins[j].time
+                basetime = rh500_sorted.where(selecting_var, drop=True).time
+
+                times = basetime
                 quantity[4] = ls[var].sel(time=times.where(
                                               times.isin(ls.time), drop=True
                                           ).values).mean(dim='time')
 
                 for i, hours in enumerate([6, 12, 18, 24]):
                     # times before the high-ROME time -> '-'
-                    times = bins[j].time - np.timedelta64(hours, 'h')
+                    times = basetime - np.timedelta64(hours, 'h')
                     quantity[3-i] = ls[var].sel(time=times.where(
                         times.isin(ls.time), drop=True
                     ).values).mean(dim='time')
 
                     # times after the high-ROME time -> '+'
-                    times = bins[j].time + np.timedelta64(hours, 'h')
+                    times = basetime + np.timedelta64(hours, 'h')
                     quantity[5+i] = ls[var].sel(time=times.where(
                         times.isin(ls.time), drop=True
                     ).values).mean(dim='time')
@@ -429,15 +442,18 @@ if __name__ == '__main__':
 
             plt.axvline(x=4, color='grey', ls='--', lw=1, zorder=-100)
 
-            # plt.legend(['Before and after ROME', 'Daily'])
-            plt.legend(['1. decile', '2. decile', '3. decile',
-                        '4. decile', '5. decile', '6. decile',
-                        '7. decile', '8. decile', '9. decile',
-                        '10. decile'], fontsize=9, loc='lower right')
+            plt.ylim(358, 392.3)
+            # print(plt.ylim())
+
+            plt.legend(['Low RH, High ROME', 'High RH, High ROME'], fontsize=12, loc='lower right')
+            # plt.legend(['1. decile', '2. decile', '3. decile',
+            #             '4. decile', '5. decile', '6. decile',
+            #             '7. decile', '8. decile', '9. decile',
+            #             '10. decile'], fontsize=9, loc='upper right')
 
             plt.ylabel('OLR')
             plt.xlabel('Time')
-            plt.axes().set_xticklabels(['xxx', '-24 h', '-12 h', 't(R$_\mathrm{NN}$)',
+            plt.axes().set_xticklabels(['xxx', '-24 h', '-12 h', 't(ROME)',
                                         '+12 h', '+24 h'])
             plt.savefig('/Users/mret0001/Desktop/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()

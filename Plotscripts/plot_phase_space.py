@@ -78,7 +78,7 @@ def return_phasespace_plot():
     # plt.xlabel('Dry static energy, 990 hPa [K]')
     # plt.ylabel('RH at 215 hPa [1]')
     # plt.ylabel('Number of objects [1]')
-    plt.ylabel('Precipitable water [cm]')
+    plt.ylabel('OLR [W/m2]')
     the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')

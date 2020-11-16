@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 home = expanduser("~")
 files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season16*.nc"
-ds_st = xr.open_mfdataset("/Users/mret0001/Data/" + files, chunks={'time': 1000})
+ds_st = xr.open_mfdataset("/Users/mret0001/Documents/Data/" + files, chunks={'time': 1000})
 files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_season16*.nc"
-ds_rr = xr.open_mfdataset("/Users/mret0001/Data/" + files, chunks={'time': 1000})
+ds_rr = xr.open_mfdataset("/Users/mret0001/Documents/Data/" + files, chunks={'time': 1000})
 rain=ds_rr.radar_estimated_rain_rate
 stein=ds_st.steiner_echo_classification
 
