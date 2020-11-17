@@ -1,4 +1,5 @@
 from os.path import expanduser
+from pathlib import Path
 import pandas as pd
 import xarray as xr
 import numpy as np
@@ -132,6 +133,48 @@ def interpolate_repeating_values(dataset, l_sort_it=False):
     return ds
 
 
+def convective_rainrates():
+    """Returns an 1D-array (without particular order inside) containing values of precipitation
+    for all convective pixels."""
+
+    # # convective rain rates in xarray_array
+    # rain_conv_xr = rain.where(stein == 2)
+    #
+    # # make a numpy-copy of the rain-array
+    # rain_conv_np = np.array(rain_conv_xr)
+    #
+    # # use xarray-version to apply .notnull() to, to mask the NaNs and return boolean array.
+    # # np.nonzero() returns indices of True values (indices for each dimension in single array-> 3 arrays total)
+    # idxs = np.asarray(rain_conv_xr.notnull()).nonzero()
+    #
+    # # use numpy-version to subselect on the indices, the 3 arrays in idxs are automatically applied correctly
+    # rain_conv_1d = rain_conv_np[idxs]
+
+    # we need a loop, the numpy-array containing the whole array of shape (378000, 117, 117) would be 40GB in memory.
+
+    data_path = Path(home + '/Documents/Data/Steiner/')
+    glob_pattern_2d = 'STEINER_ECHO_CLASSIFICATION_'
+    file_names_stein = sorted([str(f) for f in data_path.rglob(f'*{glob_pattern_2d}*.nc')])
+
+    data_path = Path(home + '/Documents/Data/RainRate/')
+    glob_pattern_2d = 'RADAR_ESTIMATED_RAIN_RATE_'
+    file_names_rain = sorted([str(f) for f in data_path.rglob(f'*{glob_pattern_2d}*.nc')])
+
+    rain_rates = []
+    for stein_file, rain_file in zip(file_names_stein, file_names_rain):
+        print(stein_file[-11:-3])  # print date, to have tracker of loop and assess progress
+        stein = xr.open_dataset(stein_file).steiner_echo_classification
+        rain = xr.open_dataset(rain_file).radar_estimated_rain_rate
+
+        assert rain.time.isin(stein.time).all()
+
+        # numpy supports 3-dimensional boolean indexing, xarray not. Returns the values as 1d-array
+        rain_np = np.asarray(rain)
+        rain_rates.append(rain_np[stein == 2])
+
+    return np.concatenate(rain_rates)
+
+
 def notnull_area(array):
     """Pixels not NaN for the two fast dimensions of a 3D x-array."""
     i = 0
@@ -190,10 +233,10 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
 
-    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_season*.nc"
-    ds_st = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
-    files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_season*.nc"
-    ds_rr = xr.open_mfdataset("/Users/mret0001/Data/"+files, chunks={'time': 1000})
+    files = "Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_*.nc"
+    ds_st = xr.open_mfdataset(home+"/Documents/Data/"+files, chunks={'time': 1000})
+    files = "RainRate/CPOL_RADAR_ESTIMATED_RAIN_RATE_*.nc"
+    ds_rr = xr.open_mfdataset(home+"/Documents/Data/"+files, chunks={'time': 1000})
 
     # run with 4 parallel threads on my local laptop
     # c = Client()
