@@ -38,7 +38,8 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
         # sns.distplot(var[var.notnull()], bins=bins, kde=False, norm_hist=True)  # hist_kws={'log': True})
 
         total = var.notnull().sum().values
-        metric_clean = var.fillna(-1)
+        # metric_clean = var.fillna(-1)  # works if var is positive and thus bins as well
+        metric_clean = var.where(var.notnull(), drop=True)  # works if var is positive and thus bins as well
         h, edges = np.histogram(metric_clean, bins=bins)  # , density=True)
 
         if l_rel_mode:
@@ -67,7 +68,7 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
             h_normed_ext[ 0] = h_normed[0]
             h_normed_ext[1:] = h_normed
             # plot a step function instead of a continuous line
-            plt.step(edges, h_normed_ext, color='k', linewidth=2., linestyle=linestyle[i])
+            plt.step(edges, h_normed_ext, color='r', linewidth=2., linestyle=linestyle[i])
 
     if l_xlog:
         plt.xscale('log')
@@ -93,7 +94,7 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
         ax.spines['bottom'].set_position('zero')
         ax.tick_params(axis='x', direction='out')
         # ax.xaxis.set_ticks_position('none')  # 'left', 'right'
-        ax.set_xlim(6)
+        # ax.set_xlim(6)
 
     ax.tick_params(axis='y', direction='out')
     ax.yaxis.set_ticks_position('none')  # 'left', 'right'
@@ -204,7 +205,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = True
+    hist_2d = False
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
@@ -242,21 +243,24 @@ if __name__ == '__main__':
         fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = False
+    hist_1d = True
     if hist_1d:
         #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
-        var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
+        # var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
         #var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
         #del var1['percentile']
         #del var2['percentile']
-        ds = xr.Dataset({'rom': var2})
+        # ds = xr.Dataset({'rom': var2})
         #ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
         #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
+        var = xr.open_dataarray(home+'/Desktop/conv_rain.nc')
+        var_gt0 = var.where(var != 0., drop=True)
+        ds = var_gt0.to_dataset()
 
-        fig_h_1d = histogram_1d(ds, l_xlog=True, l_adjust_bins=True,
-                                x_label='ROME [km$^2$]',
-                                y_label='d$\mathcal{P}$ / dlog(ROME)  [km$^{-2}$]',
-                                legend_label=['ROME'],
+        fig_h_1d = histogram_1d(ds, l_xlog=False, l_adjust_bins=False, nbins=555,
+                                # x_label='ROME [km$^2$]',
+                                # y_label='d$\mathcal{P}$ / dlog(ROME)  [km$^{-2}$]',
+                                # legend_label=['ROME'],
                                 l_color=False)
 
         fig_h_1d.show()
@@ -267,3 +271,4 @@ if __name__ == '__main__':
 
     stop = timeit.default_timer()
     print('Run Time: ', stop - start)
+
