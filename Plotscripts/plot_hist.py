@@ -53,7 +53,7 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
             h_normed = h / dlogx / total # equals density=True
         else:
             if l_percentage:
-                h_normed = h / total * 100
+                h_normed = h / total # * 100
             else:
                 h_normed = h / dx / total # equals density=True
 
@@ -68,7 +68,9 @@ def histogram_1d(dataset, nbins=None, l_adjust_bins=False, l_xlog=False, x_label
             h_normed_ext[ 0] = h_normed[0]
             h_normed_ext[1:] = h_normed
             # plot a step function instead of a continuous line
-            plt.step(edges, h_normed_ext, color='r', linewidth=2., linestyle=linestyle[i])
+            h_to_plot = h_normed_ext
+            # h_to_plot = np.cumsum(h_normed_ext)
+            plt.step(edges, h_to_plot, color='r', linewidth=2., linestyle=linestyle[i])
 
     if l_xlog:
         plt.xscale('log')
@@ -139,7 +141,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=8)
+                                                         l_cut_off=False, cut_off=8)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -205,7 +207,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
@@ -221,9 +223,12 @@ if __name__ == '__main__':
         var2 = ls.lw_net_toa#PW#RH.sel(lev=515)#h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
-        # var1 = var1.where(var2)
+        var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+        model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_advTWPdTWPdt/'
+        var2 = xr.open_dataarray(home + model_path + 'predicted.nc')
+        var1 = var1.where(var2)
 
-        l_no_singlepixel = True
+        l_no_singlepixel = False
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
@@ -233,17 +238,17 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=17,
-                                      x_label= var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
-                                      y_label= var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=65,
+                                      x_label= 'rome', #var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
+                                      y_label= 'predicted', #var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
-                                      l_same_axis_length=False)
+                                      l_same_axis_length=True)
         fig_h_2d.show()
 
         fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
         #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         # var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
@@ -253,11 +258,16 @@ if __name__ == '__main__':
         # ds = xr.Dataset({'rom': var2})
         #ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
         #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
-        var = xr.open_dataarray(home+'/Desktop/conv_rain.nc')
-        var_gt0 = var.where(var != 0., drop=True)
+
+        ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/conv_rain_7mmhour.nc')
+        # var = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_rain_radar.nc')
+        # var_gt0 = var.where(var != 0., drop=True)
+        var_gt0 = ds_sim['pr']*3600
         ds = var_gt0.to_dataset()
 
-        fig_h_1d = histogram_1d(ds, l_xlog=False, l_adjust_bins=False, nbins=555,
+
+        fig_h_1d = histogram_1d(ds, l_xlog=False, l_adjust_bins=False, nbins=int(np.ceil(ds['pr'].max())), # 555,
+                                # l_percentage=False,
                                 # x_label='ROME [km$^2$]',
                                 # y_label='d$\mathcal{P}$ / dlog(ROME)  [km$^{-2}$]',
                                 # legend_label=['ROME'],
