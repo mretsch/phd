@@ -8,6 +8,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def best_model_threshold_by_roc(df, percentiles):
     # True and False positive rates
     tpr, fpr = [], []
@@ -54,7 +55,7 @@ def best_model_threshold_by_roc(df, percentiles):
 
     plt.plot([0] + fpr, [0] + tpr, c='r', ls='', marker='o', ms=0.5)
     # loop through each x,y pair
-    for i, xy in enumerate(zip(fpr,tpr)):
+    for i, xy in enumerate(zip(fpr, tpr)):
         corr = 0.#-0.05 # adds a little correction to put annotation in marker's centrum
         plt.annotate(str(percentiles[i].astype(int)),  xy=(xy[0] + corr, xy[1] + corr), fontsize=2)
     plt.xlabel('False positive rate (False positives / Target negative)')

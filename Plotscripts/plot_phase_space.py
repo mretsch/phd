@@ -64,8 +64,9 @@ def return_phasespace_plot():
                                               overlay_y=overlay['y_bins'],
                                               l_probability=True,
                                               upper_bound=10000.,
-                                              # lower_bound=overlay[overlay.percentile > 0.9].min()) # around 153
-                                              lower_bound=np.percentile(rome, 90)) # around 159
+                                              # lower_bound=overlay[overlay.percentile > 0.9].min())
+                                              lower_bound=np.percentile(overlay, 90))
+                                              # lower_bound=np.percentile(rome, 90))
                                               # lower_bound=0.)
 
     # set NaNs to the special values set in the Fortran-routine
@@ -88,7 +89,8 @@ def return_phasespace_plot():
     plt.ylabel('RH at 515 hPa [1]')
     # plt.ylabel('Number of objects [1]')
     # plt.ylabel('OLR [W/m2]')
-    the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(ROME) [1]')
+    the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
+    # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(ROME) [1]')
     # the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
