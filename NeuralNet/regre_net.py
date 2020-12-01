@@ -116,7 +116,7 @@ start = timeit.default_timer()
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')# _noDailyCycle.nc')
+                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#_noDailyCycle.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 # add quantity symbols to large-scale dataset
@@ -141,7 +141,6 @@ ls_vars = [
            'u',
            'v',
            's',
-           #'r',
            'RH',
            's_adv_h',
            'r_adv_h',
@@ -198,7 +197,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=13, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -211,7 +210,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_advTWPdTWPdt/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_s990/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -269,7 +268,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=13,# 48,# 50, #30, #26, #9, #23, #
+                                n_profile_vars= 47,#13,# 50, #30, #26, #9, #23, #
                                 xlim=35,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,

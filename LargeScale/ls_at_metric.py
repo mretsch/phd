@@ -241,8 +241,8 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         for profile_string in profiles:
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
-                # if profile_string == 'Dry static energy':  # dont take 990hPa of s for case without 10 most contributing
-                #     levels = levels_in[:-1]
+                if profile_string == 'Dry static energy':  # dont take 990hPa of s because it's correlated to RH_990
+                    levels = levels_in[:-1]
             else:
                 levels = levels_in[:-1] + [965]
             ls_list.append(
@@ -259,8 +259,8 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         for profile_string in profiles:
             if profile_string != 'Vertical wind shear':
                 levels = levels_in
-                # if profile_string == 'Dry static energy':  # dont take 990hPa of s for case without 10 most contributing
-                #     levels = levels_in[:-1]
+                if profile_string == 'Dry static energy':  # dont take 990hPa of s because it's correlated to RH_990
+                    levels = levels_in[:-1]
             else:
                 levels = levels_in[:-1] + [965]
             ls_list.append(
