@@ -3,6 +3,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib_venn as plt_venn
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import metpy.calc as mpcalc
@@ -12,8 +13,8 @@ from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
-# colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
-colours = ['violet', 'magenta']
+colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+# colours = ['violet', 'magenta']
 
 
 def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, metric='1'):
@@ -67,7 +68,7 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
 
 if __name__ == '__main__':
     ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
-                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
 
     # ROME is defined exactly at the LS time steps
     rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -79,7 +80,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
+    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -299,7 +300,7 @@ if __name__ == '__main__':
         # 'wind_dir'
     ]
 
-    l_plot_profiles = True
+    l_plot_profiles = False
     if l_plot_profiles:
         for var in ['s']:# var_strings: #
 
@@ -390,48 +391,52 @@ if __name__ == '__main__':
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
-    l_plot_scalars = False
+    l_plot_scalars = True
     if l_plot_scalars:
-        for var in ['lw_net_toa']:
+        # for var in [ls['PW'], ls['r_srf'], ls['lw_net_toa'], ls['omega'].sel(lev=515)]:
+        for var in [ls['RH'].sel(lev=515)]:
 
-            # for j in range(len(bins)):
-            for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
+            # for j in range(1):
+            for j in range(len(bins)):
+            # for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
 
-                ref_profile = ls[var].where(rome.notnull(), drop=True).mean(dim='time')
-                daily_cycle = ls[var].where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
-                del daily_cycle['percentile']
+                ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
+                daily_cycle = var.where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
+                # daily_cycle = var.groupby(group='time.time').mean(dim='time')
+                # del daily_cycle['percentile']
 
                 plt.plot(daily_cycle, color='k')
 
                 # allocate proper array
-                quantity = ls[var][:9]
+                n_timesteps = 5
+                quantity = var[:2*n_timesteps+1]
 
                 # fill array
                 # basetime = rome_top_decile.time
-                # basetime = bins[j].time
-                basetime = rh500_sorted.where(selecting_var, drop=True).time
+                basetime = bins[j].time
+                # basetime = rh500_sorted.where(selecting_var, drop=True).time
 
                 times = basetime
-                quantity[4] = ls[var].sel(time=times.where(
+                quantity[n_timesteps] = var.sel(time=times.where(
                                               times.isin(ls.time), drop=True
                                           ).values).mean(dim='time')
 
-                for i, hours in enumerate([6, 12, 18, 24]):
+                for i, hours in enumerate([6, 12, 18, 24, 30]):
                     # times before the high-ROME time -> '-'
                     times = basetime - np.timedelta64(hours, 'h')
-                    quantity[3-i] = ls[var].sel(time=times.where(
+                    quantity[n_timesteps-1-i] = var.sel(time=times.where(
                         times.isin(ls.time), drop=True
                     ).values).mean(dim='time')
 
                     # times after the high-ROME time -> '+'
                     times = basetime + np.timedelta64(hours, 'h')
-                    quantity[5+i] = ls[var].sel(time=times.where(
+                    quantity[n_timesteps+1+i] = var.sel(time=times.where(
                         times.isin(ls.time), drop=True
                     ).values).mean(dim='time')
 
                 l_relative_profiles = False
                 if l_relative_profiles:
-                    quantity -= quantity[4]
+                    quantity -= quantity[n_timesteps]
                     daily_cycle -= daily_cycle.mean(dim='time')
 
                 plt.plot(quantity, lw=2, color=sol[colours[j]])
@@ -440,20 +445,23 @@ if __name__ == '__main__':
             # colormap = cm.Purples
             # plt.plot(daily_cycle, lw=1, ls='-', color=colormap(1 * 60 + 60))
 
-            plt.axvline(x=4, color='grey', ls='--', lw=1, zorder=-100)
+            plt.axvline(x=n_timesteps, color='grey', ls='--', lw=1, zorder=-100)
+            # plt.axes().xaxis.set_major_locator(ticker.MultipleLocator(1))
 
-            plt.ylim(358, 392.3)
+            # plt.ylim(358, 392.3)
             # print(plt.ylim())
 
-            plt.legend(['Low RH, High ROME', 'High RH, High ROME'], fontsize=12, loc='lower right')
+            # plt.legend(['Low RH, High ROME', 'High RH, High ROME'], fontsize=12, loc='lower right')
             # plt.legend(['1. decile', '2. decile', '3. decile',
             #             '4. decile', '5. decile', '6. decile',
             #             '7. decile', '8. decile', '9. decile',
             #             '10. decile'], fontsize=9, loc='upper right')
 
-            plt.ylabel('OLR')
-            plt.xlabel('Time')
-            plt.axes().set_xticklabels(['xxx', '-24 h', '-12 h', 't(ROME)',
-                                        '+12 h', '+24 h'])
-            plt.savefig('/Users/mret0001/Desktop/'+var+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
+            # plt.ylabel('OLR')
+            plt.xlabel('Time [h]')
+            plt.axes().set_xticklabels(['xxx', '-30', '-18', '-6',
+                                        '+6', '+18', '+30'])
+            # plt.axes().set_xticklabels(['xxx', '-30', '-24', '-18', '-12', '-6',  't(ROME)',
+            #                             '+6', '+12', '+18', '+24', '+30'])
+            plt.savefig('/Users/mret0001/Desktop/'+var.long_name[:3]+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()

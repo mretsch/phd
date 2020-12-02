@@ -25,7 +25,7 @@ def return_phasespace_plot():
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25 \
     #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
-    model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_advTWPdTWPdt/'
+    model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
     da = xr.open_dataarray(home + model_path + 'predicted.nc')
 
     subselect = True
@@ -47,8 +47,8 @@ def return_phasespace_plot():
 
     phase_space = ds_ps.hist_2D
 
-    overlay = da #.rom_kilometres #.RH.sel(lev=515) #conv_intensity #conv_intensity # div.sel(lev=845) # .where(da.cop_mod < 60.)
-    # overlay = rome
+    # overlay = da #.rom_kilometres #.RH.sel(lev=515) #conv_intensity #conv_intensity # div.sel(lev=845) # .where(da.cop_mod < 60.)
+    overlay = rome
 
     # give the overlay time series information about the placements of the bins for each time step
     overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins[ds_ps.time.isin(da_sub.time)].values)
@@ -83,15 +83,15 @@ def return_phasespace_plot():
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=0., vmax=1.)
 
-    plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
+    plt.xlabel('$\Delta(\omega, \Phi)$ at 515 hPa [hPa/h]')
     # plt.xlabel('Total conv. area [km$^2$]')
     # plt.xlabel('Dry static energy, 990 hPa [K]')
-    plt.ylabel('RH at 515 hPa [1]')
+    # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
+    plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
     # plt.ylabel('OLR [W/m2]')
-    the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
-    # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(ROME) [1]')
-    # the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
+    # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
+    the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
     # the_plot.colorbar.set_label(da.long_name+', 515 hPa [1]')
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     plot = return_phasespace_plot()
     save = True
     if save:
-        plt.savefig(home+'/Desktop/phase_space_rnn.pdf', transparent=True, bbox_inches='tight')
-        # plt.savefig(home+'/Desktop/phase_space_rome.pdf', transparent=True, bbox_inches='tight')
+        # plt.savefig(home+'/Desktop/phase_space_rnn.pdf', transparent=True, bbox_inches='tight')
+        plt.savefig(home+'/Desktop/phase_space_rome.pdf', transparent=True, bbox_inches='tight')
         plt.show()
     else:
         plt.show()

@@ -116,7 +116,7 @@ start = timeit.default_timer()
 ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#_noDailyCycle.nc')
+                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 # add quantity symbols to large-scale dataset
@@ -210,7 +210,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_No_s990/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
