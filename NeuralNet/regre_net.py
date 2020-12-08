@@ -139,14 +139,14 @@ if l_remove_diurnal_cycle:
 ls_vars = [
            'omega',
            'u',
-           'v',
-           's',
-           'RH',
-           's_adv_h',
-           'r_adv_h',
-           'dsdt',
-           'drdt',
-           'dwind_dz'
+           # 'v',
+           # 's',
+           # 'RH',
+           # 's_adv_h',
+           # 'r_adv_h',
+           # 'dsdt',
+           # 'drdt',
+           # 'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
 ls_times = 'same_and_earlier_time'
@@ -179,7 +179,7 @@ if l_eof_input:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = True
+l_loading_model = False
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -197,7 +197,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=13, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=23, batch_size=10, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
