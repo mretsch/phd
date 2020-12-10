@@ -80,7 +80,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
+    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = True
+        l_plot_scatter = False
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -454,10 +454,22 @@ if __name__ == '__main__':
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
-    l_plot_scalars = False
+    l_plot_scalars = True
     if l_plot_scalars:
-        # for var in [ls['PW'], ls['r_srf'], ls['lw_net_toa'], ls['omega'].sel(lev=515)]:
-        for var in [ls['RH'].sel(lev=515)]:
+        vars = [
+            (ls['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
+            (ls['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
+            (ls['PW'],                     'PW',   'cm'),
+            (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
+            (ls['r_srf'],                  'r_2m', 'g/kg'),
+            (ls['u']    .sel(lev=990)    , 'u' ,   'm/s'),
+            (ls['RH']   .sel(lev=215)*100, 'RH',   '%'),
+            (ls['RH']   .sel(lev=515)*100, 'RH',   '%'),
+            ]
+
+        fig, axes = plt.subplots(ncols=1, nrows=len(vars), sharex=True, figsize=(6, len(vars)*3))
+
+        for i, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
 
             # for j in range(1):
             for j in range(len(bins)):
@@ -468,7 +480,7 @@ if __name__ == '__main__':
                 # daily_cycle = var.groupby(group='time.time').mean(dim='time')
                 # del daily_cycle['percentile']
 
-                plt.plot(daily_cycle, color='k')
+                # plt.plot(daily_cycle, color='k')
 
                 # allocate proper array
                 n_timesteps = 5
@@ -499,32 +511,44 @@ if __name__ == '__main__':
 
                 l_relative_profiles = False
                 if l_relative_profiles:
-                    quantity -= quantity[n_timesteps]
+                    quantity    -= quantity[n_timesteps]
                     daily_cycle -= daily_cycle.mean(dim='time')
 
-                plt.plot(quantity, lw=2, color=sol[colours[j]])
-                # plt.plot(ref_profile, q.lev, color='k', ls='--')
+                ax.plot(quantity, lw=2.5, color=sol[colours[j]])
 
-            # colormap = cm.Purples
-            # plt.plot(daily_cycle, lw=1, ls='-', color=colormap(1 * 60 + 60))
-
-            plt.axvline(x=n_timesteps, color='grey', ls='--', lw=1, zorder=-100)
+            ax.axvline(x=n_timesteps, color='grey', ls='--', lw=1, zorder=-100)
             # plt.axes().xaxis.set_major_locator(ticker.MultipleLocator(1))
 
-            # plt.ylim(358, 392.3)
-            # print(plt.ylim())
+            try:
+                ax.set_ylabel(f'$\Delta(${symbol}$_{{{str(int(quantity.lev.values))}}} , \Phi)$ [{unit}]')
+                # ax.set_ylabel(f'{symbol}$_{{{str(int(quantity.lev.values))}}}$ [{unit}]')
+            except AttributeError:
+                ax.set_ylabel(f'$\Delta(${symbol}$, \Phi)$ [{unit}]')
+                # ax.set_ylabel(f'{symbol} [{unit}]')
 
-            # plt.legend(['Low RH, High ROME', 'High RH, High ROME'], fontsize=12, loc='lower right')
-            # plt.legend(['1. decile', '2. decile', '3. decile',
-            #             '4. decile', '5. decile', '6. decile',
-            #             '7. decile', '8. decile', '9. decile',
-            #             '10. decile'], fontsize=9, loc='upper right')
+            ax.axes.spines['top'].set_visible(False)
+            l_yaxis_on_left = False
+            if l_yaxis_on_left:
+                ax.axes.spines['right'].set_visible(False)
+            else:
+                ax.axes.spines['left'].set_visible(False)
+                ax.yaxis.set_label_position("right")
+                ax.yaxis.tick_right()
 
-            # plt.ylabel('OLR')
-            plt.xlabel('Time [h]')
-            plt.axes().set_xticklabels(['xxx', '-30', '-18', '-6',
-                                        '+6', '+18', '+30'])
-            # plt.axes().set_xticklabels(['xxx', '-30', '-24', '-18', '-12', '-6',  't(ROME)',
-            #                             '+6', '+12', '+18', '+24', '+30'])
-            plt.savefig('/Users/mret0001/Desktop/'+var.long_name[:3]+'_before_highW_ROME.pdf', bbox_inches='tight', transparent=True)
-            plt.close()
+        ax.set_xlabel('Time [h]')
+        ax.set_xticklabels(['xxx', '-30', '-18', '-6',
+                                    '+6', '+18', '+30'])
+        # plt.axes().set_xticklabels(['xxx', '-30', '-24', '-18', '-12', '-6',  't(ROME)',
+        #                             '+6', '+12', '+18', '+24', '+30'])
+
+        plt.sca(axes[0])
+        plt.legend(['1. decile', '2. decile', '3. decile',
+                    '4. decile', '5. decile', '6. decile',
+                    '7. decile', '8. decile', '9. decile',
+                    '10. decile'], fontsize=8, loc='lower right')
+
+        plt.subplots_adjust(hspace=0.13)
+
+        # plt.savefig('/Users/mret0001/Desktop/'+var.long_name[:3]+'_afterbefore_ROME.pdf', bbox_inches='tight', transparent=True)
+        plt.savefig('/Users/mret0001/Desktop/afterbefore_ROME.pdf', bbox_inches='tight', transparent=True)
+        plt.close()
