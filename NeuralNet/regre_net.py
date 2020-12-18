@@ -179,7 +179,7 @@ if l_eof_input:
 
 n_lev = len(predictor['lev'])
 
-l_loading_model = False
+l_loading_model = True
 if not l_loading_model:
     # building the model
     model = kmodels.Sequential()
@@ -210,7 +210,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_7Influential/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -268,8 +268,8 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 47,#13,# 50, #30, #26, #9, #23, #
-                                xlim=35,
+                                n_profile_vars= 7,#13,# 50, #30, #26, #9, #23, #
+                                xlim=45,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,
