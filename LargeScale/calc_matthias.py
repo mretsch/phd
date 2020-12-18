@@ -26,6 +26,14 @@ def mixratio_to_spechum(mixing_ratio, pressure):
     return 0.622 * vapour_pres / (p - 0.378 * vapour_pres)
 
 
+def mixingratio_to_relativehumidity(pressure, temperature, mixing_ratio):
+        actual_vapour_pressure = mpcalc.vapor_pressure(pressure * units['hPa'],
+                                                       mixing_ratio * units['g/kg']).to_base_units()
+        sat_vapour_pressure = mpcalc.saturation_vapor_pressure(temperature * units['degC']).to_base_units()
+        rh = actual_vapour_pressure / sat_vapour_pressure
+        return rh
+
+
 def temp_to_virtual(temperature, spec_hum):
     """Calculate virtual temperature [K] given ambient temperature [K] and specific humidity [kg/kg]."""
     return temperature * (1 + 0.608 * spec_hum)
@@ -268,12 +276,12 @@ def down_cape(p_start=None):
 
 
 if __name__ == '__main__':
-    ghome = home + '/Google Drive File Stream/My Drive'
+    home = home + '/Documents/Data/LargeScaleState/'
     # ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-    ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing.nc')
+    ls = xr.open_dataset(home + 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
-    take_lower_level = False
+    take_lower_level = True
     if take_lower_level:
         level_pres = ls.lev  # [hPa] constant level heights
         temp = ls.T  # [K]
@@ -326,7 +334,22 @@ if __name__ == '__main__':
 
         t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
 
-    ls_new = vertical_wind_shear(ls.u, ls.v)
+    # ls_new = vertical_wind_shear(ls.u, ls.v)
     # ls_new = wind_direction(ls.u, ls.v)
     # ls_new = down_cape(p_start=515)
+
+    # What happens to moistening (in RH terms) for different starting levels of mixing ratio and temperature?
+    mix_diffs = []
+    r = np.arange(0, 50)
+    for mix in r:
+        warmRH = mixingratio_to_relativehumidity(1003.75, 29.3, mix)
+        coldRH = mixingratio_to_relativehumidity(1003.75, 28.3, mix)
+        mix_diffs.append(coldRH - warmRH)
+
+    temp_diffs = []
+    t = np.arange(10, 35)
+    for temp in t:
+        warmRH = mixingratio_to_relativehumidity(1003.75, temp  , 20)
+        coldRH = mixingratio_to_relativehumidity(1003.75, temp-1, 20)
+        temp_diffs.append(coldRH - warmRH)
 
