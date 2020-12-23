@@ -68,7 +68,8 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
 
 if __name__ == '__main__':
     ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
-                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
     # ROME is defined exactly at the LS time steps
     rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
+    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -153,11 +154,13 @@ if __name__ == '__main__':
         'drdt',
         'dwind_dz'
     ]
-    for var in ['PW']:#scalars:
+
+    for var in ls_vars:
         # Take large-scale variable, then subset it
-        ls_var = ls[var]#.sel(lev=215)
+        ls_var = ls[var].sel(lev=215)
         rh500 = ls_var.where(rome_top_w)
         rh500_sorted =      rh500.sortby(rome_top_w, ascending=l_sort_ascending)
+        rh500_sorted = ls_var.sel(time=rh500_sorted.time.values - np.timedelta64(6, 'h'))
 
         # Choose how many of the last (highest) ROME values to take
         n = 220 # 700 #
@@ -187,7 +190,7 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = False
+        l_plot_scatter = True
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -201,20 +204,26 @@ if __name__ == '__main__':
             ax.plot(rome_top_w_sorted, rh500_sorted,#.where(l_neither_subset),
                     ls='', marker='x', mew=2, color=sol['cyan'])
 
-            correlation = np.corrcoef(rome_top_w_sorted, rh500_sorted)
-            plt.annotate('r={:.3f}'.format(correlation[0, 1]), xy=(10, 0), fontsize=12)
+            notnan = rh500_sorted.notnull().values
+            correlation = np.corrcoef(rome_top_w_sorted[notnan], rh500_sorted[notnan])
+            # plt.annotate('r={:.3f}'.format(correlation[0, 1]), xy=(10, 0), fontsize=12)
+            plt.text(0, 0.5, 'r={:.3f}'.format(correlation[0, 1]),
+                     fontdict={'fontsize':12}, transform=ax.transAxes)
 
             # ax.set_title('Highest decile of ROME.')
             # ax.set_title('Highest decile of total convective area.')
-            ax.set_title('Highest decile of omega_515. Difference to diurnal cycle more than -4.3 hPa/hour.')
+            ax.set_title('Highest decile of omega_515, less than -6.6 hPa/h.')
+            # ax.set_title('Highest decile of omega_515. Difference to diurnal cycle more than -4.3 hPa/hour.')
             # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
             # ax.set_xlabel('ROME [km$^2$]')
             # ax.set_ylabel('Relative humidity at 515 hPa [1]')
             ax.set_xlabel('ROME [km$^2$]')
             try:
-                ax.set_ylabel(f'$\Delta(${ls_var.name}$_{{{str(int(ls_var.lev.values))}}} , \Phi)$ [{ls_var.units}]')
+                # ax.set_ylabel(f'$\Delta(${ls_var.name}$_{{{str(int(ls_var.lev.values))}}} , \Phi)$ [{ls_var.units}], 6h earlier')
+                ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}], 6h earlier')
             except AttributeError:
-                ax.set_ylabel(f'$\Delta(${ls_var.name}$, \Phi)$ [{ls_var.units}]')
+                # ax.set_ylabel(f'$\Delta(${ls_var.name}$, \Phi)$ [{ls_var.units}], 6h earlier')
+                ax.set_ylabel(f'{ls_var.name} [{ls_var.units}], 6h earlier')
 
             # again plot the non-masked ROME values in the previous figure-axes
             # ax.plot(range(len(rh500)), rh500_sorted.where(l_rh_high), ls='', marker='^', color=sol['magenta'])
@@ -232,7 +241,7 @@ if __name__ == '__main__':
 
             # ax.axvline(x=67, color='gray', ls='--', lw=1.5, zorder=0)
             # ax.axvline(x=199, color='gray', ls='--', lw=1.5, zorder=0)
-            ax.axhline(y=0, color=sol['red'], lw=1, zorder=0)
+            # ax.axhline(y=0, color=sol['red'], lw=1, zorder=0)
 
             try:
                 plt.savefig(home+f'/Desktop/P/omega_{ls_var.name}_{str(int(ls_var.lev.values))}.pdf', bbox_inches='tight')
@@ -454,17 +463,16 @@ if __name__ == '__main__':
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
-    l_plot_scalars = True
+    l_plot_scalars = False
     if l_plot_scalars:
         vars = [
-            (ls['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
-            (ls['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
-            (ls['PW'],                     'PW',   'cm'),
+            (ls['omega'].sel(lev=515)    , 'w'         ,   'hPa/hour'),
+            (ls['lw_net_toa'],             'OLR'       ,  'W/m${{^2}}$'),
+            (ls['PW'],                     'PW'        ,   'cm'),
+            (ls['u']    .sel(lev=990)    , 'u'         ,   'm/s'),
+            (ls['r_srf'],                  'r$_{\mathrm{2m}}$', 'g/kg'),
             (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
-            (ls['r_srf'],                  'r_2m', 'g/kg'),
-            (ls['u']    .sel(lev=990)    , 'u' ,   'm/s'),
-            (ls['RH']   .sel(lev=215)*100, 'RH',   '%'),
-            (ls['RH']   .sel(lev=515)*100, 'RH',   '%'),
+            (ls['T_srf'],                  'T$_{\mathrm{2m}}$', '${{^\circ}}$C'),
             ]
 
         fig, axes = plt.subplots(ncols=1, nrows=len(vars), sharex=True, figsize=(6, len(vars)*3))
@@ -472,7 +480,7 @@ if __name__ == '__main__':
         for i, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
 
             # for j in range(1):
-            for j in range(len(bins)):
+            for j in [0, 5, 9]:#range(len(bins)):
             # for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
 
                 ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
@@ -520,17 +528,18 @@ if __name__ == '__main__':
             # plt.axes().xaxis.set_major_locator(ticker.MultipleLocator(1))
 
             try:
-                ax.set_ylabel(f'$\Delta(${symbol}$_{{{str(int(quantity.lev.values))}}} , \Phi)$ [{unit}]')
-                # ax.set_ylabel(f'{symbol}$_{{{str(int(quantity.lev.values))}}}$ [{unit}]')
+                # ax.set_ylabel(f'$\Delta(${symbol}$_{{{str(int(quantity.lev.values))}}} , \Phi)$ [{unit}]')
+                ax.set_ylabel(f'{symbol}$_{{{str(int(quantity.lev.values))}}}$ [{unit}]')
             except AttributeError:
-                ax.set_ylabel(f'$\Delta(${symbol}$, \Phi)$ [{unit}]')
-                # ax.set_ylabel(f'{symbol} [{unit}]')
+                # ax.set_ylabel(f'$\Delta(${symbol}$, \Phi)$ [{unit}]')
+                ax.set_ylabel(f'{symbol} [{unit}]')
 
             ax.axes.spines['top'].set_visible(False)
-            l_yaxis_on_left = False
+            l_yaxis_on_left = True
             if l_yaxis_on_left:
                 ax.axes.spines['right'].set_visible(False)
             else:
+                ax.axhline(y=0, color='grey', ls='--', lw=1, zorder=-100)
                 ax.axes.spines['left'].set_visible(False)
                 ax.yaxis.set_label_position("right")
                 ax.yaxis.tick_right()
