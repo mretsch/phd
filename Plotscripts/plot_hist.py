@@ -141,7 +141,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=2)
+                                                         l_cut_off=True, cut_off=4)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     hist_2d = True
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
-                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#_NoDailyCycle.nc')
 
         subselect = False
         if subselect:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
             ls = ls_sub
 
         var1 = ls.omega.sel(lev=515)
-        var2 = ls.PW#RH.sel(lev=515)#lw_net_toa#PW#h2o_adv_col
+        var2 = ls.lw_net_toa#RH.sel(lev=515)##PW#h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -238,7 +238,7 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=37,#23,
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=24,# 37,#23,
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
                                       y_label=var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
