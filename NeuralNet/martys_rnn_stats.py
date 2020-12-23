@@ -80,7 +80,7 @@ def best_model_threshold_by_roc(df, percentiles):
 if __name__=='__main__':
 
     rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
+    model_path = '/Documents/Data/NN_Models/ROME_Models/Only_5Influential/'
     # model_path = '/Documents/Data/NN_Models/ROME_Models/PhysSelect/'
     predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
@@ -105,10 +105,11 @@ if __name__=='__main__':
     ##############
     # Hit and Miss
     ##############
-    most_accurate_percentile, stats = best_model_threshold_by_roc(df, percentiles=np.arange(99., -1, -1))
+    # most_accurate_percentile, stats = best_model_threshold_by_roc(df, percentiles=np.arange(99., -1, -1))
 
-    df['actual_class'] = pd.qcut(df['rome'],      10, labels=list(range(1,11)))
-    df['predic_class'] = pd.qcut(df['predicted'], 10, labels=list(range(1,11)))
+    df['actual_class'], r_bins = pd.qcut(df['rome'],      10, labels=list(range(1, 11)), retbins=True)
+    # df['predic_class'] = pd.qcut(df['predicted'], 10, labels=list(range(1, 11)))
+    df['predic_class'] = pd.cut(df['predicted'], bins=r_bins, labels=list(range(1, 11)))
 
     cm = ConfusionMatrix(df['actual_class'].to_list(), df['predic_class'].to_list())
     cm.print_stats()
@@ -117,6 +118,6 @@ if __name__=='__main__':
 
     matrix = cm.to_dataframe()
     matrix.index.rename('ROME', inplace=True)
-    matrix.columns.rename('R$_\mathrm{NN}$', inplace=True)
-    sns.heatmap(matrix / 576, cmap='Greys')
+    matrix.columns.rename('R$_\mathrm{NN}$ in ROME-decile', inplace=True)
+    sns.heatmap(matrix / 576, cmap='Greys', annot=matrix, fmt='d')
     plt.savefig(home+'/Desktop/conf_matrix.pdf', bbox_inches='tight')

@@ -197,7 +197,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=23, batch_size=10, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=33, batch_size=40, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -210,7 +210,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_7Influential/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_5Influential/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -268,7 +268,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 7,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars= 5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=45,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
