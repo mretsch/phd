@@ -13,7 +13,7 @@ def contribution_whisker(input_percentages, levels, long_names,
     plt.rc('font', size=19)
 
     if ls_times == 'same_and_earlier_time':
-        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42 * 7/47.))  # *(12/94. + 10/94.)
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42))# * 7/47.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 24))

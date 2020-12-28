@@ -139,14 +139,14 @@ if l_remove_diurnal_cycle:
 ls_vars = [
            'omega',
            'u',
-           # 'v',
-           # 's',
-           # 'RH',
-           # 's_adv_h',
-           # 'r_adv_h',
-           # 'dsdt',
-           # 'drdt',
-           # 'dwind_dz'
+           'v',
+           's',
+           'RH',
+           's_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
 ls_times = 'same_and_earlier_time'
@@ -210,7 +210,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_5Influential/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -245,6 +245,7 @@ else:
         input_percentages['high_pred'].loc[dict(time=predicted_high.time)] = True
 
     p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
+    p50 = xr.DataArray([nth_percentile(series, 0.50) for series in input_percentages.T])
     p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
     spread = p75 - p25
     # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
@@ -268,7 +269,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars= 47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=45,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
