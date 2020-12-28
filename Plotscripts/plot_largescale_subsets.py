@@ -81,7 +81,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
+    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -155,9 +155,9 @@ if __name__ == '__main__':
         'dwind_dz'
     ]
 
-    for var in ls_vars:
+    for var in ['PW']:#ls_vars:
         # Take large-scale variable, then subset it
-        ls_var = ls[var].sel(lev=215)
+        ls_var = ls[var]#.sel(lev=215)
         rh500 = ls_var.where(rome_top_w)
         rh500_sorted =      rh500.sortby(rome_top_w, ascending=l_sort_ascending)
         rh500_sorted = ls_var.sel(time=rh500_sorted.time.values - np.timedelta64(6, 'h'))
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = True
+        l_plot_scatter = False
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -463,59 +463,68 @@ if __name__ == '__main__':
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
-    l_plot_scalars = False
+    l_plot_scalars = True
     if l_plot_scalars:
         vars = [
-            (ls['omega'].sel(lev=515)    , 'w'         ,   'hPa/hour'),
-            (ls['lw_net_toa'],             'OLR'       ,  'W/m${{^2}}$'),
-            (ls['PW'],                     'PW'        ,   'cm'),
-            (ls['u']    .sel(lev=990)    , 'u'         ,   'm/s'),
-            (ls['r_srf'],                  'r$_{\mathrm{2m}}$', 'g/kg'),
-            (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
-            (ls['T_srf'],                  'T$_{\mathrm{2m}}$', '${{^\circ}}$C'),
+            # (ls['omega'].sel(lev=515)    , 'w'         ,   'hPa/hour'),
+            # (ls['lw_net_toa'],             'OLR'       ,  'W/m${{^2}}$'),
+            # (ls['PW'],                     'PW'        ,   'cm'),
+            (ls['u']    .sel(lev=515)    , 'u'         ,   'm/s'),
+            # (ls['r_srf'],                  'r$_{\mathrm{2m}}$', 'g/kg'),
+            # (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
+            # (ls['T_srf'],                  'T$_{\mathrm{2m}}$', '${{^\circ}}$C'),
+            (ls['v']    .sel(lev=515)    , 'v'         ,   'm/s'),
             ]
 
         fig, axes = plt.subplots(ncols=1, nrows=len(vars), sharex=True, figsize=(6, len(vars)*3))
 
-        for i, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
+        for ax in axes:#m, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
 
             # for j in range(1):
-            for j in [0, 5, 9]:#range(len(bins)):
+            for j in range(len(bins)):#[0, 5, 9]:#
             # for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
 
-                ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
-                daily_cycle = var.where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
-                # daily_cycle = var.groupby(group='time.time').mean(dim='time')
-                # del daily_cycle['percentile']
+                for m, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
+                    ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
+                    daily_cycle = var.where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
+                    # daily_cycle = var.groupby(group='time.time').mean(dim='time')
+                    # del daily_cycle['percentile']
 
-                # plt.plot(daily_cycle, color='k')
+                    # plt.plot(daily_cycle, color='k')
 
-                # allocate proper array
-                n_timesteps = 5
-                quantity = var[:2*n_timesteps+1]
+                    # allocate proper array
+                    n_timesteps = 5
+                    quantity = var[:2*n_timesteps+1]
 
-                # fill array
-                # basetime = rome_top_decile.time
-                basetime = bins[j].time
-                # basetime = rh500_sorted.where(selecting_var, drop=True).time
+                    # fill array
+                    # basetime = rome_top_decile.time
+                    basetime = bins[j].time
+                    # basetime = rh500_sorted.where(selecting_var, drop=True).time
 
-                times = basetime
-                quantity[n_timesteps] = var.sel(time=times.where(
-                                              times.isin(ls.time), drop=True
-                                          ).values).mean(dim='time')
+                    times = basetime
+                    quantity[n_timesteps] = var.sel(time=times.where(
+                                                  times.isin(ls.time), drop=True
+                                              ).values).mean(dim='time')
 
-                for i, hours in enumerate([6, 12, 18, 24, 30]):
-                    # times before the high-ROME time -> '-'
-                    times = basetime - np.timedelta64(hours, 'h')
-                    quantity[n_timesteps-1-i] = var.sel(time=times.where(
-                        times.isin(ls.time), drop=True
-                    ).values).mean(dim='time')
+                    for i, hours in enumerate([6, 12, 18, 24, 30]):
+                        # times before the high-ROME time -> '-'
+                        times = basetime - np.timedelta64(hours, 'h')
+                        quantity[n_timesteps-1-i] = var.sel(time=times.where(
+                            times.isin(ls.time), drop=True
+                        ).values).mean(dim='time')
 
-                    # times after the high-ROME time -> '+'
-                    times = basetime + np.timedelta64(hours, 'h')
-                    quantity[n_timesteps+1+i] = var.sel(time=times.where(
-                        times.isin(ls.time), drop=True
-                    ).values).mean(dim='time')
+                        # times after the high-ROME time -> '+'
+                        times = basetime + np.timedelta64(hours, 'h')
+                        quantity[n_timesteps+1+i] = var.sel(time=times.where(
+                            times.isin(ls.time), drop=True
+                        ).values).mean(dim='time')
+
+                    if m==0:
+                        u_wind = quantity
+                    else:
+                        v_wind = quantity
+                        wind_dir = mpcalc.wind_direction(u_wind, v_wind)
+                        quantity = xr.where(wind_dir.m >= 160., wind_dir.m - 360., wind_dir.m)
 
                 l_relative_profiles = False
                 if l_relative_profiles:
