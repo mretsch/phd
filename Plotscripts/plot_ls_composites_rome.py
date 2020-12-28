@@ -170,10 +170,10 @@ if l_plot_scalars:
     #                             '+6', '+12', '+18', '+24', '+30'])
 
     plt.sca(axes[0])
-    plt.legend(['1. decile', '2. decile', '3. decile',
-                '4. decile', '5. decile', '6. decile',
-                '7. decile', '8. decile', '9. decile',
-                '10. decile'], fontsize=8, loc='lower right')
+    plt.legend(['1. Decile (D1)', 'Diurnal cycle in D1',
+                '5. Decile (D5)', 'Diurnal cycle in D5',
+                '10. Decile (D10)', 'Diurnal cycle in D10',
+               ], fontsize=8, loc='lower right', markerfirst=False)
 
     plt.subplots_adjust(hspace=0.13)
 
