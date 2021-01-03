@@ -466,104 +466,97 @@ if __name__ == '__main__':
     l_plot_scalars = True
     if l_plot_scalars:
         vars = [
-            # (ls['omega'].sel(lev=515)    , 'w'         ,   'hPa/hour'),
-            # (ls['lw_net_toa'],             'OLR'       ,  'W/m${{^2}}$'),
-            # (ls['PW'],                     'PW'        ,   'cm'),
             (ls['u']    .sel(lev=515)    , 'u'         ,   'm/s'),
-            # (ls['r_srf'],                  'r$_{\mathrm{2m}}$', 'g/kg'),
-            # (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
-            # (ls['T_srf'],                  'T$_{\mathrm{2m}}$', '${{^\circ}}$C'),
             (ls['v']    .sel(lev=515)    , 'v'         ,   'm/s'),
             ]
 
-        fig, axes = plt.subplots(ncols=1, nrows=len(vars), sharex=True, figsize=(6, len(vars)*3))
+        fig, ax = plt.subplots(ncols=1, nrows=1, sharex=True, figsize=(6*(15/11), len(vars)*3))
 
-        for ax in axes:#m, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
+        for j in [0, 4, 9]:#range(len(bins)):#
 
-            # for j in range(1):
-            for j in range(len(bins)):#[0, 5, 9]:#
-            # for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
+            for m, (var, symbol, unit) in enumerate(vars):
+                ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
+                daily_cycle = var.where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
 
-                for m, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
-                    ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
-                    daily_cycle = var.where(rome.notnull(), drop=True).groupby(group='time.time').mean(dim='time')
-                    # daily_cycle = var.groupby(group='time.time').mean(dim='time')
-                    # del daily_cycle['percentile']
+                # allocate proper array
+                n_timesteps = 5
+                quantity = var[:2*n_timesteps+1]
 
-                    # plt.plot(daily_cycle, color='k')
+                # fill array
+                basetime = bins[j].time
 
-                    # allocate proper array
-                    n_timesteps = 5
-                    quantity = var[:2*n_timesteps+1]
+                times = basetime
+                quantity[n_timesteps] = var.sel(time=times.where(
+                                              times.isin(ls.time), drop=True
+                                          ).values).mean(dim='time')
 
-                    # fill array
-                    # basetime = rome_top_decile.time
-                    basetime = bins[j].time
-                    # basetime = rh500_sorted.where(selecting_var, drop=True).time
+                for i, hours in enumerate([6, 12, 18, 24, 30]):
+                    # times before the high-ROME time -> '-'
+                    times = basetime - np.timedelta64(hours, 'h')
+                    quantity[n_timesteps-1-i] = var.sel(time=times.where(
+                        times.isin(ls.time), drop=True
+                    ).values).mean(dim='time')
 
-                    times = basetime
-                    quantity[n_timesteps] = var.sel(time=times.where(
-                                                  times.isin(ls.time), drop=True
-                                              ).values).mean(dim='time')
+                    # times after the high-ROME time -> '+'
+                    times = basetime + np.timedelta64(hours, 'h')
+                    quantity[n_timesteps+1+i] = var.sel(time=times.where(
+                        times.isin(ls.time), drop=True
+                    ).values).mean(dim='time')
 
-                    for i, hours in enumerate([6, 12, 18, 24, 30]):
-                        # times before the high-ROME time -> '-'
-                        times = basetime - np.timedelta64(hours, 'h')
-                        quantity[n_timesteps-1-i] = var.sel(time=times.where(
-                            times.isin(ls.time), drop=True
-                        ).values).mean(dim='time')
+                if m == 0:
+                    u_wind = quantity
+                else:
+                    v_wind = quantity
+                    wind_dir = mpcalc.wind_direction(u_wind, v_wind)
+                    quantity = xr.where(wind_dir.m >= 160., wind_dir.m - 360., wind_dir.m)
 
-                        # times after the high-ROME time -> '+'
-                        times = basetime + np.timedelta64(hours, 'h')
-                        quantity[n_timesteps+1+i] = var.sel(time=times.where(
-                            times.isin(ls.time), drop=True
-                        ).values).mean(dim='time')
+            # ax.plot(quantity, lw=2.5, color=sol[colours[j]])
+            for i in range(len(quantity)):
+                ax.arrow(x=i, y=0, dx=u_wind[i], dy=v_wind[i],
+                         width=0.04,
+                         length_includes_head=True,
+                         head_width=0.08,
+                         overhang=0.2,
+                         color=sol[colours[j]])
 
-                    if m==0:
-                        u_wind = quantity
-                    else:
-                        v_wind = quantity
-                        wind_dir = mpcalc.wind_direction(u_wind, v_wind)
-                        quantity = xr.where(wind_dir.m >= 160., wind_dir.m - 360., wind_dir.m)
+        ax.axvline(x=n_timesteps, color='grey', ls='--', lw=1, zorder=-100)
 
-                l_relative_profiles = False
-                if l_relative_profiles:
-                    quantity    -= quantity[n_timesteps]
-                    daily_cycle -= daily_cycle.mean(dim='time')
+        ax.set_xlim(-3, 12)
+        ax.set_ylim(-1.2, 2)
+        # ax.set_xlim(0, 12)
+        # ax.set_ylim(-1.2, 0.)
+        ax.set_aspect('equal')
 
-                ax.plot(quantity, lw=2.5, color=sol[colours[j]])
-
-            ax.axvline(x=n_timesteps, color='grey', ls='--', lw=1, zorder=-100)
-            # plt.axes().xaxis.set_major_locator(ticker.MultipleLocator(1))
-
-            try:
-                # ax.set_ylabel(f'$\Delta(${symbol}$_{{{str(int(quantity.lev.values))}}} , \Phi)$ [{unit}]')
-                ax.set_ylabel(f'{symbol}$_{{{str(int(quantity.lev.values))}}}$ [{unit}]')
-            except AttributeError:
-                # ax.set_ylabel(f'$\Delta(${symbol}$, \Phi)$ [{unit}]')
-                ax.set_ylabel(f'{symbol} [{unit}]')
-
-            ax.axes.spines['top'].set_visible(False)
-            l_yaxis_on_left = True
-            if l_yaxis_on_left:
-                ax.axes.spines['right'].set_visible(False)
-            else:
-                ax.axhline(y=0, color='grey', ls='--', lw=1, zorder=-100)
-                ax.axes.spines['left'].set_visible(False)
-                ax.yaxis.set_label_position("right")
-                ax.yaxis.tick_right()
+        try:
+            # ax.set_ylabel(f'$\Delta(${symbol}$_{{{str(int(quantity.lev.values))}}} , \Phi)$ [{unit}]')
+            ax.set_ylabel(f'{symbol}$_{{{str(int(quantity.lev.values))}}}$ [{unit}]')
+        except AttributeError:
+            # ax.set_ylabel(f'$\Delta(${symbol}$, \Phi)$ [{unit}]')
+            # ax.set_ylabel(f'{symbol} [{unit}]')
+            ax.set_ylabel(f'|$\\vec{{u}}_{{515}}$| [m/s]')
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+        ax.set_yticklabels(['xxx', '1', '0', '1', '2'])
 
         ax.set_xlabel('Time [h]')
-        ax.set_xticklabels(['xxx', '-30', '-18', '-6',
-                                    '+6', '+18', '+30'])
-        # plt.axes().set_xticklabels(['xxx', '-30', '-24', '-18', '-12', '-6',  't(ROME)',
-        #                             '+6', '+12', '+18', '+24', '+30'])
+        ax.set_xticks([0, 2, 4, 6, 8, 10])
+        ax.set_xticklabels(['-30', '-18', '-6',
+                            '+6', '+18', '+30'])
 
-        plt.sca(axes[0])
-        plt.legend(['1. decile', '2. decile', '3. decile',
-                    '4. decile', '5. decile', '6. decile',
-                    '7. decile', '8. decile', '9. decile',
-                    '10. decile'], fontsize=8, loc='lower right')
+        ax.axes.spines['top'].set_visible(False)
+        l_yaxis_on_left = True
+        if l_yaxis_on_left:
+            ax.axes.spines['right'].set_visible(False)
+        else:
+            ax.axhline(y=0, color='grey', ls='--', lw=1, zorder=-100)
+            ax.axes.spines['left'].set_visible(False)
+            ax.yaxis.set_label_position("right")
+            ax.yaxis.tick_right()
+
+        # plt.sca(axes[0])
+        # plt.legend(['1. decile', '2. decile', '3. decile',
+        #             '4. decile', '5. decile', '6. decile',
+        #             '7. decile', '8. decile', '9. decile',
+        #             '10. decile'], fontsize=8, loc='lower right')
 
         plt.subplots_adjust(hspace=0.13)
 

@@ -14,8 +14,6 @@ home = expanduser("~")
 plt.rc('font', size=18)
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
-colours = ['yellow', 'base01']
-# colours = ['violet', 'magenta']
 
 ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
                       # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
@@ -38,7 +36,7 @@ percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea 
 
 bins = []
 # should be 2 at least
-n_bins = 2#10
+n_bins = 10
 # the percentile-separating numbers
 p_edges = np.linspace(0., 1., n_bins + 1)
 
@@ -92,7 +90,7 @@ if l_plot_scalars:
     for m, ((var, symbol, unit), ax) in enumerate(zip(vars, axes)):
 
         # for j in range(1):
-        for j in [0, 1]:#, 2]:#[0, 5, 9]:#range(len(bins)):
+        for j in [0, 4, 9]:
         # for j, selecting_var in enumerate([l_rh_low, l_rh_high]):
 
             ref_profile = var.where(rome.notnull(), drop=True).mean(dim='time')
