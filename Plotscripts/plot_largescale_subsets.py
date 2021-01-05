@@ -81,7 +81,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
+    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -155,12 +155,12 @@ if __name__ == '__main__':
         'dwind_dz'
     ]
 
-    for var in ['PW']:#ls_vars:
+    for var in ['omega']:
         # Take large-scale variable, then subset it
-        ls_var = ls[var]#.sel(lev=215)
+        ls_var = ls[var].sel(lev=515)
         rh500 = ls_var.where(rome_top_w)
         rh500_sorted =      rh500.sortby(rome_top_w, ascending=l_sort_ascending)
-        rh500_sorted = ls_var.sel(time=rh500_sorted.time.values - np.timedelta64(6, 'h'))
+        # rh500_sorted = ls_var.sel(time=rh500_sorted.time.values - np.timedelta64(6, 'h'))
 
         # Choose how many of the last (highest) ROME values to take
         n = 220 # 700 #
@@ -190,37 +190,39 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = False
+        l_plot_scatter = True
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
             if l_subselect_low_org:
                 l_neither_subset = np.logical_and(l_neither_subset, np.logical_not(l_org_low))
 
-            fig, ax = plt.subplots(figsize=(15, 5))
+            fig, ax = plt.subplots(figsize=(4.*1.5, 2.5*1.5 ))
             # ax.plot(range(len(rh500)), rh500_sorted.where(l_neither_subset),
             #         ls='', marker='x', mew=2, color=sol['cyan'])
 
             ax.plot(rome_top_w_sorted, rh500_sorted,#.where(l_neither_subset),
-                    ls='', marker='x', mew=2, color=sol['cyan'])
+                    ls='', marker='X', ms=5, color=sol['cyan'], alpha=0.8, mew=0.13)
 
             notnan = rh500_sorted.notnull().values
             correlation = np.corrcoef(rome_top_w_sorted[notnan], rh500_sorted[notnan])
             # plt.annotate('r={:.3f}'.format(correlation[0, 1]), xy=(10, 0), fontsize=12)
-            plt.text(0, 0.5, 'r={:.3f}'.format(correlation[0, 1]),
-                     fontdict={'fontsize':12}, transform=ax.transAxes)
+            # plt.text(0, 0.5, 'r={:.3f}'.format(correlation[0, 1]),
+            #          fontdict={'fontsize':12}, transform=ax.transAxes)
 
             # ax.set_title('Highest decile of ROME.')
             # ax.set_title('Highest decile of total convective area.')
-            ax.set_title('Highest decile of omega_515, less than -6.6 hPa/h.')
+            # ax.set_title('Highest decile of omega_515, less than -6.6 hPa/h.')
             # ax.set_title('Highest decile of omega_515. Difference to diurnal cycle more than -4.3 hPa/hour.')
-            # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
+
             # ax.set_xlabel('ROME [km$^2$]')
+            # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
             # ax.set_ylabel('Relative humidity at 515 hPa [1]')
-            ax.set_xlabel('ROME [km$^2$]')
             try:
                 # ax.set_ylabel(f'$\Delta(${ls_var.name}$_{{{str(int(ls_var.lev.values))}}} , \Phi)$ [{ls_var.units}], 6h earlier')
-                ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}], 6h earlier')
+                # ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}]')
+                # ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [1]')
+                ax.set_ylabel(f'w$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}]')
             except AttributeError:
                 # ax.set_ylabel(f'$\Delta(${ls_var.name}$, \Phi)$ [{ls_var.units}], 6h earlier')
                 ax.set_ylabel(f'{ls_var.name} [{ls_var.units}], 6h earlier')
@@ -239,14 +241,18 @@ if __name__ == '__main__':
                 ax.plot(rome_top_w.where(rh_at_lowROME_sorted.time[-m:]),
                         rh500.     where(rh_at_lowROME_sorted.time[-m:]), ls='', marker='o', color=sol['yellow'])
 
-            # ax.axvline(x=67, color='gray', ls='--', lw=1.5, zorder=0)
-            # ax.axvline(x=199, color='gray', ls='--', lw=1.5, zorder=0)
-            # ax.axhline(y=0, color=sol['red'], lw=1, zorder=0)
+            ax.axvline(x=56 , color='gray', ls='--', lw=1.5, zorder=0) # median
+            ax.axvline(x=154, color='gray', ls='--', lw=1.5, zorder=0) # 90th percentile
+            # ax.axhline(y=0, color='lightgray', lw=0.8, zorder=0)
+
+            ax.axes.spines['top'].set_visible(False)
+            ax.axes.spines['right'].set_visible(False)
+            ax.set_xticklabels([])
 
             try:
-                plt.savefig(home+f'/Desktop/P/omega_{ls_var.name}_{str(int(ls_var.lev.values))}.pdf', bbox_inches='tight')
+                plt.savefig(home+f'/Desktop/omega_{ls_var.name}_{str(int(ls_var.lev.values))}.pdf', bbox_inches='tight')
             except AttributeError:
-                plt.savefig(home+f'/Desktop/P/omega_{ls_var.name}.pdf', bbox_inches='tight')
+                plt.savefig(home+f'/Desktop/omega_{ls_var.name}.pdf', bbox_inches='tight')
 
             # Christian's plot of violins in each ROME-bin of the plot above
             l_christians_violins = False
@@ -463,7 +469,7 @@ if __name__ == '__main__':
             plt.savefig('/Users/mret0001/Desktop/P/'+var+'_after_ROME.pdf', bbox_inches='tight', transparent=True)
             plt.close()
 
-    l_plot_scalars = True
+    l_plot_scalars = False
     if l_plot_scalars:
         vars = [
             (ls['u']    .sel(lev=515)    , 'u'         ,   'm/s'),
