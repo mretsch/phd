@@ -59,30 +59,30 @@ rome_top_decile_sorted = rome_top_decile.sortby(rome_top_decile, ascending=l_sor
 l_plot_scalars = True
 if l_plot_scalars:
     vars = [
-        (ls['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
-        (ls['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
-        (ls['PW'],                     'PW',   'cm'),
+        # (ls['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
+        # (ls['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
+        # (ls['PW'],                     'PW',   'cm'),
         (ls['r_srf'],                  'r_2m', 'g/kg'),
-        (ls['u']    .sel(lev=990)    , 'u' ,   'm/s'),
+        # (ls['u']    .sel(lev=990)    , 'u' ,   'm/s'),
         (ls['RH']   .sel(lev=990)*100, 'RH',   '%'),
         (ls['T_srf'],                  'T_2m', 'K'),
-        (ls['p_srf_aver'],                  'p_sfc', 'hPa'),
-        # (ls['RH']   .sel(lev=215)*100, 'RH',   '%'),
-        # (ls['RH']   .sel(lev=515)*100, 'RH',   '%'),
-        # (ls['s_srf'],                  's_2m', 'K'),
+        # (ls['p_srf_aver'],                  'p_sfc', 'hPa'),
+        (ls['evap_srf']                    , 'E',   'mm/hour'),
+        (ls['drdt'].sel(lev=990),          'drdt', 'g/kg/hour'),
+        (ls['r_adv_h'].sel(lev=990),       'adv(r)', 'g/kg/hour'),
         ]
     vars_noday = [
-        (ls_noday['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
-        (ls_noday['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
-        (ls_noday['PW'],                     'PW',   'cm'),
+        # (ls_noday['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
+        # (ls_noday['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
+        # (ls_noday['PW'],                     'PW',   'cm'),
         (ls_noday['r_srf'],                  'r_2m', 'g/kg'),
-        (ls_noday['u']    .sel(lev=990)    , 'u' ,   'm/s'),
+        # (ls_noday['u']    .sel(lev=990)    , 'u' ,   'm/s'),
         (ls_noday['RH']   .sel(lev=990)*100, 'RH',   '%'),
         (ls_noday['T_srf'],                  'T_2m', 'K'),
-        (ls_noday['p_srf_aver'],                  'p_sfc', 'hPa'),
-        # (ls_noday['RH']   .sel(lev=215)*100, 'RH',   '%'),
-        # (ls_noday['RH']   .sel(lev=515)*100, 'RH',   '%'),
-        # (ls_noday['s_srf'],                  's_2m', 'K'),
+        # (ls_noday['p_srf_aver'],                  'p_sfc', 'hPa'),
+        (ls_noday['evap_srf']                    , 'E',   'mm/hour'),
+        (ls_noday['drdt'].sel(lev=990),           'drdt', 'g/kg/hour'),
+        (ls_noday['r_adv_h'].sel(lev=990),        'adv(r)', 'g/kg/hour'),
     ]
 
     fig, axes = plt.subplots(ncols=1, nrows=len(vars), sharex=True, figsize=(6, len(vars)*3))
