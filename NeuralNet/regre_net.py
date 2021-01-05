@@ -255,6 +255,8 @@ else:
     if l_sort_input_percentage:
         # sort the first time step, which is first half of data. Reverse index because I want descending order.
         first_half_order = np.unique(spread[:(n_lev // 2)], return_index=True)[1][::-1]
+        # first_half_order = np.unique(abs(p50[:(n_lev // 2)]), return_index=True)[1][::-1]
+
         # apply same order to second time step, which is in second half of data
         second_half_order = first_half_order + (n_lev // 2)
         sort_index = np.concatenate((first_half_order, second_half_order))

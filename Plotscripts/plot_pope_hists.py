@@ -2,6 +2,7 @@ from os.path import expanduser
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+from Plotscripts.colors_solarized import sol
 from Plotscripts.plot_hist import histogram_1d
 from basic_stats import into_pope_regimes, interpolate_repeating_values
 home = expanduser("~")
@@ -93,7 +94,7 @@ if l_hists_side_by:
                '9. Decile',
                '10. Decile',
                ])
-    ax.legend()
+    ax.legend(fontsize=10)
     ax.set_xticklabels(('xxx', '(DE)', 'DW', '(E)', 'SW', 'ME'))
 
 save = True
