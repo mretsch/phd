@@ -220,7 +220,7 @@ if __name__ == '__main__':
             ls = ls_sub
 
         var1 = ls.omega.sel(lev=515)
-        var2 = ls.lw_net_toa#RH.sel(lev=515)##PW#h2o_adv_col
+        var2 = ls.RH.sel(lev=515)#PW#lw_net_toa##h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -235,10 +235,19 @@ if __name__ == '__main__':
             # var1 = var1[var1 < 800.]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
+
+            # # remove false data in precipitable water
+            # var2.loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+            # var2.loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+            # var2.loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+            # var2.loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+            # var2.loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+            # var2.loc[{'time': slice('2015-01-05T00', None)}] = np.nan
+
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=24,# 37,#23,
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=18,# 37,#23,
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
                                       y_label=var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')

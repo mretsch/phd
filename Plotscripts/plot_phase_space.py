@@ -77,7 +77,7 @@ def return_phasespace_plot():
     plt.rc('legend', fontsize=18)
     # plt.style.use('dark_background')
 
-    the_plot = ps_overlay.T.plot(cmap='rainbow', # 'gist_yarg_r', #'gray_r', #'inferno',# (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
+    the_plot = ps_overlay.T.plot(#cmap='rainbow', # 'gist_yarg_r', #'gray_r', #'inferno',# (robust=True)  # (cmap='coolwarm_r', 'gnuplot2', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=0., vmax=1.)
 
@@ -88,7 +88,7 @@ def return_phasespace_plot():
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
     # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
-    plt.ylabel('OLR [W/m2]')
+    plt.ylabel('RH_515 [%]')
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
     the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
