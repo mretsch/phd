@@ -122,6 +122,14 @@ metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons
 # add quantity symbols to large-scale dataset
 ds_ls = add_variable_symbol_string(ds_ls)
 
+# remove false data in precipitable water
+ds_ls['PW'].loc[{'time': slice(None           , '2002-02-27T12')}] = np.nan
+ds_ls['PW'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+ds_ls['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+ds_ls['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+ds_ls['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+ds_ls['PW'].loc[{'time': slice('2015-01-05T00', None           )}] = np.nan
+
 
 l_remove_diurnal_cycle = False
 if l_remove_diurnal_cycle:
@@ -138,15 +146,15 @@ if l_remove_diurnal_cycle:
 
 ls_vars = [
            'omega',
-           'u',
-           'v',
-           's',
-           'RH',
-           's_adv_h',
-           'r_adv_h',
-           'dsdt',
-           'drdt',
-           'dwind_dz'
+           # 'u',
+           # 'v',
+           # 's',
+           # 'RH',
+           # 's_adv_h',
+           # 'r_adv_h',
+           # 'dsdt',
+           # 'drdt',
+           # 'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
 ls_times = 'same_and_earlier_time'
@@ -197,7 +205,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=33, batch_size=40, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=150, batch_size=40, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -210,7 +218,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_w_olr_pw/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -220,6 +228,7 @@ else:
     assert needed_input_size == input_length, 'Provided input to model does not match needed input size.'
 
     predicted = xr.open_dataarray(model_path + 'predicted.nc')
+    # predicted = predicted[predicted.time.isin(predictor.time)]
 
     l_high_values = True
     if l_high_values:
@@ -262,6 +271,16 @@ else:
         sort_index = np.concatenate((first_half_order, second_half_order))
         input_percentages = input_percentages[:, sort_index]
 
+    # grab some variables explicitly
+    # olr = predictor[:, 36]
+    # r2m = predictor[:, 35]
+    # u990 = predictor[:, 5]
+    # pw = predictor[:, 46]
+    # v515 = predictor[:, 7]
+    # w515 = predictor[:, 1]
+    # rh215 = predictor[:, 11]
+    # rh515 = predictor[:, 12]
+
     # ===== Plots =====================
 
     l_violins = True \
@@ -271,8 +290,8 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 47,#5,#13,# 50, #30, #26, #9, #23, #
-                                xlim=45,
+                                n_profile_vars= 3,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                xlim=80,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,

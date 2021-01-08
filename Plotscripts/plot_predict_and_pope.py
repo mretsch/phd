@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
-model_path = '/Documents/Data/NN_Models/ROME_Models/Only_7Influential/'
+model_path = '/Documents/Data/NN_Models/ROME_Models/Only_w_olr_pw/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
 mlr_predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
