@@ -13,8 +13,8 @@ def return_phasespace_plot():
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/515rh_515omega_hist_gt8.nc')
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/adv_h2o_s_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/omega_pw_25bin5per_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
     rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
@@ -25,8 +25,9 @@ def return_phasespace_plot():
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25 \
     #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
-    model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
-    da = xr.open_dataarray(home + model_path + 'predicted.nc')
+    # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
+    # da = xr.open_dataarray(home + model_path + 'predicted.nc')
+    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     subselect = True
     if subselect:
@@ -62,7 +63,7 @@ def return_phasespace_plot():
                                               overlay=overlay,
                                               overlay_x=overlay['x_bins'],
                                               overlay_y=overlay['y_bins'],
-                                              l_probability=True,
+                                              l_probability=False,
                                               upper_bound=10000.,
                                               lower_bound=np.percentile(overlay, 90))
                                               # lower_bound=-10000.)
@@ -81,17 +82,20 @@ def return_phasespace_plot():
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=0., vmax=1.)
 
-    plt.xlabel('$\omega$ at 515 hPa [hPa/h]')
+    plt.xlabel('$\omega_{515}$ [hPa/h]')
     # plt.xlabel('$\Delta(\omega, \Phi)$ at 515 hPa [hPa/h]')
     # plt.xlabel('Avg. object area [km$^2$]')
     # plt.xlabel('Dry static energy, 990 hPa [K]')
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
     # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
-    plt.ylabel('RH_515 [%]')
+    # plt.ylabel('RH$_{515}$ [%]')
+    plt.ylabel('PW [cm]')
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
-    the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
+    # the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
+    # the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
+    the_plot.colorbar.set_label('ROME [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
     # the_plot.colorbar.set_label(da.long_name+', 515 hPa [1]')
 

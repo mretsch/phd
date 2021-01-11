@@ -61,7 +61,7 @@ if l_plot_scalars:
     vars = [
         (ls['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
         (ls['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
-        (ls['r_srf'],                  'r_2m', 'g/kg'),
+        (ls['r_srf'],                  'r${{_\\mathrm{2m}}}$', 'g/kg'),
         (ls['PW'],                     'PW',   'cm'),
         (ls['RH']   .sel(lev=215)*100, 'RH',   '%'),
         (ls['v']    .sel(lev=515)    , 'v' ,   'm/s'),
@@ -75,7 +75,7 @@ if l_plot_scalars:
     vars_noday = [
         (ls_noday['omega'].sel(lev=515)    , 'w' ,   'hPa/hour'),
         (ls_noday['lw_net_toa'],             'OLR',  'W/m${{^2}}$'),
-        (ls_noday['r_srf'],                  'r_2m', 'g/kg'),
+        (ls_noday['r_srf'],                  'r${{_\\mathrm{2m}}}$', 'g/kg'),
         (ls_noday['PW'],                     'PW',   'cm'),
         (ls_noday['RH']   .sel(lev=215)*100, 'RH',   '%'),
         (ls_noday['v']    .sel(lev=515)    , 'v' ,   'm/s'),
@@ -170,12 +170,13 @@ if l_plot_scalars:
     #                             '+6', '+12', '+18', '+24', '+30'])
 
     plt.sca(axes[0])
-    plt.legend(['1. Decile (D1)', 'Diurnal cycle in D1',
-                '5. Decile (D5)', 'Diurnal cycle in D5',
-                '10. Decile (D10)', 'Diurnal cycle in D10',
-               ], fontsize=8, loc='lower right', markerfirst=False)
+    # labels starting with underscore omit these specific label strings
+    plt.legend(['1. Decile', '_Diurnal cycle in D1',
+                '5. Decile', '_Diurnal cycle in D5',
+                '10. Decile', '_Diurnal cycle in D10',
+               ], fontsize=14, loc='lower right', markerfirst=False)
 
-    plt.subplots_adjust(hspace=0.13)
+    plt.subplots_adjust(hspace=0.16)
 
     # plt.savefig('/Users/mret0001/Desktop/'+var.long_name[:3]+'_afterbefore_ROME.pdf', bbox_inches='tight', transparent=True)
     plt.savefig('/Users/mret0001/Desktop/afterbefore_ROME.pdf', bbox_inches='tight', transparent=True)
