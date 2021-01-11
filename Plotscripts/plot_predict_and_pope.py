@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
-model_path = '/Documents/Data/NN_Models/ROME_Models/Only_w_olr_pw/'
+model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/SecondModel/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
 mlr_predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
@@ -39,16 +39,16 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-plot_length = 1200
-plot_index = slice(None, 1200)
+plot_length = 200
+plot_index = slice(950, 1150)
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(72, 4), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(36, 4), sharex=True, sharey=True)
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 for i, ax in enumerate([axes]):
     ax.plot(rome             [plot_index], color='k', lw=3)
     # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
-    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=1.5)
+    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=4.5)
     # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
     # ax.plot(    predicted[-1200:], color='red')
 
