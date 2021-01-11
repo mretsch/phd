@@ -146,15 +146,15 @@ if l_remove_diurnal_cycle:
 
 ls_vars = [
            'omega',
-           # 'u',
-           # 'v',
-           # 's',
-           # 'RH',
-           # 's_adv_h',
-           # 'r_adv_h',
-           # 'dsdt',
-           # 'drdt',
-           # 'dwind_dz'
+           'u',
+           'v',
+           's',
+           'RH',
+           's_adv_h',
+           'r_adv_h',
+           'dsdt',
+           'drdt',
+           'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
 ls_times = 'same_and_earlier_time'
@@ -205,7 +205,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=150, batch_size=40, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=40, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -218,7 +218,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Only_w_olr_pw/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/SecondModel/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -272,14 +272,14 @@ else:
         input_percentages = input_percentages[:, sort_index]
 
     # grab some variables explicitly
-    # olr = predictor[:, 36]
-    # r2m = predictor[:, 35]
-    # u990 = predictor[:, 5]
-    # pw = predictor[:, 46]
-    # v515 = predictor[:, 7]
-    # w515 = predictor[:, 1]
-    # rh215 = predictor[:, 11]
-    # rh515 = predictor[:, 12]
+    olr = predictor[:, 36]
+    r2m = predictor[:, 35]
+    u990 = predictor[:, 5]
+    pw = predictor[:, 46]
+    v515 = predictor[:, 7]
+    w515 = predictor[:, 1]
+    rh215 = predictor[:, 11]
+    rh515 = predictor[:, 12]
 
     # ===== Plots =====================
 
@@ -290,8 +290,8 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_and_earlier_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 3,#47,#5,#13,# 50, #30, #26, #9, #23, #
-                                xlim=80,
+                                n_profile_vars= 9,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,
