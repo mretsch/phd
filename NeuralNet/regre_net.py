@@ -157,7 +157,7 @@ ls_vars = [
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
-ls_times = 'same_and_earlier_time'
+ls_times = 'same_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
@@ -205,7 +205,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=40, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=40, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -218,7 +218,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/SecondModel/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/Same_Time/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -269,6 +269,10 @@ else:
         # apply same order to second time step, which is in second half of data
         second_half_order = first_half_order + (n_lev // 2)
         sort_index = np.concatenate((first_half_order, second_half_order))
+
+        if ls_times == 'same_time':
+            sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
+
         input_percentages = input_percentages[:, sort_index]
 
     # grab some variables explicitly
@@ -288,9 +292,9 @@ else:
     plot = contribution_whisker(input_percentages=input_percentages,
                                 levels=predictor.lev.values[sort_index],
                                 long_names=predictor['symbol'][sort_index],
-                                ls_times='same_and_earlier_time',
+                                ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 9,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars= 47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
