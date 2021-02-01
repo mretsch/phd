@@ -11,7 +11,7 @@ import skimage.measure as skm
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
-import artificial_fields as af
+# import artificial_fields as af
 # import random_fields as rf
 
 
