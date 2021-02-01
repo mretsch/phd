@@ -11,7 +11,7 @@ import skimage.measure as skm
 import scipy as sp
 import shapely.geometry as spg
 import shapely.ops as spo
-import artificial_fields as af
+# import artificial_fields as af
 # import random_fields as rf
 
 
@@ -508,12 +508,12 @@ if __name__ == '__main__':
 
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rom_limod': False, 'rom_el': False,
-              'iorg': False, 'scai': True, 'rom': False, 'basics': False,
+              'iorg': False, 'scai': False, 'rom': False, 'basics': True,
               'boundary': False}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Documents/Data/Steiner_Earlier/*season*")
+                            file=home+"/Documents/Data/Steiner/CPOL_STEINER_ECHO_CLASSIFICATION_19981206.nc")
 
     # save metrics as netcdf-files
     save = True
