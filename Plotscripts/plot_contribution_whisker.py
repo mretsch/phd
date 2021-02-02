@@ -16,7 +16,7 @@ def contribution_whisker(input_percentages, levels, long_names,
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42 * 9/47.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 42))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 42 * 7/47.  ))
         axes = [axes]
         n_lev_onetime = n_lev_total
 
@@ -101,10 +101,10 @@ def contribution_whisker(input_percentages, levels, long_names,
 
         ax.set_yticks(list(range(len(var_to_plot))))
         if i == 0:
-            ax.set_yticklabels(label_list)
+            ax.set_yticklabels(label_list[:len(var_to_plot)])
             # plt.text(0.8, 0.85, 'Same\ntime', transform=ax.transAxes,
             #          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-            ax.axes.set_title('Time of R$_\mathrm{NN}$')
+            # ax.axes.set_title('Time of R$_\mathrm{NN}$')
         else:
             ax.set_yticklabels([])
             # plt.text(0.7, 0.85, '6 hours\nearlier', transform=ax.transAxes,
@@ -117,10 +117,10 @@ def contribution_whisker(input_percentages, levels, long_names,
         legend = ax.legend()
         legend.remove()
 
-    xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
-    xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
-    for ax in axes:
-        ax.set_xlim(xlim_low, xlim_upp)
+    # xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
+    # xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
+    # for ax in axes:
+    #     ax.set_xlim(xlim_low, xlim_upp)
 
     plt.subplots_adjust(wspace=0.05)
 
