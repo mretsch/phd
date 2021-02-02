@@ -12,22 +12,24 @@ def return_phasespace_plot():
 
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/515rh_515omega_hist_gt8.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/omega_pw_25bin5per_hist.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/hist_18bin4per.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/omega_pw_25bin5per_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
     rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
-    # ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
-    #                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
+                            'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    # da    = ls['cin']
     # da    = ls['lw_net_toa'].resample(time='10min').interpolate('linear')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
-    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25 \
-    #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
+    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area_avg6h.nc') * 6.25# \
+    #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number_avg6h.nc')
     # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
     # da = xr.open_dataarray(home + model_path + 'predicted.nc')
-    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     subselect = True
     if subselect:
@@ -48,8 +50,8 @@ def return_phasespace_plot():
 
     phase_space = ds_ps.hist_2D
 
-    # overlay = da #.rom_kilometres #.RH.sel(lev=515) #conv_intensity #conv_intensity # div.sel(lev=845) # .where(da.cop_mod < 60.)
-    overlay = rome
+    overlay = da#.rom_kilometres #.RH.sel(lev=515) #conv_intensity #conv_intensity # div.sel(lev=845) # .where(da.cop_mod < 60.)
+    # overlay = rome
 
     # give the overlay time series information about the placements of the bins for each time step
     overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins[ds_ps.time.isin(da_sub.time)].values)
@@ -89,13 +91,16 @@ def return_phasespace_plot():
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
     # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
-    # plt.ylabel('RH$_{515}$ [%]')
-    plt.ylabel('PW [cm]')
+    plt.ylabel('RH$_{515}$ [1]')
+    # plt.ylabel('PW [cm]')
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
     # the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
     # the_plot.colorbar.set_label('Probability of highest ROME decile [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
-    the_plot.colorbar.set_label('ROME [km$^2$]')
+    # the_plot.colorbar.set_label('ROME [km$^2$]')
+    # the_plot.colorbar.set_label('CIN')
+    # the_plot.colorbar.set_label('Number of objects [1]')
+    the_plot.colorbar.set_label('Mean object area [km$^2$]')
     # the_plot.colorbar.set_label(da.long_name+' ['+da.units+']')
     # the_plot.colorbar.set_label(da.long_name+', 515 hPa [1]')
 

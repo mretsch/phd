@@ -126,7 +126,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
                          np.linspace(start=0., stop=max(x_series_max, y_series_max), num=nbins+1)]
         else:
             bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
-                         np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
+                         np.linspace(start=0., stop=1., num=nbins+1)]
         # bin_edges = [np.linspace(start=0., stop=250, num=nbins+1),
         #              np.linspace(start=0., stop=250, num=nbins+1)]
     else:
@@ -147,7 +147,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=4)
+                                                         l_cut_off=True, cut_off=2000)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -213,7 +213,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = False
+    hist_2d = True
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#_NoDailyCycle.nc')
@@ -225,8 +225,8 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.omega.sel(lev=515)
-        var2 = ls.RH.sel(lev=515)#PW#lw_net_toa##h2o_adv_col
+        var1 = ls.omega.sel(lev=515).resample(time='10min').interpolate('linear')
+        var2 = ls.RH.sel(lev=515).resample(time='10min').interpolate('linear') #PW#lw_net_toa##h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -239,6 +239,7 @@ if __name__ == '__main__':
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
             # var1 = var1[var1 < 800.]
+            var1 = var1[(-10 < var1) & (var1 < 5)]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
 
@@ -253,7 +254,7 @@ if __name__ == '__main__':
             var1 = var1.where(var2)
             var2 = var2.where(var1)
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=18,# 37,#23,
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=9,# 37,#23,
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
                                       y_label=var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
@@ -263,7 +264,7 @@ if __name__ == '__main__':
         fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = True
+    hist_1d = False
     if hist_1d:
         #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         # var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
