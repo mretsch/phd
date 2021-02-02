@@ -33,7 +33,7 @@ var_strings = [
 # 's'
 # ,'u'
 # ,'v'
-'omega'
+# 'omega'
 # ,'div'
 # ,'T_adv_h'
 # ,'T_adv_v'
@@ -44,7 +44,7 @@ var_strings = [
 # ,'dTdt'
 # ,'dsdt'
 # ,'drdt'
-# ,'RH'
+'RH'
 # ,'dwind_dz'
 # 'wind_dir'
 ]
@@ -116,6 +116,7 @@ for var in var_strings:
     plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
     # plt.xlabel(ls_sub[var].long_name+' deviation from average, [K/K]')
     # plt.xlabel('Wind direction, [degrees]')
+    plt.xlim((0.28, 0.82))
 
     plt.legend(['1. decile', '2. decile', '3. decile',
                 '4. decile', '5. decile', '6. decile',
