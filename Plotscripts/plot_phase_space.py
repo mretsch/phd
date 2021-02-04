@@ -12,19 +12,22 @@ def return_phasespace_plot():
 
     # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/hist_18bin4per.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/omega_pw_25bin5per_hist.nc')
-    # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
+    ds_ps = xr.open_dataset(home+'/Desktop/LikeValentin_WithBoundary/hist.nc')
 
-    rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    # da=rome
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     # da    = ls['cin']
     # da    = ls['lw_net_toa'].resample(time='10min').interpolate('linear')
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_intensity.nc')
-    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/o_area.nc') * 6.25
+    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
     # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area_avg6h.nc') * 6.25# \
     #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number_avg6h.nc')
     # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
@@ -43,6 +46,7 @@ def return_phasespace_plot():
         l_histogram = True
         if l_histogram:
             # ds_sub = da.sel(time=ds_ps.time)
+            da = da[da.notnull()]
             da_sub = da[da.time.isin(ds_ps.time)]
 
         da = da_sub

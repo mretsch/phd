@@ -126,9 +126,9 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
                          np.linspace(start=0., stop=max(x_series_max, y_series_max), num=nbins+1)]
         else:
             bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
-                         np.linspace(start=0., stop=1., num=nbins+1)]
-        # bin_edges = [np.linspace(start=0., stop=250, num=nbins+1),
-        #              np.linspace(start=0., stop=250, num=nbins+1)]
+                         np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
+        bin_edges = [np.linspace(start=-10., stop=5, num=nbins+1),
+                     np.linspace(start=0., stop=1., num=nbins+1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -147,7 +147,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=2000)
+                                                         l_cut_off=True, cut_off=2000)#60)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -233,13 +233,14 @@ if __name__ == '__main__':
         # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
         # var2 = xr.open_dataarray(home + model_path + 'predicted.nc')
         # var1 = var1.where(var2)
+        # var2 *= -1.
 
         l_no_singlepixel = True
         if l_no_singlepixel:
             # don't take scenes where convection is 1 pixel large only
             # var1 = var1[var1 != 6.25]
             # var1 = var1[var1 < 800.]
-            var1 = var1[(-10 < var1) & (var1 < 5)]
+            # var1 = var1[(-10 < var1) & (var1 < 5)]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
 
@@ -251,8 +252,11 @@ if __name__ == '__main__':
             # var2.loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
             # var2.loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
-            var1 = var1.where(var2)
-            var2 = var2.where(var1)
+            # var1 = var1.where(var2)
+            # var2 = var2.where(var1)
+            both_valid = var1.notnull() & var2.notnull()
+            var1 = var1[both_valid]
+            var2 = var2[both_valid]
 
         fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=9,# 37,#23,
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
