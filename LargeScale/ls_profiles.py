@@ -56,7 +56,7 @@ for var in var_strings:
     if l_percentage_profiles:
         ref_profile = ls[var].mean(dim='time')
 
-    for i in range(n_bins):
+    for i in [0, 5, 9]:# range(n_bins):
         print(var)
 
         l_earlier_time = False
@@ -100,12 +100,19 @@ for var in var_strings:
                 plt.axes().set_xticks(tick_degrees)
                 plt.axes().set_xticklabels(tick_labels)
         else:
-            profile_to_plot =  ls_sub[var][:, :-1].mean(dim='time')
+            data_to_plot = ls_sub[var][:, :-1]
+            profile_to_plot =  data_to_plot.mean(dim='time')
 
             if l_percentage_profiles:
-                profile_to_plot = (ls_sub[var][:, :-1].mean(dim='time') / ref_profile) - 1
+                profile_to_plot = (data_to_plot.mean(dim='time') / ref_profile) - 1
+
+            # lower_band = [np.nanpercentile(series, q=25) for series in data_to_plot.transpose()]
+            # upper_band = [np.nanpercentile(series, q=75) for series in data_to_plot.transpose()]
+            lower_band = [series.mean() - 0.5*series.std() for series in data_to_plot.transpose()]
+            upper_band = [series.mean() + 0.5*series.std() for series in data_to_plot.transpose()]
 
             plt.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
+            plt.fill_betweenx(y=ls_sub.lev[:-1], x1=lower_band, x2=upper_band, alpha=0.1)
 
     plt.gca().invert_yaxis()
     if l_earlier_time:
