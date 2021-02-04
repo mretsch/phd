@@ -10,13 +10,19 @@ def contribution_whisker(input_percentages, levels, long_names,
     if ls_times not in ['same_time', 'same_and_earlier_time', 'only_earlier_time', 'only_later_time', 'all_ls']:
         raise ValueError("String ls_times to select large-scale time steps does not match or is not provided.")
 
+    dim1, dim2 = input_percentages.dims
+    if dim1 != 'time':
+        height_dim = dim1
+    else:
+        height_dim = dim2
+
     plt.rc('font', size=19)
 
     if ls_times == 'same_and_earlier_time':
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42 * 9/47.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 42 * 7/47.  ))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 82))# * 7/47.  ))
         axes = [axes]
         n_lev_onetime = n_lev_total
 
@@ -53,7 +59,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             # rename columns
             if not l_eof_input:
                 df.columns = np.char.add(input_percentages[:, var_to_plot].long_name,
-                                         input_percentages[:, var_to_plot].lev.astype(str))
+                                         input_percentages[:, var_to_plot][height_dim].astype(str))
                 # df.columns = input_percentages[:, var_to_plot].long_name
             else:
                 df.columns = ['Pattern '+str(i) for i in range(1, len(var_to_plot) + 1)]
@@ -84,7 +90,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             label_list = []
             for element1, element2 in zip(long_names.values, levels):
                 # the profile-input to NN only has pressure down to 215hPa. And scalars got 'levels' below 100 earlier.
-                if element2 > 100.:
+                if element2 >= 0.:
                     label_list.append(
                         element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa '
                     )

@@ -112,11 +112,17 @@ def remove_diurnal(series, dailycycle):
 home = expanduser("~")
 start = timeit.default_timer()
 
+l_profiles_as_eof=True
+if l_profiles_as_eof:
+    height_dim = 'number'
+else:
+    height_dim = 'lev'
+
 # assemble the large scale dataset
-ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
+                         'CPOL_large-scale_forcing_noDailyCycle_profilesEOF.nc')
+#                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 # add quantity symbols to large-scale dataset
@@ -162,11 +168,16 @@ predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   large_scale_time=ls_times)
+                                                   large_scale_time=ls_times,
+                                                   l_profiles_as_eof=l_profiles_as_eof)
 
 l_subselect = True
 if l_subselect:
-    predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
+    predictor = subselect_ls_vars(predictor,
+                                  long_names,
+                                  levels_in=[215, 515, 990],
+                                  large_scale_time=ls_times,
+                                  l_profiles_as_eof=l_profiles_as_eof)
 
 l_eof_input = False
 if l_eof_input:
@@ -185,7 +196,7 @@ if l_eof_input:
     predictor = predictor[target.notnull()]
     target    = target   [target.notnull()]
 
-n_lev = len(predictor['lev'])
+n_lev = len(predictor['number'])
 
 l_loading_model = True
 if not l_loading_model:
@@ -205,7 +216,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=10, batch_size=40, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=4, batch_size=5, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -218,7 +229,7 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/Same_Time/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_LWDown/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -243,7 +254,7 @@ else:
         l_input_positive [i, :] = (model_input > 0.).values
 
     positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
-    for i, _ in enumerate(positive_positive_ratio.lev):
+    for i, _ in enumerate(positive_positive_ratio['number']):
         positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_percentages[:, i] > 0.)).sum() \
                                       /  l_input_positive[:, i].sum()
         positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_percentages[:, i] < 0.)).sum() \
@@ -290,11 +301,11 @@ else:
     l_violins = True \
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
-                                levels=predictor.lev.values[sort_index],
+                                levels=predictor['number'].values[sort_index],
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 7,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars= 81,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
