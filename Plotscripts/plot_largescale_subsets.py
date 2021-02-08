@@ -81,7 +81,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
+    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = True
+        l_plot_scatter = False
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -284,6 +284,28 @@ if __name__ == '__main__':
                 idx = longset[longset.index.isin(dummy[480:   ].time.values)].index
                 longset.loc[idx, 'category'] = 3
                 sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
+
+    l_plot_boxwhisker = True
+    if l_plot_boxwhisker:
+        df = pd.DataFrame()
+
+        var = ls['cape']
+        dataseries = []
+        for i in range(10):
+            times = bins[i].time
+
+            dataseries.append(var.sel(time=times.where(
+                times.isin(ls.time), drop=True
+            ).values).to_pandas())
+
+        df = pd.DataFrame(dataseries).transpose()
+        sns.boxplot(data=df)
+
+        plt.ylabel('CAPE')
+        plt.xlabel('ROME deciles')
+
+        plt.savefig(home + '/Desktop/whisker_romedeciles.pdf', bbox_inches='tight')
+
 
     l_plot_venn= False
     if l_plot_venn:
