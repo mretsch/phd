@@ -31,7 +31,7 @@ var_strings = [
 # 'T'
 # ,'r'
 # 's'
-# ,'u'
+# 'u'
 # ,'v'
 # 'omega'
 # ,'div'
@@ -43,10 +43,10 @@ var_strings = [
 # ,'s_adv_v'
 # ,'dTdt'
 # ,'dsdt'
-# ,'drdt'
-'RH'
+# 'drdt'
+# 'RH'
 # ,'dwind_dz'
-# 'wind_dir'
+'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -56,7 +56,8 @@ for var in var_strings:
     if l_percentage_profiles:
         ref_profile = ls[var].mean(dim='time')
 
-    for i in [0, 5, 9]:# range(n_bins):
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(3, 6 * (15 / 11)))
+    for i in [0, 9, 4]:# range(n_bins):#
         print(var)
 
         l_earlier_time = False
@@ -70,6 +71,8 @@ for var in var_strings:
         if var == 'wind_dir':
             u_mean = ls_sub['u'][:, :-1].mean(dim='time')
             v_mean = ls_sub['v'][:, :-1].mean(dim='time')
+            u_std  = ls_sub['u'][:, :-1].std (dim='time')
+            v_std  = ls_sub['v'][:, :-1].std (dim='time')
             direction    = xr.full_like(v_mean, np.nan)
             direction[:] = mpcalc.wind_direction(u_mean, v_mean)
             dir_diff = direction.sel(lev=slice(None, 965)).values - direction.sel(lev=slice(65, None)).values
@@ -88,17 +91,33 @@ for var in var_strings:
             ##     direction.loc[465:540] = direction.loc[465:540] - 180
 
             speed = np.sqrt((u_mean**2 + v_mean**2))
+            speed_std = np.sqrt((u_std**2 + v_std**2))
+
             l_wind_speed = False
             if l_wind_speed:
                 plot_var = speed
             else:
                 plot_var = direction
-            plt.plot(plot_var, ls_sub.lev[:-1], color=sol[colours[i]])
-            if not l_wind_speed:
-                tick_degrees = np.arange(-45, 540, 45)
-                tick_labels = ['NW', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
-                plt.axes().set_xticks(tick_degrees)
-                plt.axes().set_xticklabels(tick_labels)
+
+            # plt.plot(plot_var, ls_sub.lev[:-1], color=sol[colours[i]])
+            for level in ls_sub.lev[:-1]:
+                # the minus for dy is necessary when later we apply invert_yaxis() but want to retain arrow direction
+                ax.arrow(x=0, y=level/10., dx=u_mean.sel(lev=level), dy=-v_mean.sel(lev=level),
+                         width=0.04,
+                         length_includes_head=True,
+                         head_width=0.08,
+                         overhang=0.2,
+                         color=sol[colours[i]])
+
+            # lower_band = speed - 0.5*speed_std
+            # upper_band = speed + 0.5*speed_std
+            # plt.fill_betweenx(y=ls_sub.lev[:-1], x1=lower_band, x2=upper_band, alpha=0.1)
+
+            # if not l_wind_speed:
+            #     tick_degrees = np.arange(-45, 540, 45)
+            #     tick_labels = ['NW', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
+            #     plt.axes().set_xticks(tick_degrees)
+            #     plt.axes().set_xticklabels(tick_labels)
         else:
             data_to_plot = ls_sub[var][:, :-1]
             profile_to_plot =  data_to_plot.mean(dim='time')
@@ -114,21 +133,22 @@ for var in var_strings:
             plt.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
             plt.fill_betweenx(y=ls_sub.lev[:-1], x1=lower_band, x2=upper_band, alpha=0.1)
 
+    ax.set_aspect('equal')
+    ax.set_yticks(list(range(20, 120, 20)))
+    ax.set_yticklabels(list(range(200, 1200, 200)))
+    ax.set_xticks([-10, -5, 0])
+    ax.set_xticklabels([10, 5, 0])
     plt.gca().invert_yaxis()
-    if l_earlier_time:
-        plt.title('6 hours before prediction')
-    else:
-        plt.title('Same time as prediction')
     plt.ylabel('Pressure [hPa]')
-    plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
     # plt.xlabel(ls_sub[var].long_name+' deviation from average, [K/K]')
-    # plt.xlabel('Wind direction, [degrees]')
-    plt.xlim((0.28, 0.82))
+    plt.xlabel('|$\\vec{{u}}$| [m/s]')
+    # plt.xlim((0.28, 0.82))
 
-    plt.legend(['1. decile', '2. decile', '3. decile',
-                '4. decile', '5. decile', '6. decile',
-                '7. decile', '8. decile', '9. decile',
-                '10. decile'], fontsize=9)
+    # plt.legend(['1. decile', '2. decile', '3. decile',
+    #             '4. decile', '5. decile', '6. decile',
+    #             '7. decile', '8. decile', '9. decile',
+    #             '10. decile'], fontsize=9)
 
     plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight', transparent=True)
     plt.close()
