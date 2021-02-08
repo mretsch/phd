@@ -22,7 +22,7 @@ def contribution_whisker(input_percentages, levels, long_names,
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42 * 9/47.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 82))# * 7/47.  ))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 82 * n_profile_vars/82 ))# * 7/47.  ))
         axes = [axes]
         n_lev_onetime = n_lev_total
 
@@ -90,9 +90,9 @@ def contribution_whisker(input_percentages, levels, long_names,
             label_list = []
             for element1, element2 in zip(long_names.values, levels):
                 # the profile-input to NN only has pressure down to 215hPa. And scalars got 'levels' below 100 earlier.
-                if element2 >= 0.:
+                if element2 < 3.:
                     label_list.append(
-                        element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa '
+                        element1.replace('            ', '') + ', ' + str(int(element2)+1) + '. EOF'
                     )
                 else:
                     label_list.append(

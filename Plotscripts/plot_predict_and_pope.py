@@ -14,7 +14,7 @@ ghome = home+'/Google Drive File Stream/My Drive'
 
 rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
-model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_LWDown/'
+model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
 mlr_predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
@@ -40,7 +40,7 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 plt.rc('font', size=24)
 
 plot_length = 1200
-plot_index = slice(-1200, None)
+plot_index = slice(None, 1200)
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
 fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)

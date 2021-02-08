@@ -225,25 +225,25 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         'Convective Inhibition',
         'Convective Available Potential Energy',
         # '515 hPa Downward CAPE',                    # correlation to other variables higher than 0.8
-        'Satellite-measured low cloud',
+        # 'Satellite-measured low cloud',
         # 'Surface downwelling LW',                   # correlated -0.64 to OLR
-        '10m wind speed',
+        # '10m wind speed',
         '10m V component',
-        '2m water vapour mixing ratio',
+        # '2m water vapour mixing ratio',
         'TOA LW flux, upward positive',                # without10important; OLR is just chicken-egg so leave out
         'Surface sensible heat flux, upward positive', # without10important
         'MWR-measured cloud liquid water path',
 
         'Surface latent heat flux, upward positive',
-        'Surface pressure averaged over the domain',
-        '2m air temperature',
+        # 'Surface pressure averaged over the domain',
+        # '2m air temperature',
         # 'Surface skin temperature',                 # correlation to other variables higher than 0.8
         # '2m air relative humidity',                 # correlation to other variables higher than 0.8
         '10m U component',
         # 'Surface net radiation, downward positive', # correlation to other variables higher than 0.8
         # 'TOA net SW flux, downward positive',       # correlation to other variables higher than 0.8
         'Satellite-measured middle cloud',
-        'Satellite-measured high cloud',
+        # 'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
         # 'Column-integrated dH2O/dt',                  # without10important; leave out TWP stuff
         # 'Column-integrated H2O advection',            # without10important; dont understand its calculation so leave out
@@ -252,7 +252,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
         # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
         # 'Column latent heating',                    # correlation to other variables higher than 0.8
-        '2m dry static energy',                       # without10important
+        # '2m dry static energy',                       # without10important
         'MWR-measured column precipitable water',
         # 'Surface upwelling LW',                     # correlation to other variables higher than 0.8
         # 'Surface downwelling SW',                   # has same long_name as sw_dn_srf (according to statsmodels)
@@ -312,22 +312,26 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
             string_selection = ', 6h   later'
 
         for profile_string in profiles:
-            if profile_string != 'Vertical wind shear':
-                levels = levels_in
-                if profile_string == 'Dry static energy':  # dont take 990hPa of s because it's correlated to RH_990
-                    levels = levels_in[:-1]
-            else:
-                levels = levels_in[:-1] + [965]
-
             if not l_profiles_as_eof:
+                if profile_string != 'Vertical wind shear':
+                    levels = levels_in
+                    if profile_string == 'Dry static energy':  # dont take 990hPa of s because it's correlated to RH_990
+                        levels = levels_in[:-1]
+                else:
+                    levels = levels_in[:-1] + [965]
+
                 ls_list.append(
                     large_scale.where(large_scale['long_name'] == profile_string + string_selection,
                                       drop=True).sel(lev=levels)
                 )
             else:
+                if profile_string in ['Relative humidity', 'Horizontal r advection']:
+                    levels = slice(1, None)
+                else:
+                    levels = slice(None, None)
                 ls_list.append(
                     large_scale.where(large_scale['long_name'] == profile_string+string_selection,
-                                      drop=True)
+                                      drop=True).sel(number=levels)
                 )
 
         for scalar_string in scalars:

@@ -112,7 +112,7 @@ def remove_diurnal(series, dailycycle):
 home = expanduser("~")
 start = timeit.default_timer()
 
-l_profiles_as_eof=True
+l_profiles_as_eof = True
 if l_profiles_as_eof:
     height_dim = 'number'
 else:
@@ -122,7 +122,7 @@ else:
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
                          'CPOL_large-scale_forcing_noDailyCycle_profilesEOF.nc')
-#                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
+                         # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 # add quantity symbols to large-scale dataset
@@ -196,7 +196,7 @@ if l_eof_input:
     predictor = predictor[target.notnull()]
     target    = target   [target.notnull()]
 
-n_lev = len(predictor['number'])
+n_lev = len(predictor[height_dim])
 
 l_loading_model = True
 if not l_loading_model:
@@ -216,20 +216,23 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=4, batch_size=5, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=1, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
         print('Predicting...')
+        model2 = kmodels.load_model(home + '/Desktop/model.h5')
         pred = []
         for i, entry in enumerate(predictor):
-            pred.append(model.predict(np.array([entry])))
+            pred.append(model2.predict(np.array([entry])))
         pred_array = xr.DataArray(pred).squeeze()
         predicted = xr.DataArray(pred_array.values, coords={'time': predictor.time}, dims='time')
+        predicted.to_netcdf(home + '/Desktop/predicted.nc')
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_LWDown/'
+    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/'
+    # model_path = home + '/Desktop/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -254,7 +257,7 @@ else:
         l_input_positive [i, :] = (model_input > 0.).values
 
     positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
-    for i, _ in enumerate(positive_positive_ratio['number']):
+    for i, _ in enumerate(positive_positive_ratio[height_dim]):
         positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_percentages[:, i] > 0.)).sum() \
                                       /  l_input_positive[:, i].sum()
         positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_percentages[:, i] < 0.)).sum() \
@@ -270,6 +273,7 @@ else:
     spread = p75 - p25
     # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
     high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+    p50_high = xr.DataArray([nth_percentile(series[input_percentages['high_pred']], 0.50) for series in input_percentages.T])
 
     l_sort_input_percentage = True
     if l_sort_input_percentage:
@@ -282,7 +286,8 @@ else:
         sort_index = np.concatenate((first_half_order, second_half_order))
 
         if ls_times == 'same_time':
-            sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
+            # sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
+            sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
 
         input_percentages = input_percentages[:, sort_index]
 
@@ -290,7 +295,7 @@ else:
     olr = predictor[:, 36]
     r2m = predictor[:, 35]
     u990 = predictor[:, 5]
-    pw = predictor[:, 46]
+    # pw = predictor[:, 46]
     v515 = predictor[:, 7]
     w515 = predictor[:, 1]
     rh215 = predictor[:, 11]
@@ -301,16 +306,31 @@ else:
     l_violins = True \
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
-                                levels=predictor['number'].values[sort_index],
+                                levels=predictor[height_dim].values[sort_index],
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 81,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,
                                 )
+
+    l_show_correlationmatrix = False
+    if l_show_correlationmatrix:
+        df = predictor.to_pandas()
+
+        symbl_list = [string.strip() for string in predictor.symbol.values]
+        n_list = [str(n) for n in predictor[height_dim].values]
+
+        column_list = [a + b for a, b in zip(symbl_list, n_list)]
+        df.columns = column_list
+
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 70))
+        corrmatrix = df.corr()
+        sns.heatmap(abs(corrmatrix), annot=corrmatrix, fmt='.2f', cmap='Spectral')
+        plt.savefig(home + '/Desktop/corrmatrix.pdf', bbox_inches='tight')
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
 
