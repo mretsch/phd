@@ -46,7 +46,7 @@ def delta_height(p_levels, virt_temp):
     l_isotherm = False
     if l_isotherm:
         if take_lower_level:
-            pressure_ratio = p_levels[:, :-1].values / p_levels[:, 1:].values
+            pressure_ratio = p_levels[:-1].values / p_levels[1:].values
         else:
             pressure_ratio = p_levels[:-1].values / p_levels[1:].values
 
@@ -58,7 +58,7 @@ def delta_height(p_levels, virt_temp):
     l_lineargradient = not l_isotherm
     if l_lineargradient:
         if take_lower_level:
-            pressure_ratio = p_levels[:, 1:].values / p_levels[:, :-1].values
+            pressure_ratio = p_levels[1:].values / p_levels[:-1].values
         else:
             pressure_ratio = p_levels[1:].values / p_levels[:-1].values
 
@@ -202,11 +202,11 @@ def vertical_wind_shear(u, v):
     thickness_metpy[:, :] = 0
 
     for i in range(len(thickness.lev)):
-        thickness_metpy[0, i] = mpcalc.thickness_hydrostatic(ls.lev[i + 1:i + 3], ls.T[:1, i + 1:i + 3])[0]
+        thickness_metpy[:, i] = mpcalc.thickness_hydrostatic(ls.lev[i + 1:i + 3], ls.T[:1, i + 1:i + 3])[0]
 
-    shear = velo_change / thickness
+    shear = velo_change #/ thickness_metpy
     shear.attrs['long_name'] = 'Vertical wind shear'
-    shear.attrs['units'] = '1/s'
+    shear.attrs['units'] = 'm/s'
 
     return xr.merge([ls, xr.Dataset({'dwind_dz': shear})])
 
@@ -278,7 +278,8 @@ def down_cape(p_start=None):
 if __name__ == '__main__':
     home = home + '/Documents/Data/LargeScaleState/'
     # ls = xr.open_dataset(ghome + '/Data/LargeScale/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear.nc')
-    ls = xr.open_dataset(home + 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    # ls = xr.open_dataset(home + 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    ls = xr.open_dataset(home + 'CPOL_large-scale_forcing.nc')
 
     # level 0 is not important because quantities at level 0 have repeated value from level 1 there.
     take_lower_level = True
@@ -334,22 +335,25 @@ if __name__ == '__main__':
 
         t = parcel_ascent(temp[:2, :], delta_z[:2, :], nlev_below_lcl[:2], lev_pres, mix_ratio, lcl)
 
-    # ls_new = vertical_wind_shear(ls.u, ls.v)
+    ls_new = vertical_wind_shear(ls.u, ls.v)
     # ls_new = wind_direction(ls.u, ls.v)
     # ls_new = down_cape(p_start=515)
 
-    # What happens to moistening (in RH terms) for different starting levels of mixing ratio and temperature?
-    mix_diffs = []
-    r = np.arange(0, 50)
-    for mix in r:
-        warmRH = mixingratio_to_relativehumidity(1003.75, 29.3, mix)
-        coldRH = mixingratio_to_relativehumidity(1003.75, 28.3, mix)
-        mix_diffs.append(coldRH - warmRH)
 
-    temp_diffs = []
-    t = np.arange(10, 35)
-    for temp in t:
-        warmRH = mixingratio_to_relativehumidity(1003.75, temp  , 20)
-        coldRH = mixingratio_to_relativehumidity(1003.75, temp-1, 20)
-        temp_diffs.append(coldRH - warmRH)
+    l_different_moistening = False
+    if l_different_moistening:
+        # What happens to moistening (in RH terms) for different starting levels of mixing ratio and temperature?
+        mix_diffs = []
+        r = np.arange(0, 50)
+        for mix in r:
+            warmRH = mixingratio_to_relativehumidity(1003.75, 29.3, mix)
+            coldRH = mixingratio_to_relativehumidity(1003.75, 28.3, mix)
+            mix_diffs.append(coldRH - warmRH)
+
+        temp_diffs = []
+        t = np.arange(10, 35)
+        for temp in t:
+            warmRH = mixingratio_to_relativehumidity(1003.75, temp  , 20)
+            coldRH = mixingratio_to_relativehumidity(1003.75, temp-1, 20)
+            temp_diffs.append(coldRH - warmRH)
 
