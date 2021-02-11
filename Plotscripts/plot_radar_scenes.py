@@ -1,4 +1,5 @@
 from os.path import expanduser
+from pathlib import Path
 home = expanduser("~")
 import xarray as xr
 import numpy as np
@@ -16,7 +17,20 @@ plt.rc('legend', fontsize=16) # 22 # 18
 
 def plot_multiple_radar_scenes(large_scale_date):
 
-    print(large_scale_date.values.astype(str)[:13])
+    print(large_scale_date.astype(str)[:13])
+
+    day_string = str(large_scale_date)[:10]
+    lookup_string = day_string.replace('-', '')
+    assert lookup_string.isdigit()
+    lookup_daybefore = str(np.datetime64(day_string) - np.timedelta64(1, 'D')).replace('-', '')
+    lookup_dayafter  = str(np.datetime64(day_string) + np.timedelta64(1, 'D')).replace('-', '')
+
+    # find steiner files
+    steiner_path = Path(home) / 'Documents' / 'Data' / 'Steiner'
+    steiner_files = []
+    for string in [lookup_daybefore, lookup_string, lookup_dayafter]:
+        search_pattern = '*' + string + '.nc'
+        steiner_files.append(next(steiner_path.rglob(f'{search_pattern}')))
 
     metric_1   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
     # delta_prox
@@ -25,8 +39,7 @@ def plot_multiple_radar_scenes(large_scale_date):
     # delta_size
     metric_3   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_low_limit.nc') * 6.25 - \
                  xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
-    ds_steiner_early = xr.open_mfdataset(home+'/Documents/Data/Steiner_Earlier/*season*', chunks=40)
-    ds_steiner_late  = xr.open_mfdataset(home+'/Documents/Data/Steiner/*season*', chunks=40)
+    ds_steiner = xr.open_mfdataset(steiner_files, chunks=40)
 
     timeselect = True
     contiguous = True
@@ -49,12 +62,8 @@ def plot_multiple_radar_scenes(large_scale_date):
             # times = [np.datetime64('2013-02-24T08:40:00'), np.datetime64('2016-11-19T14:50:00'),
             #          np.datetime64('2011-03-15T06:10:00'), np.datetime64('2017-02-27T13:00:00')]
 
-        if large_scale_date.isin(ds_steiner_early.time).values.item():
-            steiner_select = ds_steiner_early.steiner_echo_classification.sel(time=times)
-            time_select    = ds_steiner_early.time.sel(time=times)
-        else:
-            steiner_select = ds_steiner_late.steiner_echo_classification.sel(time=times)
-            time_select    = ds_steiner_late.time.sel(time=times)
+        steiner_select = ds_steiner.steiner_echo_classification.sel(time=times)
+        time_select    = ds_steiner.time.sel(time=times)
 
         metric1_select = metric_1.sel(time=times)
         metric2_select = metric_2.sel(time=times)
@@ -127,11 +136,11 @@ def plot_multiple_radar_scenes(large_scale_date):
         fontsize = 19
         p = steiner_select.plot(col='time', col_wrap=n_per_row, add_colorbar=False, aspect=684./754, size=4, cmap=newcmp)
 
-    # for i, ax in enumerate(p.axes.flat):
+    for i, ax in enumerate(p.axes.flat):
+        plt.sca(ax)  # sets the current axis ('plot') to draw to
 
-    for i in range(36):
-        scene, ax = plt.subplots(nrows=1, ncols=1, figsize=(4, 4))
-        # plt.sca(ax)  # sets the current axis ('plot') to draw to
+    # for i in range(36):
+    #     scene, ax = plt.subplots(nrows=1, ncols=1, figsize=(4, 4))
 
         try:
             ax.pcolormesh(steiner_select.lon, steiner_select.lat, steiner_select[i], cmap=newcmp)
@@ -172,60 +181,60 @@ def plot_multiple_radar_scenes(large_scale_date):
             ax.text(x=131.75, y=-11.05, s=str((time_select[i] + darwin_time).values)[11:16]+' h', verticalalignment='top'
                     , fontdict={'fontsize': 16})
 
-    # # all the bottom plots
-    # for ax in p.axes.flat[-n_per_row:]:
-    #     ax.spines['bottom'].set_visible(True)
-    #     ax.xaxis.set_ticks_position('bottom')
-    #     ax.axes.set_xlabel('Longitude [$^\circ$E]', fontdict={'fontsize': fontsize})
-    #     ax.axes.set_xticks([130, 130.5, 131, 131.5, 132])
-    #     ax.axes.set_xticklabels(labels=['130', '', '131', '', '132'], fontdict={'fontsize': fontsize})
-    #
-    # # all the left plots
-    # for i in np.arange(0, len(p.axes.flat), n_per_row):
-    #     p.axes.flat[i].spines['left'].set_visible(True)
-    #     p.axes.flat[i].yaxis.set_ticks_position('left')
-    #     p.axes.flat[i].axes.set_ylabel('Latitude [$^\circ$S]', fontdict={'fontsize': fontsize})
-    #     p.axes.flat[i].axes.set_yticklabels(labels=['xxx', '', '13', '', '12', '', '11'], fontdict={'fontsize': fontsize})
-    #
-    # # Print some information on plots
-    # percentiles = False
-    # as_coordinate = True
-    # if percentiles:
-    #     if as_coordinate:
-    #         perct1 = metric1_select.percentile * 100
-    #         perct2 = metric2_select.percentile * 100
-    #     else:
-    #         perct1 = metric_1.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
-    #         perct2 = metric_2.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
-    #
-    # print1 = metric1_select
-    # print2 = metric2_select
-    #
-    # print_numbers = False
-    # if print_numbers:
-    #     for i, ax in enumerate(p.axes.flat):
-    #         ax.annotate('ROME: {:5.1f}'        .format(metric1_select[i].item()), (131.73, -13.5 ), color='blue',  fontsize=12)
-    #         ax.annotate('$\Delta$prox: {:5.1f}'.format(metric2_select[i].item()), (129.8 , -13.5 ), color='green', fontsize=12)
-    #         ax.annotate('$\Delta$size: {:5.1f}'.format(metric3_select[i].item()), (129.8 , -11.05), color='red',   fontsize=12)
-    #         if percentiles:
-    #             ax.annotate('ROM: {:3.0f}%\n'
-    #                         'SIC: {:3.0f}%'.format(perct1[i].item(),
-    #                                                perct2[i].item()), (131.78, -13.5), color='blue')
+    # all the bottom plots
+    for ax in p.axes.flat[-n_per_row:]:
+        ax.spines['bottom'].set_visible(True)
+        ax.xaxis.set_ticks_position('bottom')
+        ax.axes.set_xlabel('Longitude [$^\circ$E]', fontdict={'fontsize': fontsize})
+        ax.axes.set_xticks([130, 130.5, 131, 131.5, 132])
+        ax.axes.set_xticklabels(labels=['130', '', '131', '', '132'], fontdict={'fontsize': fontsize})
 
-    # save = True
-    # if save:
-    #     plt.savefig(home+'/Desktop/Radar_highRH/radar_scenes'+large_scale_date.values.astype(str)[:13]+'.pdf',
-    #                 transparent=True, bbox_inches='tight')
-    #     plt.close()
-    # else:
-    #     plt.show()
+    # all the left plots
+    for i in np.arange(0, len(p.axes.flat), n_per_row):
+        p.axes.flat[i].spines['left'].set_visible(True)
+        p.axes.flat[i].yaxis.set_ticks_position('left')
+        p.axes.flat[i].axes.set_ylabel('Latitude [$^\circ$S]', fontdict={'fontsize': fontsize})
+        p.axes.flat[i].axes.set_yticklabels(labels=['xxx', '', '13', '', '12', '', '11'], fontdict={'fontsize': fontsize})
 
-        # Have all scenes separately as a pdf to create a gif
-        plt.savefig('/Users/mret0001/Desktop/R/'+str(i)+'.pdf', bbox_inches='tight', transparent=True)
+    # Print some information on plots
+    percentiles = False
+    as_coordinate = True
+    if percentiles:
+        if as_coordinate:
+            perct1 = metric1_select.percentile * 100
+            perct2 = metric2_select.percentile * 100
+        else:
+            perct1 = metric_1.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
+            perct2 = metric_2.rank(dim='time', pct=True).sel(time=slice(start_date, end_date)) * 100
+
+    print1 = metric1_select
+    print2 = metric2_select
+
+    print_numbers = True
+    if print_numbers:
+        for i, ax in enumerate(p.axes.flat):
+            ax.annotate('ROME: {:5.1f}'        .format(metric1_select[i].item()), (131.73, -13.5 ), color='blue',  fontsize=12)
+            ax.annotate('$\Delta$prox: {:5.1f}'.format(metric2_select[i].item()), (129.8 , -13.5 ), color='green', fontsize=12)
+            ax.annotate('$\Delta$size: {:5.1f}'.format(metric3_select[i].item()), (129.8 , -11.05), color='red',   fontsize=12)
+            if percentiles:
+                ax.annotate('ROM: {:3.0f}%\n'
+                            'SIC: {:3.0f}%'.format(perct1[i].item(),
+                                                   perct2[i].item()), (131.78, -13.5), color='blue')
+
+    save = True
+    if save:
+        plt.savefig(home+'/Desktop/R/radar_scenes'+large_scale_date.astype(str)[:13]+'.pdf',
+                    transparent=True, bbox_inches='tight')
         plt.close()
+    else:
+        plt.show()
+
+        # # Have all scenes separately as a pdf to create a gif
+        # plt.savefig('/Users/mret0001/Desktop/R/'+str(i)+'.pdf', bbox_inches='tight', transparent=True)
+        # plt.close()
 
 if __name__=='__main__':
-    plot_multiple_radar_scenes(xr.DataArray(np.datetime64('2003-12-22T00')))
+    plot_multiple_radar_scenes(np.datetime64('2005-03-11T18:00'))
 
 
 stop = timeit.default_timer()
