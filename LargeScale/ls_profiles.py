@@ -11,7 +11,8 @@ ls  = xr.open_dataset(home+
                       '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
                       # ROME is defined exactly at the LS time steps
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 
 percentiles = rome.percentile
 
@@ -33,7 +34,7 @@ var_strings = [
 # 's'
 # 'u'
 # ,'v'
-# 'omega'
+'omega'
 # ,'div'
 # ,'T_adv_h'
 # ,'T_adv_v'
@@ -42,11 +43,11 @@ var_strings = [
 # ,'s_adv_h'
 # ,'s_adv_v'
 # ,'dTdt'
-# ,'dsdt'
+# 'dsdt'
 # 'drdt'
 # 'RH'
 # ,'dwind_dz'
-'wind_dir'
+# 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -56,8 +57,9 @@ for var in var_strings:
     if l_percentage_profiles:
         ref_profile = ls[var].mean(dim='time')
 
-    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(3, 6 * (15 / 11)))
-    for i in [0, 9, 4]:# range(n_bins):#
+    wind_vector_plot_ratio = (105.68/18.22)
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(5, 5* 0.25*wind_vector_plot_ratio))
+    for i in [0, 4, 9]:#range(n_bins):#
         print(var)
 
         l_earlier_time = False
@@ -102,10 +104,10 @@ for var in var_strings:
             # plt.plot(plot_var, ls_sub.lev[:-1], color=sol[colours[i]])
             for level in ls_sub.lev[:-1]:
                 # the minus for dy is necessary when later we apply invert_yaxis() but want to retain arrow direction
-                ax.arrow(x=0, y=level/10., dx=u_mean.sel(lev=level), dy=-v_mean.sel(lev=level),
-                         width=0.04,
+                ax.arrow(x=0, y=level/20., dx=u_mean.sel(lev=level), dy=-v_mean.sel(lev=level),
+                         width=0.08,
                          length_includes_head=True,
-                         head_width=0.08,
+                         head_width=0.15,
                          overhang=0.2,
                          color=sol[colours[i]])
 
@@ -118,37 +120,47 @@ for var in var_strings:
             #     tick_labels = ['NW', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']
             #     plt.axes().set_xticks(tick_degrees)
             #     plt.axes().set_xticklabels(tick_labels)
+
+            ax.set_aspect('equal')
+            ax.set_yticks(list(range(10, 60, 10)))
+            ax.set_yticklabels(list(range(200, 1200, 200)))
+            ax.set_xticks([-10, -5, 0])
+            ax.set_xticklabels([10, 5, 0])
+            plt.gca().invert_yaxis()
+            plt.ylabel('Pressure [hPa]')
+            plt.xlabel('|$\\vec{{u}}$| [m/s]')
         else:
             data_to_plot = ls_sub[var][:, :-1]
             profile_to_plot =  data_to_plot.mean(dim='time')
 
             if l_percentage_profiles:
-                profile_to_plot = (data_to_plot.mean(dim='time') / ref_profile) - 1
+                profile_to_plot = data_to_plot.mean(dim='time') - ref_profile
 
             # lower_band = [np.nanpercentile(series, q=25) for series in data_to_plot.transpose()]
             # upper_band = [np.nanpercentile(series, q=75) for series in data_to_plot.transpose()]
             lower_band = [series.mean() - 0.5*series.std() for series in data_to_plot.transpose()]
             upper_band = [series.mean() + 0.5*series.std() for series in data_to_plot.transpose()]
 
-            plt.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
-            plt.fill_betweenx(y=ls_sub.lev[:-1], x1=lower_band, x2=upper_band, alpha=0.1)
+            ax.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
+            ax.fill_betweenx(y=ls_sub.lev[:-1],
+                             x1=lower_band,# - ref_profile[:39],
+                             x2=upper_band,# - ref_profile[:39],
+                             alpha=0.1, color=sol[colours[i]])
 
-    ax.set_aspect('equal')
-    ax.set_yticks(list(range(20, 120, 20)))
-    ax.set_yticklabels(list(range(200, 1200, 200)))
-    ax.set_xticks([-10, -5, 0])
-    ax.set_xticklabels([10, 5, 0])
-    plt.gca().invert_yaxis()
-    plt.ylabel('Pressure [hPa]')
-    # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
-    # plt.xlabel(ls_sub[var].long_name+' deviation from average, [K/K]')
-    plt.xlabel('|$\\vec{{u}}$| [m/s]')
     # plt.xlim((0.28, 0.82))
+    # plt.xlim((-0.055, 0.055))
+    # plt.xlim((-1, 1))
+    plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    # plt.xlabel(ls_sub[var].long_name+' delta from average, [K]')
 
+    plt.legend(['1. decile', '5. decile', '10. decile',], fontsize=9)
     # plt.legend(['1. decile', '2. decile', '3. decile',
     #             '4. decile', '5. decile', '6. decile',
     #             '7. decile', '8. decile', '9. decile',
     #             '10. decile'], fontsize=9)
+
+    ax.axvline(x=0, lw=1.5, color='darkgrey', zorder=1)
+    ax.invert_yaxis()
 
     plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight', transparent=True)
     plt.close()
