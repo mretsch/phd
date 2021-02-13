@@ -9,7 +9,7 @@ import pandas as pd
 import metpy.calc as mpcalc
 import seaborn as sns
 from Plotscripts.colors_solarized import sol
-from Plotscripts.plot_phase_space import return_phasespace_plot
+# from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
@@ -70,9 +70,23 @@ if __name__ == '__main__':
     ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
                           # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
                           'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+    # remove false data in precipitable water
+    ls['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+    ls['PW'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+    ls['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+    ls['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+    ls['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+    ls['PW'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
+    ls['LWP'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
     # ROME is defined exactly at the LS time steps
-    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
     totalarea = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     # Percentiles used for the decile-binning
@@ -289,7 +303,7 @@ if __name__ == '__main__':
     if l_plot_boxwhisker:
         df = pd.DataFrame()
 
-        var = ls['cape']
+        var = ls['cin']
         dataseries = []
         for i in range(10):
             times = bins[i].time
@@ -301,8 +315,10 @@ if __name__ == '__main__':
         df = pd.DataFrame(dataseries).transpose()
         sns.boxplot(data=df)
 
-        plt.ylabel('CAPE')
-        plt.xlabel('ROME deciles')
+        # plt.ylim(0, 0.025)
+
+        plt.ylabel('CIN')
+        plt.xlabel('$\pm$20min max. ROME deciles')
 
         plt.savefig(home + '/Desktop/whisker_romedeciles.pdf', bbox_inches='tight')
 
