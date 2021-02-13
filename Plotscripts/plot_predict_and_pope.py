@@ -10,11 +10,11 @@ from NeuralNet.backtracking import high_correct_predictions
 
 start = timeit.default_timer()
 
-ghome = home+'/Google Drive File Stream/My Drive'
-
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
-model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/'
+# model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/SecondModel/'
+model_path = '/Desktop/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
 mlr_predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
@@ -26,6 +26,9 @@ else:
     # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
     rome = rome.where(predicted.time)
     # area = area.where(predicted.time)
+
+# rome = (rome - rome.mean()) / rome.std()
+# rome = rome['percentile']
 
 # the plot of predicted versus true ROME values with Pope regimes in the background
 ds_pope = into_pope_regimes(rome, l_upsample=True, l_all=True)
@@ -40,7 +43,10 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 plt.rc('font', size=24)
 
 plot_length = 1200
-plot_index = slice(None, 1200)
+
+# plot_index = slice(None, 1200)
+plot_index = slice(-1200,None)
+
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
 fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
@@ -75,7 +81,12 @@ fig.add_subplot(111, frameon=False)
 # hide tick and tick label of the big axis
 plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 plt.xlabel('Time [6h intervals]')
-plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
+
+# plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
+plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
+# plt.ylabel('Max. ROME in 6 hours [km$^2$]', labelpad=15)
+
+# plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
 plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
 
 l_area_plot = False

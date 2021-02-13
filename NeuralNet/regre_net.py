@@ -123,7 +123,8 @@ ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
                          'CPOL_large-scale_forcing_noDailyCycle_profilesEOF.nc')
                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
-metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 
 # add quantity symbols to large-scale dataset
 ds_ls = add_variable_symbol_string(ds_ls)
@@ -135,6 +136,12 @@ ds_ls['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2015-01-05T00', None           )}] = np.nan
+ds_ls['LWP'].loc[{'time': slice(None           , '2002-02-27T12')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2015-01-05T00', None           )}] = np.nan
 
 
 l_remove_diurnal_cycle = False
@@ -198,6 +205,20 @@ if l_eof_input:
 
 n_lev = len(predictor[height_dim])
 
+l_10min_frequency = False
+if l_10min_frequency:
+    rome_raw = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    predictor_inter = predictor.resample(time='10min').interpolate('linear')
+    rome_10min = rome_raw[rome_raw.notnull()]
+    predictor = predictor_inter[predictor_inter.time.isin(rome_10min.time)]
+    target = rome_10min.sel(time= predictor.time)
+
+# target = target[::-1]
+# predictor = predictor[::-1]
+# target = (target - target.mean()) / target.std()
+# metric = (metric - metric.mean()) / metric.std()
+# target = target['percentile']
+
 l_loading_model = True
 if not l_loading_model:
     # building the model
@@ -211,12 +232,12 @@ if not l_loading_model:
     model.compile(optimizer='adam', loss='mean_squared_error')  # , metrics=['accuracy'])
 
     # checkpoint
-    filepath = home+'/Desktop/M/model-{epoch:02d}-{val_loss:.2f}.h5'
+    filepath = home+'/Desktop/M/model-{epoch:02d}-{val_loss:.5f}.h5'
     checkpoint = kcallbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=False)
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=1, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=6, batch_size=1, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -231,8 +252,8 @@ if not l_loading_model:
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/'
-    # model_path = home + '/Desktop/'
+    # model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/SecondModel/'
+    model_path = home + '/Desktop/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -310,7 +331,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars=7,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,

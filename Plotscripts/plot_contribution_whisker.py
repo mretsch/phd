@@ -90,7 +90,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             label_list = []
             for element1, element2 in zip(long_names.values, levels):
                 # the profile-input to NN only has pressure down to 215hPa. And scalars got 'levels' below 100 earlier.
-                if element2 < 3.:
+                if element2 < 50.:
                     label_list.append(
                         element1.replace('            ', '') + ', ' + str(int(element2)+1) + '. EOF'
                     )
