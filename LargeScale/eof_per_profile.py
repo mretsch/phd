@@ -161,21 +161,21 @@ for i in range(len(ls_vars)):
     evec_list.append(evec)
 
     # try some time series
-    if evec.dims[0] == 'level':
-        pc_1   = evec.sel(number=0).values @ data_norm.T.values / (nlev - 1)
-        # compute the principal component time series for all eigenvectors
-        pc_all = xr.DataArray(evec.transpose().values @ data_norm.T.values / (nlev - 1),
-                              coords={'number': list(range(nlev)), 'time': predictor.time},
-                              dims=['number', 'time'],
-                              attrs={'Variance_per_EOF': variance_perc, 'variable': ls_vars[i]})
-
-        # reconstruct the original data via the pc time series and the patterns (EOFs)
-        pattern_0_back = pc_all.isel(time=0).values @ evec.transpose().values * (nlev - 1)
-        plt.plot(data_norm.isel(time=0).values, color='k', lw=2, ls='--')
-        plt.plot(pattern_0_back, color='r', lw=0.5)
-        plt.title(f'{ls_vars[i]}')
-        plt.legend(['original height profile data, time=0', 'Reconstructed height profile data, time=0'])
-        plt.show()
+    # if evec.dims[0] == 'level':
+    #     pc_1   = evec.sel(number=0).values @ data_norm.T.values / (nlev - 1)
+    #     # compute the principal component time series for all eigenvectors
+    #     pc_all = xr.DataArray(evec.transpose().values @ data_norm.T.values / (nlev - 1),
+    #                           coords={'number': list(range(nlev)), 'time': predictor.time},
+    #                           dims=['number', 'time'],
+    #                           attrs={'Variance_per_EOF': variance_perc, 'variable': ls_vars[i]})
+    #
+    #     # reconstruct the original data via the pc time series and the patterns (EOFs)
+    #     pattern_0_back = pc_all.isel(time=0).values @ evec.transpose().values * (nlev - 1)
+    #     plt.plot(data_norm.isel(time=0).values, color='k', lw=2, ls='--')
+    #     plt.plot(pattern_0_back, color='r', lw=0.5)
+    #     plt.title(f'{ls_vars[i]}')
+    #     plt.legend(['original height profile data, time=0', 'Reconstructed height profile data, time=0'])
+    #     plt.show()
 
     # evec.to_netcdf(home+f'/Desktop/Profiles_to_EOF/eof_{ls_vars[i]}.nc')
     # pc_all.to_netcdf(home+f'/Desktop/Profiles_to_EOF/pc_{ls_vars[i]}.nc')
@@ -184,14 +184,32 @@ w_eof = evec_list[0]
 u_eof = evec_list[1]
 shear_eof = evec_list[-1]
 v_eof = evec_list[2]
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 10))
-ax.plot(w_eof[{'number':0}], w_eof.level, label='w eof-1')
-ax.plot(u_eof[{'number':0}], w_eof.level, label='u eof-1')
+s_eof = evec_list[3]
+dsdt_eof = evec_list[-3]
+drdt_eof = evec_list[-2]
+
+wind_vector_plot_ratio = (105.68/18.22)
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3, 3* 0.25*wind_vector_plot_ratio))
+ax.axvline(x=0, color='grey')
+
+# signum chosen so that plotted profile has positive contribution in NN
+ax.plot(w_eof[{'number':0}]   , w_eof.level, label='w eof-1')
+ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v eof-1')
+ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s eof-2')
+ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u eof-1')
 ax.plot(shear_eof[{'number':1}], shear_eof.level, label='shear eof-2')
-ax.plot(w_eof[{'number':2}], w_eof.level, label='w eof-3')
-ax.plot(v_eof[{'number':0}], w_eof.level, label='v eof-1')
+
+# ax.plot(dsdt_eof[{'number':3}]*-1, w_eof.level, label='dsdt eof-4')
+# ax.plot(w_eof[{'number':2}], w_eof.level, label='w eof-3')
+# ax.plot(shear_eof[{'number':0}], shear_eof.level, label='shear eof-1')
+# ax.plot(drdt_eof[{'number':0}]*-1, drdt_eof.level, label='drdt eof-1')
+# ax.plot(drdt_eof[{'number':1}]*-1, drdt_eof.level, label='drdt eof-2')
+# ax.plot(s_eof[{'number':2}], w_eof.level, label='s eof-3')
+# ax.plot(s_eof[{'number':0}]*-1, w_eof.level, label='s eof-0')
+
 ax.invert_yaxis()
 plt.legend()
+# plt.savefig(home+'/Desktop/eofs.pdf', bbox_inches='tight')
 plt.show()
 
 
