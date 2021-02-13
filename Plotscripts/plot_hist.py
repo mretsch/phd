@@ -128,7 +128,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
             bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
                          np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
         bin_edges = [np.linspace(start=0., stop=3000, num=nbins+1),
-                     np.linspace(start=0., stop=300, num=nbins+1)]
+                     np.linspace(start=0., stop=150, num=nbins+1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -147,7 +147,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=2600)#75)#2000)
+                                                         l_cut_off=True, cut_off=40)#75)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -225,8 +225,8 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.cape.resample(time='10min').interpolate('linear')
-        var2 = ls.cin.resample(time='10min').interpolate('linear') #PW#lw_net_toa##h2o_adv_col
+        var1 = ls.cape#.resample(time='10min').interpolate('linear')
+        var2 = ls.cin#.resample(time='10min').interpolate('linear') #PW#lw_net_toa##h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -252,8 +252,8 @@ if __name__ == '__main__':
             # var2.loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
             # var2.loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
-            # var1 = var1.where(var2)
-            # var2 = var2.where(var1)
+            var1 = var1.where(var2)
+            var2 = var2.where(var1)
             both_valid = var1.notnull() & var2.notnull()
             var1 = var1[both_valid]
             var2 = var2[both_valid]
