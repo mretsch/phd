@@ -95,7 +95,7 @@ if __name__ == '__main__':
     percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
     # What percentiles?
-    percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
+    percentiles = abs(percentile_w515 - 1) # percentile_rome # percentile_totalarea #
 
     bins = []
     # should be 2 at least
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         'dwind_dz'
     ]
 
-    for var in ['omega']:
+    for var in ['RH']:
         # Take large-scale variable, then subset it
         ls_var = ls[var].sel(lev=515)
         rh500 = ls_var.where(rome_top_w)
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
         ####### PLOTS ########
 
-        l_plot_scatter = False
+        l_plot_scatter = True
         if l_plot_scatter:
 
             l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -215,7 +215,7 @@ if __name__ == '__main__':
             # ax.plot(range(len(rh500)), rh500_sorted.where(l_neither_subset),
             #         ls='', marker='x', mew=2, color=sol['cyan'])
 
-            ax.plot(rome_top_w_sorted, rh500_sorted,#.where(l_neither_subset),
+            ax.plot(rome_top_w_sorted, rh500_sorted.where(l_neither_subset),
                     ls='', marker='X', ms=5, color=sol['cyan'], alpha=0.8, mew=0.13)
 
             notnan = rh500_sorted.notnull().values
@@ -229,14 +229,14 @@ if __name__ == '__main__':
             # ax.set_title('Highest decile of omega_515, less than -6.6 hPa/h.')
             # ax.set_title('Highest decile of omega_515. Difference to diurnal cycle more than -4.3 hPa/hour.')
 
-            # ax.set_xlabel('ROME [km$^2$]')
+            ax.set_xlabel('max. ROME $\pm$ 20min [km$^2$]')
             # ax.set_xlabel('Ascending ranks of ROME in highest decile of $\omega_{515}$ [1]')
             # ax.set_ylabel('Relative humidity at 515 hPa [1]')
             try:
                 # ax.set_ylabel(f'$\Delta(${ls_var.name}$_{{{str(int(ls_var.lev.values))}}} , \Phi)$ [{ls_var.units}], 6h earlier')
                 # ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}]')
                 # ax.set_ylabel(f'{ls_var.name}$_{{{str(int(ls_var.lev.values))}}}$ [1]')
-                ax.set_ylabel(f'w$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}]')
+                ax.set_ylabel(f'RH$_{{{str(int(ls_var.lev.values))}}}$ [{ls_var.units}]')
             except AttributeError:
                 # ax.set_ylabel(f'$\Delta(${ls_var.name}$, \Phi)$ [{ls_var.units}], 6h earlier')
                 ax.set_ylabel(f'{ls_var.name} [{ls_var.units}], 6h earlier')
@@ -247,21 +247,21 @@ if __name__ == '__main__':
             # if l_subselect_low_org:
             #     ax.plot(range(len(rh500)), rh500_sorted.where(l_org_low), ls='', marker='o', color=sol['yellow'])
 
-            # ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
-            #         rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='^', color=sol['magenta'])
-            # ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
-            #         rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='s', color=sol['violet'])
+            ax.plot(rome_top_w.where(rh_at_highROME_sorted[-m:]),
+                    rh500.     where(rh_at_highROME_sorted[-m:]), ls='', marker='^', color=sol['magenta'])
+            ax.plot(rome_top_w.where(rh_at_highROME_sorted[:m ]),
+                    rh500.     where(rh_at_highROME_sorted[:m ]), ls='', marker='s', color=sol['violet'])
             if l_subselect_low_org:
                 ax.plot(rome_top_w.where(rh_at_lowROME_sorted.time[-m:]),
                         rh500.     where(rh_at_lowROME_sorted.time[-m:]), ls='', marker='o', color=sol['yellow'])
 
-            ax.axvline(x=56 , color='gray', ls='--', lw=1.5, zorder=0) # median
-            ax.axvline(x=154, color='gray', ls='--', lw=1.5, zorder=0) # 90th percentile
+            ax.axvline(x=np.nanpercentile(rome, q=50).round(), color='gray', ls='--', lw=1.5, zorder=0)
+            ax.axvline(x=np.nanpercentile(rome, q=90).round(), color='gray', ls='--', lw=1.5, zorder=0)
             # ax.axhline(y=0, color='lightgray', lw=0.8, zorder=0)
 
             ax.axes.spines['top'].set_visible(False)
             ax.axes.spines['right'].set_visible(False)
-            ax.set_xticklabels([])
+            # ax.set_xticklabels([])
 
             try:
                 plt.savefig(home+f'/Desktop/omega_{ls_var.name}_{str(int(ls_var.lev.values))}.pdf', bbox_inches='tight')
@@ -299,7 +299,7 @@ if __name__ == '__main__':
                 longset.loc[idx, 'category'] = 3
                 sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
 
-    l_plot_boxwhisker = True
+    l_plot_boxwhisker = False
     if l_plot_boxwhisker:
         df = pd.DataFrame()
 
