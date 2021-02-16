@@ -127,8 +127,12 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         else:
             bin_edges = [np.linspace(start=x_series_min, stop=x_series_max, num=nbins+1),
                          np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
-        bin_edges = [np.linspace(start=0., stop=3000, num=nbins+1),
-                     np.linspace(start=0., stop=150, num=nbins+1)]
+        # bin_edges = [np.linspace(start=-7., stop=4, num=nbins+1),
+        #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
+        xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
+        ylow, yupp = np.nanpercentile(y_series, q=1.), np.nanpercentile(y_series, q=99)
+        bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
+                     np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -147,7 +151,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=40)#75)#2600)
+                                                         l_cut_off=True, cut_off=40)#60)#20)#75)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -216,7 +220,24 @@ if __name__ == '__main__':
     hist_2d = True
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
-                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#_NoDailyCycle.nc')
+                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')#.nc')#
+
+        ls_day = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
+                             'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')#
+
+        # remove false data in precipitable water
+        ls_day['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+        ls_day['PW'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+        ls_day['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+        ls_day['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+        ls_day['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+        ls_day['PW'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
+        ls_day['LWP'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+        ls_day['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+        ls_day['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+        ls_day['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+        ls_day['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+        ls_day['LWP'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
         subselect = False
         if subselect:
@@ -225,8 +246,16 @@ if __name__ == '__main__':
             ls_sub = ls.where(ls.hour.isin([6]), drop=True)
             ls = ls_sub
 
-        var1 = ls.cape#.resample(time='10min').interpolate('linear')
-        var2 = ls.cin#.resample(time='10min').interpolate('linear') #PW#lw_net_toa##h2o_adv_col
+        xr.set_options(keep_attrs=True)
+
+        var1 = ls['omega'].sel(lev=515) + ls_day['omega'].sel(lev=515).mean(dim='time')
+        # var2 = ls['RH']   .sel(lev=515) + ls_day['RH']   .sel(lev=515).mean(dim='time')
+        var2 = ls['PW']                 + ls_day['PW']                .mean(dim='time')
+
+        xr.set_options(keep_attrs=False)
+
+        # var1 = ls.omega.sel(lev=515)#.resample(time='10min').interpolate('linear')
+        # var2 = ls.PW#RH.sel(lev=515)#cape#.resample(time='10min').interpolate('linear') #PW#lw_net_toa##h2o_adv_col
         # var1 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         # var2 = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc')
         # var1 = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -258,7 +287,7 @@ if __name__ == '__main__':
             var1 = var1[both_valid]
             var2 = var2[both_valid]
 
-        fig_h_2d, h_2d = histogram_2d(var1, var2*-1,  nbins=9,# 37,#23,
+        fig_h_2d, h_2d = histogram_2d(var1, var2,  nbins=9,#12,#37#,#18,#
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
                                       y_label=var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
