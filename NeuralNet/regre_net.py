@@ -125,6 +125,8 @@ ds_ls  = xr.open_dataset(home +
                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+
 
 # add quantity symbols to large-scale dataset
 ds_ls = add_variable_symbol_string(ds_ls)
@@ -218,6 +220,12 @@ if l_10min_frequency:
 # target = (target - target.mean()) / target.std()
 # metric = (metric - metric.mean()) / metric.std()
 # target = target['percentile']
+# [2496:2635] is constant low data span in 5089 predictions
+# mask = np.full(shape=5089, fill_value=True, dtype='bool')
+# mask[2496:2635] = False
+# target = target[mask]
+# predictor = predictor[mask, :]
+
 
 l_loading_model = True
 if not l_loading_model:
@@ -237,7 +245,7 @@ if not l_loading_model:
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=6, batch_size=1, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=1, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
@@ -331,7 +339,7 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=7,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
