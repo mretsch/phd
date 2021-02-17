@@ -108,18 +108,18 @@ def return_phasespace_plot():
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=-150, vmax=ps_overlay.max())
 
-    plt.title('6h large-scale')
-    # plt.xlabel('$\omega_{515}$ [hPa/h]')
-    plt.xlabel('$\Delta(\omega, \Phi)$ at 515 hPa [hPa/h]')
+    # plt.title('6h large-scale')
+    plt.xlabel('$\omega_{515}$ [hPa/h]')
+    # plt.xlabel('$\Delta(\omega, \Phi)$ at 515 hPa [hPa/h]')
     # plt.xlabel('Avg. object area [km$^2$]')
     # plt.xlabel('Dry static energy, 990 hPa [K]')
     # plt.xlabel('CAPE')
 
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
-    plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
+    # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
     # plt.ylabel('RH$_{515}$ [1]')
-    # plt.ylabel('CIN')
+    plt.ylabel('PW [cm]')
 
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
     the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')

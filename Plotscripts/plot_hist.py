@@ -130,7 +130,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         # bin_edges = [np.linspace(start=-7., stop=4, num=nbins+1),
         #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
         xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
-        ylow, yupp = np.nanpercentile(y_series, q=1.), np.nanpercentile(y_series, q=99)
+        ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
         bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
                      np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
