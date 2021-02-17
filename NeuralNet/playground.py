@@ -345,6 +345,18 @@ if manual_sampling:
         m_max[m_max.notnull()] = avg_maximum
         m_max.coords['percentile'] = m_max.rank(dim='time', pct=True)
 
+        # get time difference of maximum ROME time and large-scale time
+        time_max_avail = time_of_max[l_time_available]
+        ls_time = m_max.sel(time=time_max_avail, method='nearest').time
+        time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
+        time_diff = xr.full_like(m_max, fill_value=np.nan)
+        time_diff[m_max.notnull()] = time_diff_list
+        time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
+        time_diff.attrs['units'] = 'seconds'
+        time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
+        del time_diff['percentile']
+
+
     l_split_and_redistribute = False
     if l_split_and_redistribute:
         # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
