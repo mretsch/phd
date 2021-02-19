@@ -11,12 +11,19 @@ from NeuralNet.backtracking import high_correct_predictions
 start = timeit.default_timer()
 
 # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
+# timedelta = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/timedelta_maxrome_largescale.nc')
 # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/SecondModel/'
 model_path = '/Desktop/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
 mlr_predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
+
+ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
+                     'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+
+omega = ls['omega'].sel(lev=515).where(predicted, drop=True)
 
 l_high_values = False
 if l_high_values:
@@ -25,7 +32,7 @@ if l_high_values:
 else:
     # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
     rome = rome.where(predicted.time)
-    # area = area.where(predicted.time)
+    # timedelta = timedelta.where(predicted.time) /1e9
 
 # rome = (rome - rome.mean()) / rome.std()
 # rome = rome['percentile']
@@ -42,27 +49,60 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-plot_length = 1200
+plot_length = 200
 
-# plot_index = slice(None, 1200)
-plot_index = slice(-1200,None)
+# plot_index = slice(None, 4800)
+plot_index = slice(-800, -600)
+# plot_index = slice(2400+260, 2400+460)
+
+special_time = np.array(['2002-03-16T00:00:00.000000000', '2003-01-19T12:00:00.000000000',
+       '2003-02-06T00:00:00.000000000', '2003-10-22T18:00:00.000000000',
+       '2003-11-05T18:00:00.000000000', '2003-12-04T06:00:00.000000000',
+       '2003-12-14T00:00:00.000000000', '2004-02-10T00:00:00.000000000',
+       '2004-11-24T18:00:00.000000000', '2004-11-30T00:00:00.000000000',
+       '2005-02-09T12:00:00.000000000', '2005-03-08T06:00:00.000000000',
+       '2005-11-13T18:00:00.000000000', '2005-12-12T06:00:00.000000000',
+       '2005-12-23T18:00:00.000000000', '2006-01-09T18:00:00.000000000',
+       '2006-02-09T12:00:00.000000000', '2006-11-13T12:00:00.000000000',
+       '2007-01-22T12:00:00.000000000', '2007-02-14T06:00:00.000000000',
+       '2007-03-11T06:00:00.000000000', '2007-03-29T18:00:00.000000000',
+       '2010-02-03T12:00:00.000000000', '2010-02-07T12:00:00.000000000',
+       '2010-02-09T12:00:00.000000000', '2010-12-03T06:00:00.000000000',
+       '2011-01-31T00:00:00.000000000', '2011-11-05T18:00:00.000000000',
+       '2011-12-15T06:00:00.000000000', '2012-02-14T06:00:00.000000000',
+       '2012-03-21T06:00:00.000000000', '2013-03-10T12:00:00.000000000',
+       '2013-03-11T12:00:00.000000000', '2014-01-02T06:00:00.000000000',
+       '2014-01-04T06:00:00.000000000', '2014-01-06T06:00:00.000000000',
+       '2014-01-09T06:00:00.000000000', '2014-01-09T12:00:00.000000000',
+       '2014-02-08T18:00:00.000000000', '2014-02-11T18:00:00.000000000',
+       '2014-03-04T12:00:00.000000000', '2014-03-09T18:00:00.000000000',
+       '2014-03-12T12:00:00.000000000', '2014-03-16T12:00:00.000000000',
+       '2014-03-24T12:00:00.000000000', '2014-03-25T06:00:00.000000000',
+       '2014-11-19T12:00:00.000000000', '2014-12-23T06:00:00.000000000',
+       '2014-12-28T12:00:00.000000000', '2014-12-28T18:00:00.000000000'],
+      dtype='datetime64[ns]')
+# special_time = np.array(['2012-02-14T06:00:00.000000000'],
+#                         dtype='datetime64[ns]')
+# special_time = np.array(['2010-02-03T12:00:00.000000000'],
+#                         dtype='datetime64[ns]')
 
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
+# fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(148, 4), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(36, 4), sharex=True, sharey=True)
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 for i, ax in enumerate([axes]):
-    ax.plot(rome             [plot_index], color='k', lw=3)
-    # ax.plot(area             [-n_last:], color='red'  , lw=1.5)
-    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=2.5)
-    # ax.plot(mlr_predicted[-1200:], color='black', lw=1.5  )
-    # ax.plot(    predicted[-1200:], color='red')
+    ax.plot(rome             [plot_index], color='k', lw=4.5)
+    # ax.plot(omega            [plot_index]*10, color='g'  , lw=1.5)
+    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=6)
+    # ax.plot(rome.where(rome.time.isin(special_time)), ls='', marker='D', color='r')
 
     # ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
     ax.legend(['ROME', 'R$_\mathrm{NN}$'])
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
-    # ax.set_ylim(0, 442.8759794239834)
+
+    # ax.set_ylim(0, None)
     ax.set_xlim(0, plot_length)
 
     # tick_1, tick_2 = -1.5, -0.5
@@ -76,6 +116,11 @@ for i, ax in enumerate([axes]):
     # ax.text(x=-50, y=150, s=' Pope 4, SW ', verticalalignment='top', color=colors[3], fontdict={'fontsize': 16})
     # ax.text(x=-50, y=100, s=' Pope 5, ME ', verticalalignment='top', color=colors[4], fontdict={'fontsize': 16})
 
+    # ax.axhline(y=-180, color='grey')
+    # ax.axhline(y=0, color='grey')
+    # ax.axhline(y=180, color='grey')
+
+
 # add a big axis, hide frame
 fig.add_subplot(111, frameon=False)
 # hide tick and tick label of the big axis
@@ -83,11 +128,11 @@ plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=Fa
 plt.xlabel('Time [6h intervals]')
 
 # plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
-plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
-# plt.ylabel('Max. ROME in 6 hours [km$^2$]', labelpad=15)
+# plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
+plt.ylabel('Total conv. area [km$^2$]', labelpad=15)
 
-# plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
-plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
+plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
+# plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
 
 l_area_plot = False
 if l_area_plot:
