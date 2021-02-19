@@ -199,18 +199,22 @@ ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s eof-2')
 ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u eof-1')
 ax.plot(shear_eof[{'number':1}], shear_eof.level, label='shear eof-2')
 
+# ax.plot(s_eof[{'number':2}], w_eof.level, label='s eof-3')
 # ax.plot(dsdt_eof[{'number':3}]*-1, w_eof.level, label='dsdt eof-4')
 # ax.plot(w_eof[{'number':2}], w_eof.level, label='w eof-3')
 # ax.plot(shear_eof[{'number':0}], shear_eof.level, label='shear eof-1')
 # ax.plot(drdt_eof[{'number':0}]*-1, drdt_eof.level, label='drdt eof-1')
-# ax.plot(drdt_eof[{'number':1}]*-1, drdt_eof.level, label='drdt eof-2')
+ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt eof-2')
 # ax.plot(s_eof[{'number':2}], w_eof.level, label='s eof-3')
 # ax.plot(s_eof[{'number':0}]*-1, w_eof.level, label='s eof-0')
 
+ax.set_ylabel('Pressure [hPa]')
+ax.set_xlabel('EOF magnitude [???]')
+ax.set_ylim(0, 1000)
 ax.invert_yaxis()
-plt.legend()
-# plt.savefig(home+'/Desktop/eofs.pdf', bbox_inches='tight')
-plt.show()
+plt.legend(fontsize=8, loc='upper right')
+plt.savefig(home+'/Desktop/eofs.pdf', bbox_inches='tight')
+# plt.show()
 
 
 def replace_profiles_by_PCSeries_in_dataset():
