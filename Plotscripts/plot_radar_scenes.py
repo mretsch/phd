@@ -223,7 +223,7 @@ def plot_multiple_radar_scenes(large_scale_date):
 
     save = True
     if save:
-        plt.savefig(home+'/Desktop/R/radar_scenes'+large_scale_date.astype(str)[:13]+'.pdf',
+        plt.savefig(home+'/Desktop/radar_scenes'+large_scale_date.astype(str)[:13]+'.pdf',
                     transparent=True, bbox_inches='tight')
         plt.close()
     else:
@@ -234,7 +234,11 @@ def plot_multiple_radar_scenes(large_scale_date):
         # plt.close()
 
 if __name__=='__main__':
-    plot_multiple_radar_scenes(np.datetime64('2005-03-11T18:00'))
+    # plot_multiple_radar_scenes(np.datetime64('2005-03-11T18:00'))
+    # plot_multiple_radar_scenes(np.datetime64('2012-02-14T06:00'))
+    plot_multiple_radar_scenes(np.datetime64('2010-02-03T12:00'))
+    # plot_multiple_radar_scenes(np.datetime64('2006-01-24T00')) # max value at 2006-01-23T21:50:00
+    # plot_multiple_radar_scenes(np.datetime64('2003-12-20T09')) # max value at 2003-12-20T09:40:00
 
 
 stop = timeit.default_timer()

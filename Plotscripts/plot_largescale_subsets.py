@@ -68,8 +68,8 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
 
 if __name__ == '__main__':
     ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
-                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
-                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
     # remove false data in precipitable water
     ls['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     ####### PLOTS ########
 
-    l_plot_scatter = True
+    l_plot_scatter = False
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -249,11 +249,11 @@ if __name__ == '__main__':
             longset.loc[idx, 'category'] = 3
             sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
 
-    l_plot_boxwhisker = False
+    l_plot_boxwhisker = True
     if l_plot_boxwhisker:
         df = pd.DataFrame()
 
-        var = ls['PW']
+        var = ls['cin']
         dataseries = []
         for i in range(10):
             times = bins[i].time
@@ -263,11 +263,11 @@ if __name__ == '__main__':
             ).values).to_pandas())
 
         df = pd.DataFrame(dataseries).transpose()
-        sns.boxplot(data=df)
+        sns.boxplot(data=df*-1)
 
         # plt.ylim(0, 0.025)
 
-        plt.ylabel('PW')
+        plt.ylabel('cin')
         plt.xlabel('$\pm$20min max. ROME deciles')
 
         plt.savefig(home + '/Desktop/whisker_romedeciles.pdf', bbox_inches='tight')
@@ -333,6 +333,24 @@ if __name__ == '__main__':
         if l_subselect_low_org:
             plt.plot(low_org_xaxis, low_org_yaxis, ls='', marker='o', color=sol['yellow'], alpha=1.0)
             plt.legend(['Low RH, high ROME', 'High RH, high ROME', 'High RH, low ROME'], fontsize=14)
+
+        # get associated Pope regimes
+        pope = pd.read_csv(home + '/Documents/Data/PopeRegimes/Pope_regimes.csv',
+                           names=['time', 'pope'],
+                           index_col=0)
+        pope.index = pd.to_datetime(pope.index)
+
+        lookuptime = pd.to_datetime([str(t)[:10] for t in low_rh_xaxis.time.values])
+        # pope.index.get_loc(np.datetime64('2013-03-16 11:00:00'), method='nearest')
+        pope_low_rh = pope.loc[lookuptime]
+
+        lookuptime = pd.to_datetime([str(t)[:10] for t in high_rh_xaxis.time.values])
+        pope_high_rh = pope.loc[lookuptime]
+
+        # plt.hist(pope_low_rh, bins=np.arange(0.5, 6.5))
+        # plt.axes().set_xticklabels(['xxx', 'DE', 'DW', 'E', 'SW', 'ME'])
+        # plt.title('Pope for dry cases')
+        # plt.ylabel('Count')
 
         save = True
         if save:
