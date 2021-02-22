@@ -9,7 +9,7 @@ import pandas as pd
 import metpy.calc as mpcalc
 import seaborn as sns
 from Plotscripts.colors_solarized import sol
-from Plotscripts.plot_phase_space import return_phasespace_plot
+# from Plotscripts.plot_phase_space import return_phasespace_plot
 home = expanduser("~")
 plt.rc('font', size=18)
 
@@ -68,8 +68,8 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
 
 if __name__ == '__main__':
     ls  = xr.open_dataset(home+'/Documents/Data/LargeScaleState/'+
-                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
-                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
+                          # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')
+                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
 
     # remove false data in precipitable water
     ls['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     # ROME is defined exactly at the LS time steps
     # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_max6h_avg_pm20minutes.nc')
     totalarea = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     # Percentiles used for the decile-binning
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     if l_plot_boxwhisker:
         df = pd.DataFrame()
 
-        var = ls['cin']
+        var = ls['PW']
         dataseries = []
         for i in range(10):
             times = bins[i].time
@@ -263,12 +263,13 @@ if __name__ == '__main__':
             ).values).to_pandas())
 
         df = pd.DataFrame(dataseries).transpose()
-        sns.boxplot(data=df*-1)
+        sns.boxplot(data=df)
 
         # plt.ylim(0, 0.025)
 
-        plt.ylabel('cin')
-        plt.xlabel('$\pm$20min max. ROME deciles')
+        plt.ylabel('PW')
+        # plt.xlabel('$\pm$20min max. ROME deciles')
+        plt.xlabel('6h-average total convective area deciles')
 
         plt.savefig(home + '/Desktop/whisker_romedeciles.pdf', bbox_inches='tight')
 
@@ -347,10 +348,10 @@ if __name__ == '__main__':
         lookuptime = pd.to_datetime([str(t)[:10] for t in high_rh_xaxis.time.values])
         pope_high_rh = pope.loc[lookuptime]
 
-        # plt.hist(pope_low_rh, bins=np.arange(0.5, 6.5))
-        # plt.axes().set_xticklabels(['xxx', 'DE', 'DW', 'E', 'SW', 'ME'])
-        # plt.title('Pope for dry cases')
-        # plt.ylabel('Count')
+        plt.hist(pope_low_rh, bins=np.arange(0.5, 6.5))
+        plt.axes().set_xticklabels(['xxx', 'DE', 'DW', 'E', 'SW', 'ME'])
+        plt.title('Pope for dry cases')
+        plt.ylabel('Count')
 
         save = True
         if save:

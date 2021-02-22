@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
 
 def contribution_whisker(input_percentages, levels, long_names,
@@ -76,13 +77,27 @@ def contribution_whisker(input_percentages, levels, long_names,
             # Manually this could be achieved by series.reindex_like(frame).
             dfsr['high_pred'] = highpred_series
 
-            # Plot
-            sns.violinplot(x=0, y='level_1', hue='high_pred', data=dfsr, split=True, scale='width',
+            # copy the input data for high predictions
+            df_highpred = dfsr.loc[dfsr['high_pred']]
+            # set whole data to False, so that seaborn plots the distribution for the whole data set
+            dfsr['high_pred'] = False
+            # convert the category-type column to boolean-type column
+            df_highpred.loc[:, 'high_pred'] = True
+            # append the high-predictions to the whole data. I.e. the high-prediction input occurs twice,
+            # once with False in the whole data and once with True in the appended data.
+            df_to_plot = pd.concat([dfsr, df_highpred])
+
+            # Plot. The dataframe has
+            # column '0', which holds the contributing percentage,
+            # column 'level_1', which holds the name of the input (quantity plus a unique integer) and
+            # column 'high_pred', which identifies if the input contributed to a correct high prediction.
+            sns.violinplot(x=0, y='level_1', hue='high_pred', data=df_to_plot, split=True, scale='width',
                            inner='quartile', palette='Set3', zorder=500)
 
         ax.set_xlim(-xlim, xlim)
         ax.axvline(x=0, color='lightgray', lw=2.5, zorder=-100)
-        ax.set_xticks([-40, -20, 0, 20, 40])
+        # ax.set_xticks([-40, -20, 0, 20, 40])
+        # ax.set_xticks([-40, -20, 0, 20, 40])
 
         if l_eof_input:
             label_list = [integer + 1 for integer in var_to_plot]

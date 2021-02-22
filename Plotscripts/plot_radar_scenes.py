@@ -103,8 +103,8 @@ def plot_multiple_radar_scenes(large_scale_date):
     vals = np.ones((256, 4))
     for i in range(3):
         vals[   :100, i] = 1.0   # white
-        # vals[100:200, i] = 0.95  # light grey
-        vals[100:200, i] = 1.0   # white
+        vals[100:200, i] = 0.9  # light grey
+        # vals[100:200, i] = 1.0   # white
         # vals[200:   , i] = 0.0   # black
         vals[200:, 0] =   0 / 255  # blue, r
         vals[200:, 1] = 162 / 255  # blue, g
@@ -234,9 +234,7 @@ def plot_multiple_radar_scenes(large_scale_date):
         # plt.close()
 
 if __name__=='__main__':
-    # plot_multiple_radar_scenes(np.datetime64('2005-03-11T18:00'))
-    # plot_multiple_radar_scenes(np.datetime64('2012-02-14T06:00'))
-    plot_multiple_radar_scenes(np.datetime64('2010-02-03T12:00'))
+    plot_multiple_radar_scenes(np.datetime64('2017-03-31T18:00:00'))
     # plot_multiple_radar_scenes(np.datetime64('2006-01-24T00')) # max value at 2006-01-23T21:50:00
     # plot_multiple_radar_scenes(np.datetime64('2003-12-20T09')) # max value at 2003-12-20T09:40:00
 

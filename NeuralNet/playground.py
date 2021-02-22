@@ -271,9 +271,10 @@ if testing:
 if manual_sampling:
     l_resample = True
     if l_resample:
-        metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
-        # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc') \
-        #        * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+        # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+        # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+        metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc') \
+               * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
         # the averaging period. Thus the labels are aligned to the large scale data set.
         # For reasons unknown, averages crossing a day of no data, not even NaN, into a normal day have wrongly
@@ -345,16 +346,16 @@ if manual_sampling:
         m_max[m_max.notnull()] = avg_maximum
         m_max.coords['percentile'] = m_max.rank(dim='time', pct=True)
 
-        # get time difference of maximum ROME time and large-scale time
-        time_max_avail = time_of_max[l_time_available]
-        ls_time = m_max.sel(time=time_max_avail, method='nearest').time
-        time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
-        time_diff = xr.full_like(m_max, fill_value=np.nan)
-        time_diff[m_max.notnull()] = time_diff_list
-        time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
-        time_diff.attrs['units'] = 'seconds'
-        time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
-        del time_diff['percentile']
+        # # get time difference of maximum ROME time and large-scale time
+        # time_max_avail = time_of_max[l_time_available]
+        # ls_time = m_max.sel(time=time_max_avail, method='nearest').time
+        # time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
+        # time_diff = xr.full_like(m_max, fill_value=np.nan)
+        # time_diff[m_max.notnull()] = time_diff_list
+        # time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
+        # time_diff.attrs['units'] = 'seconds'
+        # time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
+        # del time_diff['percentile']
 
 
     l_split_and_redistribute = False

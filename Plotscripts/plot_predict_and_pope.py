@@ -12,9 +12,10 @@ start = timeit.default_timer()
 
 # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
-# area   = xr.open_dataarray(home+'/Documents/Data/Analysis/o_area_avg6h_nanzero.nc') * 6.25
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_max6h_avg_pm20minutes.nc')
+# area   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area_km_max6h_avg_pm20minutes.nc')
 # timedelta = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/timedelta_maxrome_largescale.nc')
+
 # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/SecondModel/'
 model_path = '/Desktop/'
 predicted     = xr.open_dataarray(home + model_path + 'predicted.nc')
@@ -32,6 +33,7 @@ if l_high_values:
 else:
     # only times that could be predicted (via large-scale set). Sample size: 26,000 -> 6,000
     rome = rome.where(predicted.time)
+    # area = area.where(predicted.time)
     # timedelta = timedelta.where(predicted.time) /1e9
 
 # rome = (rome - rome.mean()) / rome.std()
@@ -49,10 +51,11 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-plot_length = 200
+plot_length = 1200
 
-# plot_index = slice(None, 4800)
-plot_index = slice(-800, -600)
+# plot_index = slice(None, 1200)
+plot_index = slice(-1200, None)
+# plot_index = slice(-800, -600)
 # plot_index = slice(2400+260, 2400+460)
 
 special_time = np.array(['2002-03-16T00:00:00.000000000', '2003-01-19T12:00:00.000000000',
@@ -89,12 +92,13 @@ special_time = np.array(['2002-03-16T00:00:00.000000000', '2003-01-19T12:00:00.0
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
 # fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(148, 4), sharex=True, sharey=True)
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(36, 4), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 for i, ax in enumerate([axes]):
-    ax.plot(rome             [plot_index], color='k', lw=4.5)
+    ax.plot(rome             [plot_index], color='k', lw=3)
+    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=2)
     # ax.plot(omega            [plot_index]*10, color='g'  , lw=1.5)
-    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=6)
+    # ax.plot(area            [plot_index], color='pink'  , lw=1.5)
     # ax.plot(rome.where(rome.time.isin(special_time)), ls='', marker='D', color='r')
 
     # ax.legend(['ROME', 'Earlier & same time '+legend_both[i]])
@@ -128,11 +132,11 @@ plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=Fa
 plt.xlabel('Time [6h intervals]')
 
 # plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
-# plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
-plt.ylabel('Total conv. area [km$^2$]', labelpad=15)
+plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
+# plt.ylabel('Total conv. area [km$^2$]', labelpad=15)
 
-plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
-# plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
+# plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
+plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
 
 l_area_plot = False
 if l_area_plot:

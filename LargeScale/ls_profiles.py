@@ -32,8 +32,8 @@ for v in ls.data_vars:
 xr.set_options(keep_attrs=False)
 
 # ROME is defined exactly at the LS time steps
-# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 
 percentiles = rome.percentile
 
@@ -55,7 +55,7 @@ var_strings = [
 # 's'
 # 'u'
 # ,'v'
-# 'omega'
+'omega'
 # ,'div'
 # ,'T_adv_h'
 # ,'T_adv_v'
@@ -68,7 +68,7 @@ var_strings = [
 # 'drdt'
 # 'RH'
 # ,'dwind_dz'
-'wind_dir'
+# 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
@@ -163,15 +163,17 @@ for var in var_strings:
 
             ax.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
             ax.fill_betweenx(y=ls_sub.lev[:-1],
-                             x1=lower_band - ref_profile[:39],
-                             x2=upper_band - ref_profile[:39],
+                             x1=lower_band,#- ref_profile[:39],
+                             x2=upper_band,#- ref_profile[:39],
                              alpha=0.1, color=sol[colours[i]])
 
     # plt.xlim((0.28, 0.82))
     # plt.xlim((-0.055, 0.055))
-    # plt.xlim((-1, 1))
-    # plt.ylim(0, 1000)
-    plt.ylim(0, 51)
+    # plt.xlim((-1,1))
+
+    plt.ylim(0, 1000)
+    # plt.ylim(0, 51)
+
     # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
     # plt.xlabel('$\Delta(s)$ from average profile, [K]')
 
@@ -181,7 +183,7 @@ for var in var_strings:
     #             '7. decile', '8. decile', '9. decile',
     #             '10. decile'], fontsize=9)
 
-    # ax.axvline(x=0, lw=1.5, color='darkgrey', zorder=1)
+    ax.axvline(x=0, lw=1.5, color='darkgrey', zorder=1)
     ax.invert_yaxis()
 
     plt.savefig('/Users/mret0001/Desktop/'+var+'.pdf', bbox_inches='tight', transparent=True)
