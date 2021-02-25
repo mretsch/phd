@@ -112,12 +112,21 @@ def remove_diurnal(series, dailycycle):
 home = expanduser("~")
 start = timeit.default_timer()
 
+l_profiles_as_eof = True
+if l_profiles_as_eof:
+    height_dim = 'number'
+else:
+    height_dim = 'lev'
+
 # assemble the large scale dataset
-ghome = home+'/Google Drive File Stream/My Drive'
 ds_ls  = xr.open_dataset(home +
                          '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
-metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+                         'CPOL_large-scale_forcing_noDailyCycle_profilesEOF.nc')
+                         # 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
+# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+
 
 # add quantity symbols to large-scale dataset
 ds_ls = add_variable_symbol_string(ds_ls)
@@ -129,6 +138,12 @@ ds_ls['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
 ds_ls['PW'].loc[{'time': slice('2015-01-05T00', None           )}] = np.nan
+ds_ls['LWP'].loc[{'time': slice(None           , '2002-02-27T12')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+ds_ls['LWP'].loc[{'time': slice('2015-01-05T00', None           )}] = np.nan
 
 
 l_remove_diurnal_cycle = False
@@ -157,16 +172,21 @@ ls_vars = [
            'dwind_dz'
            ]
 long_names = [ds_ls[var].long_name for var in ls_vars]
-ls_times = 'same_and_earlier_time'
+ls_times = 'same_time'
 predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                    timeseries=metric,
                                                    chosen_vars=ls_vars,
                                                    l_take_scalars=True,
-                                                   large_scale_time=ls_times)
+                                                   large_scale_time=ls_times,
+                                                   l_profiles_as_eof=l_profiles_as_eof)
 
 l_subselect = True
 if l_subselect:
-    predictor = subselect_ls_vars(predictor, long_names, levels_in=[215, 515, 990], large_scale_time=ls_times)
+    predictor = subselect_ls_vars(predictor,
+                                  long_names,
+                                  levels_in=[215, 515, 990],
+                                  large_scale_time=ls_times,
+                                  l_profiles_as_eof=l_profiles_as_eof)
 
 l_eof_input = False
 if l_eof_input:
@@ -185,7 +205,27 @@ if l_eof_input:
     predictor = predictor[target.notnull()]
     target    = target   [target.notnull()]
 
-n_lev = len(predictor['lev'])
+n_lev = len(predictor[height_dim])
+
+l_10min_frequency = False
+if l_10min_frequency:
+    rome_raw = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    predictor_inter = predictor.resample(time='10min').interpolate('linear')
+    rome_10min = rome_raw[rome_raw.notnull()]
+    predictor = predictor_inter[predictor_inter.time.isin(rome_10min.time)]
+    target = rome_10min.sel(time= predictor.time)
+
+# target = target[::-1]
+# predictor = predictor[::-1]
+# target = (target - target.mean()) / target.std()
+# metric = (metric - metric.mean()) / metric.std()
+# target = target['percentile']
+# [2496:2635] is constant low data span in 5089 predictions
+# mask = np.full(shape=5089, fill_value=True, dtype='bool')
+# mask[2496:2635] = False
+# target = target[mask]
+# predictor = predictor[mask, :]
+
 
 l_loading_model = True
 if not l_loading_model:
@@ -200,25 +240,28 @@ if not l_loading_model:
     model.compile(optimizer='adam', loss='mean_squared_error')  # , metrics=['accuracy'])
 
     # checkpoint
-    filepath = home+'/Desktop/M/model-{epoch:02d}-{val_loss:.2f}.h5'
+    filepath = home+'/Desktop/M/model-{epoch:02d}-{val_loss:.5f}.h5'
     checkpoint = kcallbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=False)
     callbacks_list = [checkpoint]
 
     # fit the model
-    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=40, callbacks=callbacks_list)
+    model.fit(x=predictor, y=target, validation_split=0.2, epochs=5, batch_size=1, callbacks=callbacks_list)
 
     l_predict = False
     if l_predict:
         print('Predicting...')
+        model2 = kmodels.load_model(home + '/Desktop/model.h5')
         pred = []
         for i, entry in enumerate(predictor):
-            pred.append(model.predict(np.array([entry])))
+            pred.append(model2.predict(np.array([entry])))
         pred_array = xr.DataArray(pred).squeeze()
         predicted = xr.DataArray(pred_array.values, coords={'time': predictor.time}, dims='time')
+        predicted.to_netcdf(home + '/Desktop/predicted.nc')
 
 else:
     # load a model
-    model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/SecondModel/'
+    # model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_EOFprofiles/No_lowcloud_rstp2m/SecondModel/'
+    model_path = home + '/Desktop/'
     model = kmodels.load_model(model_path + 'model.h5')
 
     input_length = len(predictor[0])
@@ -243,7 +286,7 @@ else:
         l_input_positive [i, :] = (model_input > 0.).values
 
     positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
-    for i, _ in enumerate(positive_positive_ratio.lev):
+    for i, _ in enumerate(positive_positive_ratio[height_dim]):
         positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_percentages[:, i] > 0.)).sum() \
                                       /  l_input_positive[:, i].sum()
         positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_percentages[:, i] < 0.)).sum() \
@@ -259,6 +302,7 @@ else:
     spread = p75 - p25
     # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
     high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+    p50_high = xr.DataArray([nth_percentile(series[input_percentages['high_pred']], 0.50) for series in input_percentages.T])
 
     l_sort_input_percentage = True
     if l_sort_input_percentage:
@@ -269,13 +313,18 @@ else:
         # apply same order to second time step, which is in second half of data
         second_half_order = first_half_order + (n_lev // 2)
         sort_index = np.concatenate((first_half_order, second_half_order))
+
+        if ls_times == 'same_time':
+            # sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
+            sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
+
         input_percentages = input_percentages[:, sort_index]
 
     # grab some variables explicitly
     olr = predictor[:, 36]
     r2m = predictor[:, 35]
     u990 = predictor[:, 5]
-    pw = predictor[:, 46]
+    # pw = predictor[:, 46]
     v515 = predictor[:, 7]
     w515 = predictor[:, 1]
     rh215 = predictor[:, 11]
@@ -286,16 +335,31 @@ else:
     l_violins = True \
                 and l_high_values
     plot = contribution_whisker(input_percentages=input_percentages,
-                                levels=predictor.lev.values[sort_index],
+                                levels=predictor[height_dim].values[sort_index],
                                 long_names=predictor['symbol'][sort_index],
-                                ls_times='same_and_earlier_time',
+                                ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars= 9,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                 xlim=50,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,
                                 )
+
+    l_show_correlationmatrix = False
+    if l_show_correlationmatrix:
+        df = predictor.to_pandas()
+
+        symbl_list = [string.strip() for string in predictor.symbol.values]
+        n_list = [str(n) for n in predictor[height_dim].values]
+
+        column_list = [a + b for a, b in zip(symbl_list, n_list)]
+        df.columns = column_list
+
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(80, 70))
+        corrmatrix = df.corr()
+        sns.heatmap(abs(corrmatrix), annot=corrmatrix, fmt='.2f', cmap='Spectral')
+        plt.savefig(home + '/Desktop/corrmatrix.pdf', bbox_inches='tight')
 
     plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
 

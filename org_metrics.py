@@ -452,9 +452,9 @@ def run_metrics(file="", switch={}):
     m1, o_number, o_area, o_area_max, lrl = [], [], [], [], []
     if switch['basics']:
         for cloudlist in props_r:
-            m1.append        (metric_1 (clouds=cloudlist))
+            # m1.append        (metric_1 (clouds=cloudlist))
             o_number.append  (n_objects(clouds=cloudlist))
-            o_area_max.append(max_area (clouds=cloudlist))
+            # o_area_max.append(max_area (clouds=cloudlist))
     else:
         m1 = np.nan
         o_number = np.nan
@@ -463,16 +463,16 @@ def run_metrics(file="", switch={}):
     if switch['rom_limod'] or switch['basics']:
         for cloudlist in props_r:
             o_area.append(avg_area       (clouds=cloudlist))
-            lrl.append   (lower_rom_limit(clouds=cloudlist))
+            # lrl.append   (lower_rom_limit(clouds=cloudlist))
     else:
         o_area = np.nan
         lrl = np.nan
 
-    m1 = xr.DataArray(m1)
+    # m1 = xr.DataArray(m1)
     o_number = xr.DataArray(o_number)
     o_area = xr.DataArray(o_area)
-    o_area_max = xr.DataArray(o_area_max)
-    lrl = xr.DataArray(lrl)
+    # o_area_max = xr.DataArray(o_area_max)
+    # lrl = xr.DataArray(lrl)
 
     # compute rom_limod by modifying rom based on the theoretical limits
     # IMPORTANT: not the ROME as in the paper. This is the proposed modification of the paper's ROME,
@@ -508,12 +508,12 @@ if __name__ == '__main__':
 
     switch = {'artificial': False, 'random': False,
               'cop': False, 'cop_mod': False, 'sic': False, 'rom_limod': False, 'rom_el': False,
-              'iorg': False, 'scai': True, 'rom': False, 'basics': False,
-              'boundary': False}
+              'iorg': False, 'scai': False, 'rom': False, 'basics': True,
+              'boundary': True}
 
     # compute the metrics
     ds_metric = run_metrics(switch=switch,
-                            file=home+"/Documents/Data/Steiner_Earlier/*season*")
+                            file=home+"/Documents/Data/Steiner/*.nc")
 
     # save metrics as netcdf-files
     save = True

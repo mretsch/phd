@@ -271,6 +271,8 @@ if testing:
 if manual_sampling:
     l_resample = True
     if l_resample:
+        # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+        # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
         metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc') \
                * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
         # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
@@ -286,7 +288,7 @@ if manual_sampling:
         m_mean = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
                                 loffset='3H').mean()
         m_avg = m_avg.where(m_mean.notnull(), other=np.nan)
-        manual_overwrite = True
+        manual_overwrite = False
         if manual_overwrite:
             m_avg.loc[
                 [np.datetime64('2003-03-15T00:00'), np.datetime64('2003-03-17T00:00'), np.datetime64('2003-10-30T00:00'),
@@ -297,6 +299,64 @@ if manual_sampling:
                  metric.sel(time=slice('2003-11-24T21', '2003-11-25T02:50')).sum()/36.,
                  metric.sel(time=slice('2006-11-10T21', '2006-11-11T02:50')).sum()/36.]
         m_avg.coords['percentile'] = m_avg.rank(dim='time', pct=True)
+
+        # m_q95 = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+        #                        loffset='3H').quantile(q=0.95)
+        # m_q95.coords['percentile'] = m_q95.rank(dim='time', pct=True)
+
+        # m_std = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+        #                          loffset='3H').std()
+
+        def maximum_time(x):
+            x_max = x[x == x.max()]
+            if len(x_max) > 1:
+                x_return = x_max[0].time
+            else:
+                x_return = x_max.time
+            return x_return
+
+        m_max = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+                                loffset='3H').max()
+
+        time_of_max = metric.resample(indexer={'time': '6H'}, skipna=False, closed='left', label='left', base=3,
+                        loffset='3H').apply(maximum_time)
+
+        time_20min_before = time_of_max - np.timedelta64(20, 'm')
+        time_10min_before = time_of_max - np.timedelta64(10, 'm')
+        time_10min_after = time_of_max + np.timedelta64(10, 'm')
+        time_20min_after = time_of_max + np.timedelta64(20, 'm')
+
+        l_time_available = time_20min_before.isin(metric.time) & \
+                           time_10min_before.isin(metric.time) & \
+                           time_10min_after .isin(metric.time) & \
+                           time_20min_after .isin(metric.time)
+
+        time_not_available = time_of_max[np.logical_not(l_time_available)]
+
+        rome0 = metric.sel(time=time_20min_before[l_time_available])
+        rome1 = metric.sel(time=time_10min_before[l_time_available])
+        rome2 = metric.sel(time=time_of_max      [l_time_available])
+        rome3 = metric.sel(time=time_10min_after [l_time_available])
+        rome4 = metric.sel(time=time_20min_after [l_time_available])
+        array_rome = np.array([rome0, rome1, rome2, rome3, rome4])
+
+        avg_maximum = np.nanmean(array_rome, axis=0)
+
+        m_max.loc[{'time': m_max.sel(time=time_not_available, method='nearest').time}] = np.nan
+        m_max[m_max.notnull()] = avg_maximum
+        m_max.coords['percentile'] = m_max.rank(dim='time', pct=True)
+
+        # # get time difference of maximum ROME time and large-scale time
+        # time_max_avail = time_of_max[l_time_available]
+        # ls_time = m_max.sel(time=time_max_avail, method='nearest').time
+        # time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
+        # time_diff = xr.full_like(m_max, fill_value=np.nan)
+        # time_diff[m_max.notnull()] = time_diff_list
+        # time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
+        # time_diff.attrs['units'] = 'seconds'
+        # time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
+        # del time_diff['percentile']
+
 
     l_split_and_redistribute = False
     if l_split_and_redistribute:

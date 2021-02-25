@@ -37,7 +37,7 @@ if l_hists_on_top:
 
 l_hists_side_by = True
 if l_hists_side_by:
-    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 
     ds_pope = into_pope_regimes(rome, l_upsample=True, l_all=True)
 
@@ -96,6 +96,7 @@ if l_hists_side_by:
                ])
     ax.legend(fontsize=10)
     ax.set_xticklabels(('xxx', '(DE)', 'DW', '(E)', 'SW', 'ME'))
+    ax.set_title('Max. ROME $\pm$ 20 minutes')
 
 save = True
 if save:

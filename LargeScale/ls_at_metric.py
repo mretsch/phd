@@ -5,7 +5,8 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
                                 chosen_vars=None,
                                 l_normalise_input=True,
                                 l_take_scalars=False,
-                                large_scale_time=None):
+                                large_scale_time=None,
+                                l_profiles_as_eof=False):
     """Returns a concatenated array of the large-scale variables and the time series, at times of both being present.
     chosen_vars selects some variables out of the large-scale state dataset."""
 
@@ -34,11 +35,17 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
             'dwind_dz',
             ]
 
-    # bottom level has redundant information and two bottom levels filled with NaN for dwind_dz
-    var_list = [ds_largescale[var][:, :-1] if var != 'dwind_dz' else ds_largescale[var][:, :-2]
-                for var in chosen_vars ]
+    if not l_profiles_as_eof:
+        # bottom level has redundant information and two bottom levels filled with NaN for dwind_dz
+        var_list = [ds_largescale[var][:, :-1] if var != 'dwind_dz' else ds_largescale[var][:, :-2]
+                    for var in chosen_vars ]
+        height_dim = 'lev'
+    else:
+        var_list = [ds_largescale[var][:, :] for var in chosen_vars]
+        height_dim = 'number'
 
-    c1 = xr.concat(var_list, dim='lev')
+
+    c1 = xr.concat(var_list, dim=height_dim)
 
     if l_take_scalars:
         scalars = [
@@ -85,29 +92,37 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     # Also count how long that variable is in the resulting array.
     names_list, symbl_list, variable_size = [], [], []
     for var_string in chosen_vars:
-        if var_string != 'dwind_dz':
-            last_index = -1
+        if not l_profiles_as_eof:
+            if var_string != 'dwind_dz':
+                last_index = -1
+            else:
+                last_index = -2
+            # add extra length to variable name, such that additional info can be added later
+            names_list.extend([ds_largescale[var_string].long_name + '            ' for
+                               _ in range(len(ds_largescale[var_string][:, :last_index][height_dim]))])
+            symbl_list.extend([ds_largescale[var_string].symbol    + '            ' for
+                               _ in range(len(ds_largescale[var_string][:, :last_index][height_dim]))])
+            variable_size.append(len(names_list) - sum(variable_size))
         else:
-            last_index = -2
-        # add extra length to variable name, such that additional info can be added later
-        names_list.extend([ds_largescale[var_string].long_name + '            ' for
-                           _ in range(len(ds_largescale[var_string][:, :last_index].lev))])
-        symbl_list.extend([ds_largescale[var_string].symbol    + '            ' for
-                           _ in range(len(ds_largescale[var_string][:, :last_index].lev))])
-        variable_size.append(len(names_list) - sum(variable_size))
+            # add extra length to variable name, such that additional info can be added later
+            names_list.extend([ds_largescale[var_string].long_name + '            ' for
+                               _ in range(len(ds_largescale[var_string][height_dim]))])
+            symbl_list.extend([ds_largescale[var_string].symbol    + '            ' for
+                               _ in range(len(ds_largescale[var_string][height_dim]))])
+            variable_size.append(len(names_list) - sum(variable_size))
 
-    c1.coords['long_name'] = ('lev', names_list)
-    c1.coords['symbol']    = ('lev', symbl_list)
+    c1.coords['long_name'] = (height_dim, names_list)
+    c1.coords['symbol']    = (height_dim, symbl_list)
 
     if l_take_scalars:
-        c2_r = c2.rename({'concat_dims': 'lev'})
-        c2_r.coords['lev'] = np.arange(len(c2))
+        c2_r = c2.rename({'concat_dims': height_dim})
+        c2_r.coords[height_dim] = np.arange(len(c2))
         symbl_list = [ds_largescale[scalar].symbol    + '            ' for scalar in scalars]
         names_list = [ds_largescale[scalar].long_name + '            ' for scalar in scalars]
-        c2_r.coords['symbol']    = ('lev', symbl_list)
-        c2_r.coords['long_name'] = ('lev', names_list)
+        c2_r.coords['symbol']    = (height_dim, symbl_list)
+        c2_r.coords['long_name'] = (height_dim, names_list)
 
-        var = xr.concat([c1, c2_r], dim='lev')
+        var = xr.concat([c1, c2_r], dim=height_dim)
     else:
         var = c1
 
@@ -124,11 +139,15 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         predictor = var.where(var.notnull(), drop=True)
         target = timeseries.sel(time=predictor.time)
 
+    if l_profiles_as_eof:
+        # remove all 'series' at a level/number which consists exclusively of NaN
+        var = var.where(var.notnull(), drop=True)
+
     # large scale variables only where timeseries is defined
     var_metric = var.where(timeseries.notnull(), drop=True)
 
     # boolean for the large scale variables without any NaN anywhere
-    l_var_nonull = var_metric.notnull().all(dim='lev')
+    l_var_nonull = var_metric.notnull().all(dim=height_dim)
 
     # large-scale state variables at same time as timeseries, or not
     if large_scale_time == 'same_time':
@@ -192,34 +211,39 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
     return predictor, target, variable_size
 
 
-def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=None):
+def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=None, l_profiles_as_eof=False):
 
     if large_scale_time not in ['same_time', 'same_and_earlier_time', 'only_earlier_time', 'only_later_time']:
         raise ValueError("String large_scale_time to select large-scale time steps does not match or is not provided.")
+
+    if not l_profiles_as_eof:
+        height_dim='lev'
+    else:
+        height_dim='number'
 
     scalars = [
         'Convective Inhibition',
         'Convective Available Potential Energy',
         # '515 hPa Downward CAPE',                    # correlation to other variables higher than 0.8
-        'Satellite-measured low cloud',
-        'Surface downwelling LW',
-        '10m wind speed',
-        '10m V component',
-        '2m water vapour mixing ratio',
+        # 'Satellite-measured low cloud',
+        # 'Surface downwelling LW',                   # correlated -0.64 to OLR
+        # '10m wind speed',
+        # '10m V component',
+        # '2m water vapour mixing ratio',
         'TOA LW flux, upward positive',                # without10important; OLR is just chicken-egg so leave out
         'Surface sensible heat flux, upward positive', # without10important
-        'MWR-measured cloud liquid water path',
+        # 'MWR-measured cloud liquid water path',
 
         'Surface latent heat flux, upward positive',
-        'Surface pressure averaged over the domain',
-        '2m air temperature',
+        # 'Surface pressure averaged over the domain',
+        # '2m air temperature',
         # 'Surface skin temperature',                 # correlation to other variables higher than 0.8
         # '2m air relative humidity',                 # correlation to other variables higher than 0.8
-        '10m U component',
+        # '10m U component',
         # 'Surface net radiation, downward positive', # correlation to other variables higher than 0.8
         # 'TOA net SW flux, downward positive',       # correlation to other variables higher than 0.8
-        'Satellite-measured middle cloud',
-        'Satellite-measured high cloud',
+        # 'Satellite-measured middle cloud',
+        # 'Satellite-measured high cloud',
         # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
         # 'Column-integrated dH2O/dt',                  # without10important; leave out TWP stuff
         # 'Column-integrated H2O advection',            # without10important; dont understand its calculation so leave out
@@ -228,7 +252,7 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
         # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
         # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
         # 'Column latent heating',                    # correlation to other variables higher than 0.8
-        '2m dry static energy',                       # without10important
+        # '2m dry static energy',                       # without10important
         'MWR-measured column precipitable water',
         # 'Surface upwelling LW',                     # correlation to other variables higher than 0.8
         # 'Surface downwelling SW',                   # has same long_name as sw_dn_srf (according to statsmodels)
@@ -288,14 +312,27 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
             string_selection = ', 6h   later'
 
         for profile_string in profiles:
-            if profile_string != 'Vertical wind shear':
-                levels = levels_in
+            if not l_profiles_as_eof:
+                if profile_string != 'Vertical wind shear':
+                    levels = levels_in
+                    if profile_string == 'Dry static energy':  # dont take 990hPa of s because it's correlated to RH_990
+                        levels = levels_in[:-1]
+                else:
+                    levels = levels_in[:-1] + [965]
+
+                ls_list.append(
+                    large_scale.where(large_scale['long_name'] == profile_string + string_selection,
+                                      drop=True).sel(lev=levels)
+                )
             else:
-                levels = [115, 515, 965]
-            ls_list.append(
-                large_scale.where(large_scale['long_name'] == profile_string+string_selection,
-                                  drop=True).sel(lev=levels)
-            )
+                if profile_string in ['Relative humidity', 'Horizontal r advection']:
+                    levels = slice(1, None) # slice(1, 4)
+                else:
+                    levels = slice(None, None) # slice(None, 3)
+                ls_list.append(
+                    large_scale.where(large_scale['long_name'] == profile_string+string_selection,
+                                      drop=True).sel(number=levels)
+                )
 
         for scalar_string in scalars:
             ls_list.append(
@@ -303,4 +340,4 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
                                   drop=True)
             )
 
-    return xr.concat(ls_list, dim='lev')
+    return xr.concat(ls_list, dim=height_dim)
