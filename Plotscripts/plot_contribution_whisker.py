@@ -97,7 +97,7 @@ def contribution_whisker(input_percentages, levels, long_names,
         ax.set_xlim(-xlim, xlim)
         ax.axvline(x=0, color='lightgray', lw=2.5, zorder=-100)
         # ax.set_xticks([-40, -20, 0, 20, 40])
-        # ax.set_xticks([-40, -20, 0, 20, 40])
+        ax.set_xticks([-60, -30, 0, 30, 60])
 
         if l_eof_input:
             label_list = [integer + 1 for integer in var_to_plot]

@@ -14,8 +14,8 @@ def return_phasespace_plot():
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/hist_18bin4per.nc')
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/omega_pw_25bin5per_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/w_pw_9bin40per_4to96perc_hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
     # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
     # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
@@ -67,7 +67,7 @@ def return_phasespace_plot():
         l_histogram = True
         if l_histogram:
             # da_sub = da.sel(time=ds_ps.time)
-            # da = da[da.notnull()]
+            da = da[da.notnull()]
             da_sub = da[da.time.isin(ds_ps.time)]
 
         da = da_sub
@@ -90,7 +90,7 @@ def return_phasespace_plot():
                                               overlay=overlay,
                                               overlay_x=overlay['x_bins'],
                                               overlay_y=overlay['y_bins'],
-                                              l_probability=False,
+                                              l_probability=True,
                                               upper_bound=10000.,
                                               lower_bound=np.percentile(overlay, 90))
                                               # upper_bound=np.percentile(overlay, q=10),
@@ -106,7 +106,7 @@ def return_phasespace_plot():
     plt.rc('legend', fontsize=18)
     # plt.style.use('dark_background')
 
-    the_plot = ps_overlay.T.plot(#cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg_r', # 'inferno',# (robust=True)  # (cmap='coolwarm_r', 'tab20c')
+    the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg_r', # 'inferno',# (robust=True)  # (cmap='coolwarm_r', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=-150, vmax=ps_overlay.max())
 
@@ -120,13 +120,13 @@ def return_phasespace_plot():
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
     # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
-    plt.ylabel('RH$_{515}$ [1]')
-    # plt.ylabel('CIN')
+    # plt.ylabel('RH$_{515}$ [1]')
+    plt.ylabel('PW')
 
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
-    # the_plot.colorbar.set_label('Probability of ROME > p$_{90}$(ROME) [1]')
+    the_plot.colorbar.set_label('Probability of TCA > p$_{90}$(TCA) [1]')
     # the_plot.colorbar.set_label('Probability of ROME < p$_{10}$(ROME) [1]')
-    the_plot.colorbar.set_label('Total conv. area [km$^2$]')
+    # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label('ROME [km$^2$]')
     # the_plot.colorbar.set_label('max ROME ($\pm$20min avg)')
     # the_plot.colorbar.set_label('Number of objects [1]')
