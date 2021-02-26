@@ -10,9 +10,8 @@ from NeuralNet.backtracking import high_correct_predictions
 
 start = timeit.default_timer()
 
-# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_max6h_avg_pm20minutes.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area_km_max6h_avg_pm20minutes.nc')
 # timedelta = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/timedelta_maxrome_largescale.nc')
 
@@ -51,11 +50,11 @@ p_regime[:] = xr.where(ds_pope.var_p5.notnull(), 5, p_regime)
 
 plt.rc('font', size=24)
 
-plot_length = 1200
+plot_length = 200
 
 # plot_index = slice(None, 1200)
 plot_index = slice(-1200, None)
-# plot_index = slice(-800, -600)
+plot_index = slice(-1200, -1000)
 # plot_index = slice(2400+260, 2400+460)
 
 special_time = np.array(['2002-03-16T00:00:00.000000000', '2003-01-19T12:00:00.000000000',
@@ -92,11 +91,11 @@ special_time = np.array(['2002-03-16T00:00:00.000000000', '2003-01-19T12:00:00.0
 predicted_list = [predicted, mlr_predicted]
 legend_both = ['NN', 'MLR']
 # fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(148, 4), sharex=True, sharey=True)
-fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(48, 4), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(36, 4), sharex=True, sharey=True)
 colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 for i, ax in enumerate([axes]):
-    ax.plot(rome             [plot_index], color='k', lw=3)
-    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=2)
+    ax.plot(rome             [plot_index], color='k', lw=7)
+    ax.plot(predicted_list[i][plot_index], color=sol['blue'], lw=5)
     # ax.plot(omega            [plot_index]*10, color='g'  , lw=1.5)
     # ax.plot(area            [plot_index], color='pink'  , lw=1.5)
     # ax.plot(rome.where(rome.time.isin(special_time)), ls='', marker='D', color='r')
@@ -131,12 +130,21 @@ fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 plt.xlabel('Time [6h intervals]')
 
-# plt.ylabel('6h-average ROME [km$^2$]', labelpad=15)
-plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
-# plt.ylabel('Total conv. area [km$^2$]', labelpad=15)
+# plt.ylabel('Avg. (max. ROME $\pm$ 20 min) [km$^2$]', labelpad=15)
+plt.ylabel('Total conv. area [km$^2$]', labelpad=15)
 
 # plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
 plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
+
+l_scatter_plot = False
+if l_scatter_plot:
+    # make a 'scatter'-plot via a 2d-histogram
+    from Plotscripts.plot_hist import histogram_2d
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    ax, h_2d = histogram_2d(rome, predicted, nbins=100, ax=ax,
+                                  y_label='TCA$_\mathrm{NN}$ [km$^2$]', x_label='Total conv area [km$^2$]', cbar_label='%')
+    ax.set_aspect(abs((rome.max()-rome.min())/(predicted.max()-predicted.min())))
+    fig.savefig(home+'/Desktop/predicted_scatter.pdf', bbox_inches='tight')
 
 l_area_plot = False
 if l_area_plot:

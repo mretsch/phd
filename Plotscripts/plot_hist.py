@@ -110,7 +110,10 @@ def histogram_1d(data, nbins=None, l_adjust_bins=False, l_xlog=False, x_label=''
     return fig
 
 
-def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_label='', l_same_axis_length=False):
+def histogram_2d(x_series, y_series, nbins=None,
+                 ax=None,
+                 x_label='', y_label='', cbar_label='',
+                 l_same_axis_length=False, l_cut_off=False):
     """Computes and plots a 2D histogram."""
     start_h = timeit.default_timer()
 
@@ -129,10 +132,10 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
                          np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
         # bin_edges = [np.linspace(start=-7., stop=4, num=nbins+1),
         #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
-        xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
-        ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
-        bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
-                     np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
+        # xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
+        # ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
+        # bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
+        #              np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -151,7 +154,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=True, cut_off=40)#60)#20)#75)#2600)
+                                                         l_cut_off=l_cut_off, cut_off=40)#60)#20)#75)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -201,8 +204,11 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
                         attrs={'Sample size': '{:g}'.format(samplesize.values)})
 
     # Plot 2D histogram
-    fig = plt.figure()
-    plt.pcolormesh(x_edges, y_edges, Hmasked)#, cmap='gist_ncar')#  # , cmap='tab20c')
+    if ax==None:
+        ax = plt.figure() # actually a figure shouldnt be called ax, very ambiguous
+    else:
+        plt.sca(ax)
+    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
     # plt.grid()
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -211,7 +217,7 @@ def histogram_2d(x_series, y_series, nbins=None, x_label='', y_label='', cbar_la
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)
-    return fig, ds_out
+    return ax, ds_out
 
 
 if __name__ == '__main__':
@@ -291,7 +297,7 @@ if __name__ == '__main__':
                                       x_label=var1.long_name+' ['+var1.units+']', #'Total conv. area [km$^2$]', #
                                       y_label=var2.long_name+' ['+var2.units+']', # 'Number of objects [1]', #
                                       cbar_label='%', # '[% dx$^{{-1}}$ dy$^{{-1}}$]')
-                                      l_same_axis_length=False)
+                                      l_cut_off=True)
         fig_h_2d.show()
 
         fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
