@@ -340,7 +340,7 @@ else:
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
                                 n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
-                                xlim=50,
+                                xlim=180,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,

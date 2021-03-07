@@ -23,7 +23,7 @@ def contribution_whisker(input_percentages, levels, long_names,
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 42 * 9/47.))  # *(12/94. + 10/94.)
         n_lev_onetime = n_lev_total // 2  # 11 #
     else:
-        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 82 * n_profile_vars/82 ))# * 7/47.  ))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(13.5, 82 * n_profile_vars/82 ))# * 7/47.  ))
         axes = [axes]
         n_lev_onetime = n_lev_total
 
@@ -96,8 +96,8 @@ def contribution_whisker(input_percentages, levels, long_names,
 
         ax.set_xlim(-xlim, xlim)
         ax.axvline(x=0, color='lightgray', lw=2.5, zorder=-100)
-        # ax.set_xticks([-40, -20, 0, 20, 40])
-        ax.set_xticks([-60, -30, 0, 30, 60])
+        # ax.set_xticks([-60, -30, 0, 30, 60])
+        ax.set_xticks([-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150])
 
         if l_eof_input:
             label_list = [integer + 1 for integer in var_to_plot]
