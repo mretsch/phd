@@ -161,7 +161,7 @@ def mlp_backtracking_percentage(model, data_in):
     return node_percentages[::-1]
 
 
-def mlp_backtracking_relevance(model, data_in, alpha=1., beta=0.):
+def mlp_backtracking_relevance(model, data_in, alpha=None, beta=None):
     """
     Compute the relevance contribution of each node in an MLP towards the predicted result.
     See 'Methods for interpreting and understanding deep neural networks', Montavon 2018. .
@@ -187,12 +187,11 @@ def mlp_backtracking_relevance(model, data_in, alpha=1., beta=0.):
     node_relevance = []
 
     weights = weight_list[-2][:, 0]
-    weights_positive = np.where(weights >  0., weights, 0.)
-    weights_negative = np.where(weights <= 0., weights, 0.)
+    nodes_times_weights = node_values[-2] * weights
 
     # values given from last layer maps to (one) output node.
-    last_layer_positive = node_values[-2] * weights_positive
-    last_layer_negative = node_values[-2] * weights_negative
+    last_layer_positive = np.where(nodes_times_weights >  0., nodes_times_weights, 0.)
+    last_layer_negative = np.where(nodes_times_weights <= 0., nodes_times_weights, 0.)
 
     # from paper about layer relevance propagation (LRP), Montavon 2018
     # catch dividing by zero
@@ -213,8 +212,6 @@ def mlp_backtracking_relevance(model, data_in, alpha=1., beta=0.):
     for i in range(n_layers - 1)[::-1]:
         weights = weight_list[2 * i]
         bias    = weight_list[2 * i + 1]
-        weights_positive = np.where(weights >  0., weights, 0.)
-        weights_negative = np.where(weights <= 0., weights, 0.)
 
         # weights are stored in array of shape (# nodes in layer n, # nodes in layer n+1), relevance as well
         relevance = np.zeros_like(weights)
@@ -222,8 +219,9 @@ def mlp_backtracking_relevance(model, data_in, alpha=1., beta=0.):
         # for each weight-set calculate how much each node in iput-layers contributes to a node in next layer
         for j in range(weights.shape[1]):
 
-            iput_positive = iput[i] * weights_positive[:, j]
-            iput_negative = iput[i] * weights_negative[:, j]
+            iput_times_weights = iput[i] * weights[:, j]
+            iput_positive = np.where(iput_times_weights >  0., iput_times_weights, 0.)
+            iput_negative = np.where(iput_times_weights <= 0., iput_times_weights, 0.)
 
             positive_term = alpha * iput_positive / iput_positive.sum() if iput_positive.sum() != 0. else 0.
             negative_term = beta  * iput_negative / iput_negative.sum() if iput_negative.sum() != 0. else 0.

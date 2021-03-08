@@ -6,6 +6,7 @@ import keras.models as kmodels
 import keras.utils as kutils
 import keras.callbacks as kcallbacks
 import NeuralNet.backtracking as bcktrck
+import innvestigate as innv
 import xarray as xr
 import pandas as pd
 import seaborn as sns
@@ -136,16 +137,17 @@ def four_inputs_intercorrelated():
     return (generated_data[:, i] for i in range(generated_data.shape[1]))
 
 
-# i_1, i_2, i_3, y = three_inputs_and_target()
-y, i_1, i_2, i_3, i_4 = four_inputs_intercorrelated()
+i_1, i_2, i_3, y = three_inputs_and_target()
+# y, i_1, i_2, i_3, i_4 = four_inputs_intercorrelated()
 
 
 
 # Train MLP, y is the target, [corr_1, corr_2, other_data] is input
 target = y
-inputs = np.stack((i_1, i_2, i_3, i_4), axis=1)
+inputs = np.stack((i_1, i_2, i_3), axis=1)
+# inputs = np.stack((i_1, i_2, i_3, i_4), axis=1)
 
-l_train_model = True
+l_train_model = False
 if l_train_model:
     model = kmodels.Sequential()
     model.add(klayers.Dense(150, activation='relu', input_shape=(inputs.shape[1],)))
@@ -162,6 +164,10 @@ if l_train_model:
         input_percentages[i, :] = bcktrck.mlp_backtracking_percentage(model=model, data_in=iput)[0]
         l_input_positive [i, :] = iput > 0.
 
+    # bach_input_percentages = np.zeros_like(inputs)
+    # for i, iput in enumerate(inputs):
+    #     bach_input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
+
     # positive_positive_ratio = np.zeros_like(input_percentages[:2, :])
     # for i in range(positive_positive_ratio.shape[1]):
     #     positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_percentages[:, i] > 0.)).sum() \
@@ -176,13 +182,30 @@ else:
     input_percentages = xr.open_dataarray(home+'/Documents/Data/NN_Models/BasicUnderstanding/No_Functional_Connection/'+
                                           'input_percentages.nc').values
 
+    # the _IB stands for 'ignore bias'. This seems to be the version presented in the Bach/Montavon-papers,
+    # because it matches the results of my own implementation of their algorithm.
+    lrp10 = innv.create_analyzer(name='lrp.alpha_1_beta_0_IB', model=model)
+    lrp21 = innv.create_analyzer(name='lrp.alpha_2_beta_1_IB', model=model)
 
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
-sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
-# sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
-ax.set_ylim(-150, 250)
-ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
-ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x4'])
-ax.set_xlabel('Input')
-ax.set_ylabel('Contributing percentage [%]')
-plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
+    bach10_input_percentages = np.zeros_like(inputs)
+    bach21_input_percentages = np.zeros_like(inputs)
+    lrp10_input_percentages = np.zeros_like(inputs)
+    lrp21_input_percentages = np.zeros_like(inputs)
+    for i, iput in enumerate(inputs):
+        bach10_input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
+        bach21_input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=2, beta=1)[0]
+        lrp10_input_percentages[i, :] = lrp10.analyze(np.array([iput]))
+        lrp21_input_percentages[i, :] = lrp21.analyze(np.array([iput]))
+
+
+# fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
+# sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
+# # sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
+# ax.set_ylim(-150, 250)
+# ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
+# ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
+# # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
+# plt.title('Percentage-backtracking')
+# ax.set_xlabel('Input')
+# ax.set_ylabel('Contributing percentage [%]')
+# plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
