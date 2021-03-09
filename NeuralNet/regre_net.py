@@ -283,6 +283,7 @@ else:
     l_input_positive  = xr.full_like (predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
     for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
         input_percentages[i, :] = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
+        # input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model, model_input, alpha=2, beta=1)[0]
         l_input_positive [i, :] = (model_input > 0.).values
 
     positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
@@ -339,8 +340,8 @@ else:
                                 long_names=predictor['symbol'][sort_index],
                                 ls_times='same_time',
                                 n_lev_total=n_lev,
-                                n_profile_vars=6,#n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
-                                xlim=180,
+                                n_profile_vars=n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                xlim=150,
                                 bg_color='mistyrose',
                                 l_eof_input=l_eof_input,
                                 l_violins=l_violins,

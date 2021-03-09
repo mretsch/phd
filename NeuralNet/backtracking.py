@@ -127,6 +127,7 @@ def mlp_backtracking_percentage(model, data_in):
     last_layer = node_values[-2] * weight_list[-2][:, 0].transpose()
 
     # attribute to each node the percentage with which this node contributed to next layer
+    # multiplying with the output node value (node_values[-1]) instead of 100 is done in LRP
     last_layer_perc = last_layer / (last_layer.sum() + weight_list[-1]) * 100
     node_percentages     .append(last_layer_perc)
     node_percentages_full.append(last_layer_perc)
