@@ -16,8 +16,8 @@ home = expanduser("~")
 ghome = home+'/Google Drive File Stream/My Drive'
 start = timeit.default_timer()
 
-testing = False
-manual_sampling = True
+testing = True
+manual_sampling = False
 
 if testing:
     convolving = False
@@ -173,20 +173,22 @@ if testing:
     l_model11 = False
     if l_model11:
         x = np.random.randint(1, 50, size=(1000, 3))
-        y = np.sqrt(x[:, 1]) + np.log(x[:, 2])
+        y = 0.7 * np.square(x[:, 1]) + 0.3 * np.square(x[:, 2])
         model = kmodels.Sequential()
-        model.add(klayers.Dense(750, activation='relu', input_shape=(x.shape[1],)))
-        model.add(klayers.Dense(750, activation='relu'))
-        model.add(klayers.Dense(750, activation='relu'))
+        model.add(klayers.Dense(150, activation='relu', input_shape=(x.shape[1],)))
+        model.add(klayers.Dense(150, activation='relu'))
+        # model.add(klayers.Dense(750, activation='relu'))
         model.add(klayers.Dense(1, activation='linear'))
         model.compile(optimizer='adam', loss='mean_squared_error')
-        model.fit(x, y, batch_size=10, epochs=20, validation_split=0.3)
+        model.fit(x, y, batch_size=10, epochs=150, validation_split=0.3)
 
     model_insight = True
     if model_insight:
 
         model = kmodels.load_model(
-            home+'/Documents/Data/NN_Models/BasicUnderstanding/Point7_plus_Point3_Model/point7point3model.h5')
+            # home+'/Documents/Data/NN_Models/BasicUnderstanding/Point7_plus_Point3_Model/point7point3model.h5')
+            # home + '/Documents/Data/NN_Models/BasicUnderstanding/Multi3_Model/multi3model.h5')
+            home + '/Documents/Data/NN_Models/BasicUnderstanding/07Sq_plus_03Sq_Model/07SqPlus03SqModel.h5')
         # some arbitrary input
         x = [40, 40, 20]
         output = np.array(x)
@@ -223,12 +225,15 @@ if testing:
 
         percentage_input = np.zeros(shape=(len(x), 50 ** 3))
         percentage_input_full = []
+        lrp_input = np.zeros(shape=(len(x), 50 ** 3))
         index = 0
         for k in range(1, 51):
             for l in range(1, 51):
                 for m in range(1, 51):
                     x = [k, l, m]
                     percentage_input[:, index] = bcktrck.mlp_backtracking_percentage(model=model, data_in=x)[0]
+                    lrp_input       [:, index] = bcktrck.mlp_backtracking_relevance(model=model, data_in=x,
+                                                                                    alpha=2, beta=1)[0]
                     # percentage_input_full.append(mlp_backtracking_percentage(model=model, data_in=x))
                     # percentage_input[:, index] = percentage_input_full[-1][0]
                     index += 1

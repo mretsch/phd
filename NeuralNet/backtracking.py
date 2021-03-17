@@ -29,7 +29,7 @@ def softmax(x):
 
 
 def mlp_forward_pass(input_to_mlp=None, weight_list=None):
-    """Computes a forward pass for an MLP given the input, weights list by keras.
+    """Computes a forward pass for a ReLU-MLP given the input, weights list by keras.
     Returns all node values of the MLP as a list containing arrays."""
 
     n_layers = int(len(weight_list) / 2)
@@ -43,8 +43,9 @@ def mlp_forward_pass(input_to_mlp=None, weight_list=None):
         bias = weight_list[i * 2 + 1]
         # the @ is a matrix multiplication, first output is actually the mlp's input
         output = weights.transpose() @ output + bias
-        # ReLU
-        output[output < 0] = 0
+        # ReLU for all layers, but not the last one connecting to the output node
+        if i != (n_layers-1):
+            output[output < 0] = 0
         # append output to results, so output can be overwritten in next iteration
         results.append(output)
     return results
@@ -192,16 +193,16 @@ def mlp_backtracking_relevance(model, data_in, alpha=None, beta=None):
 
     # values given from last layer maps to (one) output node.
     last_layer_positive = np.where(nodes_times_weights >  0., nodes_times_weights, 0.)
-    last_layer_negative = np.where(nodes_times_weights <= 0., nodes_times_weights, 0.)
+    last_layer_negative = np.where(nodes_times_weights < 0., nodes_times_weights, 0.)
 
     # from paper about layer relevance propagation (LRP), Montavon 2018
     # catch dividing by zero
-    positive_term = alpha * last_layer_positive / last_layer_positive.sum() if last_layer_positive.sum() != 0. else 0.
-    negative_term = beta  * last_layer_negative / last_layer_negative.sum() if last_layer_negative.sum() != 0. else 0.
+    positive_part = alpha * last_layer_positive / last_layer_positive.sum() if last_layer_positive.sum() != 0. else 0.
+    negative_part = beta  * last_layer_negative / last_layer_negative.sum() if last_layer_negative.sum() != 0. else 0.
 
     # attribute to each node the percentage with which this node contributed to next layer
     # for output node, its relevance is defined as its value.
-    last_layer_relevance = (positive_term - negative_term) * node_values[-1]
+    last_layer_relevance = (positive_part - negative_part) * node_values[-1]
     node_relevance.append(last_layer_relevance)
 
     # concatenate (+ for lists) the original NN input, i.e. data_in, and the output from the remaining layers,
@@ -224,10 +225,10 @@ def mlp_backtracking_relevance(model, data_in, alpha=None, beta=None):
             iput_positive = np.where(iput_times_weights >  0., iput_times_weights, 0.)
             iput_negative = np.where(iput_times_weights <= 0., iput_times_weights, 0.)
 
-            positive_term = alpha * iput_positive / iput_positive.sum() if iput_positive.sum() != 0. else 0.
-            negative_term = beta  * iput_negative / iput_negative.sum() if iput_negative.sum() != 0. else 0.
+            positive_part = alpha * iput_positive / iput_positive.sum() if iput_positive.sum() != 0. else 0.
+            negative_part = beta  * iput_negative / iput_negative.sum() if iput_negative.sum() != 0. else 0.
 
-            relevance[:, j] = (positive_term - negative_term) * node_relevance[-1][j]
+            relevance[:, j] = (positive_part - negative_part) * node_relevance[-1][j]
 
         # sum all contributions that went from each node in iput-layer to next layer
         node_relevance.append(relevance.sum(axis=1))
