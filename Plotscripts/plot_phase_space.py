@@ -14,12 +14,12 @@ def return_phasespace_plot():
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/2D_Histograms/area_number_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/hist_18bin4per.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/w_pw_9bin40per_4to96perc_hist.nc')
-    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/w_pw_9bin40per_4to96perc_hist.nc')
+    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
     # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
     # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
     # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
@@ -52,8 +52,8 @@ def return_phasespace_plot():
     #       * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number_avg6h.nc')
     # model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal/'
     # da = xr.open_dataarray(home + model_path + 'predicted.nc')
-    da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
-    # da=rome
+    # da    = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+    da=rome
 
     subselect = True
     if subselect:
@@ -102,13 +102,15 @@ def return_phasespace_plot():
     ps_overlay = phase_space_stack.unstack('z')
 
     # the actual plotting commands
-    plt.rc('font'  , size=18)
+    plt.rc('font'  , size=26)
     plt.rc('legend', fontsize=18)
     # plt.style.use('dark_background')
 
     the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg_r', # 'inferno',# (robust=True)  # (cmap='coolwarm_r', 'tab20c')
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=-150, vmax=ps_overlay.max())
+
+    plt.xticks((-15, -10, -5, 0))
 
     # plt.title('6h large-scale')
     plt.xlabel('$\omega_{515}$ [hPa/h]')
@@ -120,11 +122,11 @@ def return_phasespace_plot():
     # plt.ylabel('$\Delta(\mathrm{RH}, \Phi)$ at 515 hPa [1]')
     # plt.ylabel('$\Delta(\mathrm{PW}, \Phi)$ [cm]')
     # plt.ylabel('Number of objects [1]')
-    # plt.ylabel('RH$_{515}$ [1]')
-    plt.ylabel('PW')
+    plt.ylabel('RH$_{515}$ [1]')
+    # plt.ylabel('PW')
 
     # the_plot.colorbar.set_label('Probability of R$_\mathrm{NN}$ > p$_{90}$(R$_\mathrm{NN}$) [1]')
-    the_plot.colorbar.set_label('Probability of TCA > p$_{90}$(TCA) [1]')
+    the_plot.colorbar.set_label('Probability of ROME$_\mathrm{p90}$ [1]')
     # the_plot.colorbar.set_label('Probability of ROME < p$_{10}$(ROME) [1]')
     # the_plot.colorbar.set_label('Total conv. area [km$^2$]')
     # the_plot.colorbar.set_label('ROME [km$^2$]')

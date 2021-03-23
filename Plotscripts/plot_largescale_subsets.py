@@ -67,33 +67,34 @@ def metrics_at_two_timesets(start_date_1, end_date_1, start_date_2, end_date_2, 
 
 
 if __name__ == '__main__':
-    ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
-                         'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
+    # ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
+    #                      'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 
-    ls_day = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
+    ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
     # remove false data in precipitable water
-    ls_day['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
-    ls_day['PW'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
-    ls_day['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
-    ls_day['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
-    ls_day['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
-    ls_day['PW'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
-    ls_day['LWP'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
-    ls_day['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
-    ls_day['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
-    ls_day['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
-    ls_day['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
-    ls_day['LWP'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
+    ls['PW'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+    ls['PW'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+    ls['PW'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+    ls['PW'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+    ls['PW'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+    ls['PW'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
+    ls['LWP'].loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
+    ls['LWP'].loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
-    xr.set_options(keep_attrs=True)
-    for v in ls.data_vars:
-        ls[v] = ls[v] + ls_day[v].mean(dim='time')
-    xr.set_options(keep_attrs=False)
+    # xr.set_options(keep_attrs=True)
+    # for v in ls.data_vars:
+    #     ls[v] = ls[v] + ls_day[v].mean(dim='time')
+    # xr.set_options(keep_attrs=False)
 
     # ROME is defined exactly at the LS time steps
-    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    # rome = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+    # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
+    # rome = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rome_km_max6h_avg_pm20minutes.nc')
+    rome = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
     totalarea = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
     # Percentiles used for the decile-binning
@@ -160,7 +161,7 @@ if __name__ == '__main__':
 
     ####### PLOTS ########
 
-    l_plot_scatter = True
+    l_plot_scatter = False
     if l_plot_scatter:
 
         l_neither_subset = np.logical_not(np.logical_or(l_rh_high, l_rh_low))
@@ -258,11 +259,11 @@ if __name__ == '__main__':
             longset.loc[idx, 'category'] = 3
             sns.violinplot(x=longset['category'], y=longset['rh'], data=longset)
 
-    l_plot_boxwhisker = False
+    l_plot_boxwhisker = True
     if l_plot_boxwhisker:
         df = pd.DataFrame()
 
-        var = ls['SH']
+        var = ls['lw_net_toa']
         dataseries = []
         for i in range(10):
             times = bins[i].time
@@ -276,7 +277,7 @@ if __name__ == '__main__':
 
         # plt.ylim(0, 0.025)
 
-        plt.ylabel('SH [W/m2]')
+        plt.ylabel('OLR [W/m2]')
         # plt.xlabel('$\pm$20min max. ROME deciles')
         plt.xlabel('6h-average total convective area deciles')
 

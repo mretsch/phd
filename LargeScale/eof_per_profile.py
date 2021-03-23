@@ -6,10 +6,12 @@ import xarray as xr
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import matplotlib.cm as cm
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from Plotscripts.colors_solarized import sol
 
 start = timeit.default_timer()
+plt.rc('font', size=18)
 
 def add_variable_symbol_string(dataset):
     assert type(dataset) == xr.core.dataset.Dataset
@@ -113,7 +115,7 @@ for i in range(len(ls_vars)):
     predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                          timeseries=metric,
                                                          l_normalise_input=False,
-                                                         chosen_vars=[ls_vars[i]], # default is all vars
+                                                         chosen_vars=[ls_vars[0]], # default is all vars
                                                          large_scale_time='all_ls')
 
     nlev = len(predictor.lev)
@@ -143,7 +145,7 @@ for i in range(len(ls_vars)):
     variance_perc =  eigenvalues / eigenvalues.sum()
 
     # at the moment, all eigenvectors[:, i] are scaled such that each has the l2-norm of 1.
-    l_scale_vectors = False
+    l_scale_vectors = True
     if l_scale_vectors:
         norm_orig = np.linalg.norm(eigenvectors, axis=0)
         # now scale each vector such that its l2-norm equals sqrt(eigenvalue).
@@ -193,20 +195,22 @@ fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3, 3* 0.25*wind_vector_plot_ra
 ax.axvline(x=0, color='grey')
 
 # signum chosen so that plotted profile has positive contribution in NN
-ax.plot(w_eof[{'number':0}]   , w_eof.level, label='w eof-1')
-# ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v eof-1')
-# ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s eof-2')
-# ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u eof-1')
-# ax.plot(shear_eof[{'number':1}], shear_eof.level, label='shear eof-2')
+ax.plot(w_eof[{'number':0}]   , w_eof.level, label='$\omega$ 1.EOF', lw=2.5, color=sol['blue'])
+# ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v 1.EOF', lw=2.5, color=sol['cyan'])
+# ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s 2.EOF', lw=2.5, color=sol['magenta'])
+# ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u 1.EOF', lw=2.5, color=sol['green'])
+# ax.plot(shear_eof[{'number':1}], shear_eof.level, label='dUdz 2.EOF', lw=2.5, color=sol['orange'])
 
-ax.plot(w_eof[{'number':2}], w_eof.level, label='w eof-3')
-ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt eof-2')
+ax.plot(w_eof[{'number':2}], w_eof.level, label='$\omega$ 3.EOF', lw=2.5, color=sol['cyan'])
+ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt 2.EOF', lw=2.5, color=sol['magenta'])
 
-ax.set_ylabel('Pressure [hPa]')
-ax.set_xlabel('EOF magnitude [???]')
+# ax.set_ylabel('Pressure [hPa]')
+ax.set_xlabel('EOF magnitude [$\sigma$]')
 ax.set_ylim(0, 1000)
+ax.set_xlim(-1, 1)
 ax.invert_yaxis()
-plt.legend(fontsize=8, loc='upper right')
+ax.set_yticklabels([])
+plt.legend(fontsize=9, loc='upper right')
 plt.savefig(home+'/Desktop/eofs.pdf', bbox_inches='tight')
 # plt.show()
 

@@ -208,12 +208,20 @@ def histogram_2d(x_series, y_series, nbins=None,
         ax = plt.figure() # actually a figure shouldnt be called ax, very ambiguous
     else:
         plt.sca(ax)
-    plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
-    # plt.grid()
+        ax.yaxis.set_label_position("right")
+        ax.tick_params(left=False, labelleft=False)
+        ax.tick_params(right=True, labelright=True)
+
+    plot = plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
+
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    cbar = plt.colorbar()
-    cbar.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(samplesize.values))
+
+    try:
+        cb = plt.colorbar(plot, ax=[ax], location='left')
+    except AttributeError:
+        cb = plt.colorbar()
+    cb.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(samplesize.values))
 
     stop_h = timeit.default_timer()
     print('Histogram Run Time: ', stop_h - start_h)

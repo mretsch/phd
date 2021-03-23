@@ -79,9 +79,8 @@ def best_model_threshold_by_roc(df, percentiles):
 
 if __name__=='__main__':
 
-    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    model_path = '/Documents/Data/NN_Models/ROME_Models/Kitchen_NoDiurnal_nofaultyPW/SecondModel/'
-    # model_path = '/Documents/Data/NN_Models/ROME_Models/PhysSelect/'
+    rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    model_path = '/Desktop/'
     predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
     rome = rome.where(predicted)
@@ -105,7 +104,7 @@ if __name__=='__main__':
     ##############
     # Hit and Miss
     ##############
-    # most_accurate_percentile, stats = best_model_threshold_by_roc(df, percentiles=np.arange(99., -1, -1))
+    most_accurate_percentile, stats = best_model_threshold_by_roc(df, percentiles=np.arange(99., -1, -1))
 
     df['actual_class'], r_bins = pd.qcut(df['rome'],      10, labels=list(range(1, 11)), retbins=True)
     df['predic_class'] = pd.qcut(df['predicted'],         10, labels=list(range(1, 11)))
@@ -120,6 +119,6 @@ if __name__=='__main__':
     matrix.index.rename('ROME decile', inplace=True)
     matrix.columns.rename('R$_\mathrm{NN}$ decile', inplace=True)
     # sns.heatmap(matrix / (len(predicted)//10) , cmap='Greys', annot=matrix, fmt='d')
-    ax = sns.heatmap(matrix / (len(predicted)//10) , cmap='viridis', annot=matrix, fmt='d')
+    ax = sns.heatmap(matrix / (len(predicted)//10) , annot=matrix, fmt='d', cmap='gray_r')
     ax.collections[0].colorbar.set_label("Percentage in decile [1]")
     plt.savefig(home+'/Desktop/conf_matrix.pdf', bbox_inches='tight')

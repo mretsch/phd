@@ -55,7 +55,7 @@ var_strings = [
 # 's'
 # 'u'
 # ,'v'
-'omega'
+# 'omega'
 # ,'div'
 # ,'T_adv_h'
 # ,'T_adv_v'
@@ -65,13 +65,14 @@ var_strings = [
 # ,'s_adv_v'
 # ,'dTdt'
 # 'dsdt'
-# 'drdt'
+'drdt'
 # 'RH'
 # ,'dwind_dz'
 # 'wind_dir'
 ]
 
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
+# colours = ['orange','yellow',  'red', 'magenta','blue',  'violet', 'green', 'base01', 'base03', 'cyan']
 for var in var_strings:
 
     l_percentage_profiles = False
@@ -79,8 +80,8 @@ for var in var_strings:
         ref_profile = ls[var].mean(dim='time')
 
     wind_vector_plot_ratio = (105.68/18.22)
-    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(5, 5* 0.25*wind_vector_plot_ratio))
-    for i in [0, 9, 4]:#range(n_bins):#
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(3, 3 * 0.25*wind_vector_plot_ratio))
+    for i in [0, 4, 9]:#range(n_bins):#
         print(var)
 
         l_earlier_time = False
@@ -147,7 +148,7 @@ for var in var_strings:
             ax.set_yticklabels(list(range(0, 1200, 200)))
             ax.set_xticks([-10, -5, 0])
             ax.set_xticklabels([10, 5, 0])
-            plt.ylabel('Pressure [hPa]')
+            # plt.ylabel('Pressure [hPa]')
             plt.xlabel('|$\\vec{{u}}$| [m/s]')
         else:
             data_to_plot = ls_sub[var][:, :-1]
@@ -161,23 +162,28 @@ for var in var_strings:
             lower_band = [series.mean() - 0.5*series.std() for series in data_to_plot.transpose()]
             upper_band = [series.mean() + 0.5*series.std() for series in data_to_plot.transpose()]
 
-            ax.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]])
+            ax.plot(profile_to_plot, ls_sub.lev[:-1], color=sol[colours[i]], lw=2.5)
             ax.fill_betweenx(y=ls_sub.lev[:-1],
                              x1=lower_band,#- ref_profile[:39],
                              x2=upper_band,#- ref_profile[:39],
                              alpha=0.1, color=sol[colours[i]])
 
-    # plt.xlim((0.28, 0.82))
-    # plt.xlim((-0.055, 0.055))
+    plt.xlim((-0.05, 0.05))
     # plt.xlim((-1,1))
+    # plt.xlim((-12.875084799528121, 3.117282193899155))
+    # ax.xaxis.set_ticks((-10, -5, 0))
+    ax.set_yticklabels([])
 
     plt.ylim(0, 1000)
     # plt.ylim(0, 51)
 
+    # plt.ylabel('Pressure [hPa]')
     # plt.xlabel(ls_sub[var].long_name+', ['+ls_sub[var].units+']')
+    # plt.xlabel('$\omega$, ['+ls_sub[var].units+']')
+    plt.xlabel('dr/dt, ['+ls_sub[var].units+']')
     # plt.xlabel('$\Delta(s)$ from average profile, [K]')
 
-    # plt.legend(['1. decile', '5. decile', '10. decile',], fontsize=9)
+    # plt.legend(['1. decile', '5. decile', '10. decile',], fontsize=10)
     # plt.legend(['1. decile', '2. decile', '3. decile',
     #             '4. decile', '5. decile', '6. decile',
     #             '7. decile', '8. decile', '9. decile',
