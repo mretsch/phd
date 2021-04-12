@@ -132,10 +132,10 @@ def histogram_2d(x_series, y_series, nbins=None,
                          np.linspace(start=y_series_min, stop=y_series_max, num=nbins+1)]
         # bin_edges = [np.linspace(start=-7., stop=4, num=nbins+1),
         #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
-        # xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
-        # ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
-        # bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
-        #              np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
+        xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
+        ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
+        bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
+                     np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -154,7 +154,7 @@ def histogram_2d(x_series, y_series, nbins=None,
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=l_cut_off, cut_off=40)#60)#20)#75)#2600)
+                                                         l_cut_off=l_cut_off, cut_off=80000)#40)#60)#20)#75)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -208,19 +208,20 @@ def histogram_2d(x_series, y_series, nbins=None,
         ax = plt.figure() # actually a figure shouldnt be called ax, very ambiguous
     else:
         plt.sca(ax)
-        ax.yaxis.set_label_position("right")
-        ax.tick_params(left=False, labelleft=False)
-        ax.tick_params(right=True, labelright=True)
+        # ax.yaxis.set_label_position("right")
+        # ax.tick_params(left=False, labelleft=False)
+        # ax.tick_params(right=True, labelright=True)
 
-    plot = plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
+    plot = plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='rainbow')#'gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)
 
-    try:
-        cb = plt.colorbar(plot, ax=[ax], location='left')
-    except AttributeError:
-        cb = plt.colorbar()
+    # try:
+    #     cb = plt.colorbar(plot, ax=[ax], location='left')
+    # except AttributeError:
+    #     cb = plt.colorbar()
+    cb = plt.colorbar()
     cb.ax.set_ylabel(cbar_label+', Sample size: {:g}'.format(samplesize.values))
 
     stop_h = timeit.default_timer()
@@ -286,14 +287,6 @@ if __name__ == '__main__':
             # var1 = var1[(-10 < var1) & (var1 < 5)]
             # Zoom in via subsetting data
             # var2 = var2[var2 <= 250.]
-
-            # # remove false data in precipitable water
-            # var2.loc[{'time': slice(None, '2002-02-27T12')}] = np.nan
-            # var2.loc[{'time': slice('2003-02-07T00', '2003-10-19T00')}] = np.nan
-            # var2.loc[{'time': slice('2005-11-14T06', '2005-12-09T12')}] = np.nan
-            # var2.loc[{'time': slice('2006-02-25T00', '2006-04-07T00')}] = np.nan
-            # var2.loc[{'time': slice('2011-11-09T18', '2011-12-01T06')}] = np.nan
-            # var2.loc[{'time': slice('2015-01-05T00', None)}] = np.nan
 
             var1 = var1.where(var2)
             var2 = var2.where(var1)

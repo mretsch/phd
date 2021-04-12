@@ -15,12 +15,17 @@ def return_phasespace_plot():
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/valentines_hist.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/hist_18bin4per.nc')
     # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/w_pw_9bin40per_4to96perc_hist.nc')
-    ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
-    # ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
+    # ds_ps = xr.open_dataset(home+'/Documents/Plots/Phase_Space/515rh_515w/Change_Bin_and_Cutoff/9bin_1to99perc_55per.nc')
+    ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
     # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-    rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
     # rome  = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+
+    rome_np = np.array(rome)
+    rome_where_conv = xr.DataArray(rome_np[rome.notnull()])
+    rome = rome_where_conv.rename({'dim_0': 'time'})
 
     ls    = xr.open_dataset(home+'/Documents/Data/LargeScaleState/' +
                                 'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
@@ -110,10 +115,10 @@ def return_phasespace_plot():
                                  vmin=ps_overlay.min(), vmax=ps_overlay.max())
                                  # vmin=-150, vmax=ps_overlay.max())
 
-    plt.xticks((-15, -10, -5, 0))
+    # plt.xticks((-15, -10, -5, 0))
 
     # plt.title('6h large-scale')
-    plt.xlabel('$\omega_{515}$ [hPa/h]')
+    plt.xlabel('$\omega_{515}$ [Pa/s]')
     # plt.xlabel('$\Delta(\omega, \Phi)$ at 515 hPa [hPa/h]')
     # plt.xlabel('Avg. object area [km$^2$]')
     # plt.xlabel('Dry static energy, 990 hPa [K]')
