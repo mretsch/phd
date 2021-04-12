@@ -115,7 +115,7 @@ for i in range(len(ls_vars)):
     predictor, _, var_size = large_scale_at_metric_times(ds_largescale=ds_ls,
                                                          timeseries=metric,
                                                          l_normalise_input=False,
-                                                         chosen_vars=[ls_vars[0]], # default is all vars
+                                                         chosen_vars=[ls_vars[i]], # default is all vars
                                                          large_scale_time='all_ls')
 
     nlev = len(predictor.lev)
@@ -195,14 +195,17 @@ fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3, 3* 0.25*wind_vector_plot_ra
 ax.axvline(x=0, color='grey')
 
 # signum chosen so that plotted profile has positive contribution in NN
-ax.plot(w_eof[{'number':0}]   , w_eof.level, label='$\omega$ 1.EOF', lw=2.5, color=sol['blue'])
+# ax.plot(w_eof[{'number':0}]   , w_eof.level, label='$\omega$ 1.EOF', lw=2.5, color=sol['blue'])
 # ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v 1.EOF', lw=2.5, color=sol['cyan'])
 # ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s 2.EOF', lw=2.5, color=sol['magenta'])
 # ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u 1.EOF', lw=2.5, color=sol['green'])
-# ax.plot(shear_eof[{'number':1}], shear_eof.level, label='dUdz 2.EOF', lw=2.5, color=sol['orange'])
+ax.plot(shear_eof[{'number':0}], shear_eof.level, label='dUdz 1.EOF', lw=2.5, color=sol['blue'])
+ax.plot(shear_eof[{'number':1}], shear_eof.level, label='dUdz 2.EOF', lw=2.5, color=sol['cyan'])
+ax.plot(shear_eof[{'number':2}], shear_eof.level, label='dUdz 3.EOF', lw=2.5, color=sol['magenta'])
+ax.plot(shear_eof[{'number':3}], shear_eof.level, label='dUdz 4.EOF', lw=2.5, color=sol['violet'])
 
-ax.plot(w_eof[{'number':2}], w_eof.level, label='$\omega$ 3.EOF', lw=2.5, color=sol['cyan'])
-ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt 2.EOF', lw=2.5, color=sol['magenta'])
+# ax.plot(w_eof[{'number':2}], w_eof.level, label='$\omega$ 3.EOF', lw=2.5, color=sol['cyan'])
+# ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt 2.EOF', lw=2.5, color=sol['magenta'])
 
 # ax.set_ylabel('Pressure [hPa]')
 ax.set_xlabel('EOF magnitude [$\sigma$]')
