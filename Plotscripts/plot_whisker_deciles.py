@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 import metpy.calc as mpcalc
 import seaborn as sns
+from scipy import stats
 from Plotscripts.colors_solarized import sol
+
 home = expanduser("~")
 plt.rc('font', size=18)
 
@@ -41,12 +43,10 @@ xr.set_options(keep_attrs=False)
 # ROME is defined exactly at the LS time steps
 # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 rome = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
-totalarea = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
 # Percentiles used for the decile-binning
 percentile_rome      = rome.percentile
 percentile_w515      = ls.omega.sel(lev=515).rank(dim='time', pct=True)
-percentile_totalarea = totalarea.rank(dim='time', pct=True)
 
 # What percentiles?
 percentiles = percentile_rome # abs(percentile_w515 - 1) # percentile_totalarea #
@@ -72,7 +72,7 @@ def hex_to_rgb(value):
 
 df = pd.DataFrame()
 
-var = ls['PW']
+var = ls['SH']
 dataseries = []
 for i in range(10):
     times = bins[i].time
@@ -97,5 +97,12 @@ plt.xlabel('TCA decile')
 # plt.show()
 plt.savefig(home+'/Desktop/whisker_romedeciles.pdf', bbox_inches='tight', transparent=True)
 
+pvalue_ttest = stats.ttest_ind_from_stats(mean1=    data_list[0].mean(),
+                                          std1=     data_list[0].std(),
+                                          nobs1=len(data_list[0]),
+                                          mean2=    data_list[-1].mean(),
+                                          std2=     data_list[-1].std(),
+                                          nobs2=len(data_list[-1]),
+                                          equal_var=False)
 
 
