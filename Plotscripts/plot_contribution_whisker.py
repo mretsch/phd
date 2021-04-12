@@ -80,9 +80,9 @@ def contribution_whisker(input_percentages, levels, long_names,
             # copy the input data for high predictions
             df_highpred = dfsr.loc[dfsr['high_pred']]
             # set whole data to False, so that seaborn plots the distribution for the whole data set
-            dfsr['high_pred'] = False
+            dfsr['high_pred'] = True
             # convert the category-type column to boolean-type column
-            df_highpred.loc[:, 'high_pred'] = True
+            df_highpred.loc[:, 'high_pred'] = False
             # append the high-predictions to the whole data. I.e. the high-prediction input occurs twice,
             # once with False in the whole data and once with True in the appended data.
             df_to_plot = pd.concat([dfsr, df_highpred])
