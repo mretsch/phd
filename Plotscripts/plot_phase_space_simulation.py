@@ -1,0 +1,94 @@
+from os.path import expanduser
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+import timeit
+import sub as FORTRAN
+
+home = expanduser("~")
+
+
+# def return_phasespace_plot():
+
+# no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
+ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
+
+rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+
+threshold = np.nanpercentile(rome, 90)
+
+land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
+coast_mask = (0.2 < land_sea) & (land_sea < 0.8) # (land_sea > 0.8) #
+coast_mask['lat'] = rome['lat']
+coast_mask['lon'] = rome['lon']
+rome_coast = rome.where(coast_mask, other=np.nan)
+
+rome_np = np.array(rome_coast)
+rome_where_conv = xr.DataArray(rome_np[rome_coast.notnull()])
+rome = rome_where_conv.rename({'dim_0': 'time'})
+
+da=rome
+
+subselect = True
+if subselect:
+    # subselect specific times during a day
+    l_time_of_day = False
+    if l_time_of_day:
+        da.coords['hour'] = da.indexes['time'].hour
+        da_sub = da.where(da.hour.isin([6]), drop=True)
+
+    # subselect on the times given in the histogram data
+    l_histogram = True
+    if l_histogram:
+        # da_sub = da.sel(time=ds_ps.time)
+        da = da[da.notnull()]
+        da_sub = da[da.time.isin(ds_ps.time)]
+
+    da = da_sub
+    # rome = rome.where(da_sub)
+
+phase_space = ds_ps.hist_2D
+
+overlay = da#.rom_kilometres #.RH.sel(lev=515) #conv_intensity #conv_intensity # div.sel(lev=845) # .where(da.cop_mod < 60.)
+# overlay = rome
+
+# give the overlay time series information about the placements of the bins for each time step
+overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins[ds_ps.time.isin(da_sub.time)].values)
+overlay.coords['y_bins'] = ('time', ds_ps.y_series_bins[ds_ps.time.isin(da_sub.time)].values)
+
+phase_space_stack = phase_space.stack(z=('x', 'y'))
+
+ind_1, ind_2 =zip(*phase_space_stack.z.values)
+phase_space_stack[:] = FORTRAN.phasespace(indices1=ind_1,
+                                          indices2=ind_2,
+                                          overlay=overlay,
+                                          overlay_x=overlay['x_bins'],
+                                          overlay_y=overlay['y_bins'],
+                                          l_probability=False,
+                                          upper_bound=100000.,
+                                          lower_bound=np.nanpercentile(overlay, q=90))
+                                          # upper_bound=np.percentile(overlay, q=10),
+                                          # lower_bound=-10000.)
+
+# set NaNs to the special values set in the Fortran-routine
+phase_space_stack = phase_space_stack.where((phase_space_stack < -1e10) ^ (-9999999998.0 < phase_space_stack))
+
+ps_overlay = phase_space_stack.unstack('z')
+
+# the actual plotting commands
+plt.rc('font'  , size=26)
+plt.rc('legend', fontsize=18)
+
+the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg_r', # 'inferno',# (robust=True)  # (cmap='coolwarm_r', 'tab20c')
+                             vmin=ps_overlay.min(), vmax=ps_overlay.max())
+                             # vmin=-150, vmax=ps_overlay.max())
+
+# plt.xticks((-15, -10, -5, 0))
+
+plt.xlabel('$\omega_{515}$ [Pa/s]')
+plt.ylabel('RH$_{515}$ [1]')
+
+the_plot.colorbar.set_label('Probability of ROME$_\mathrm{p90}$ [1]')
+
+plt.savefig(home + '/Desktop/phase_space_rome.pdf', transparent=True, bbox_inches='tight')
+plt.show()
