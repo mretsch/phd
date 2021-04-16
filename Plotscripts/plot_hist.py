@@ -120,8 +120,8 @@ def histogram_2d(x_series, y_series, nbins=None,
     x_series_min, x_series_max = x_series.min(), x_series.max()
     y_series_min, y_series_max = y_series.min(), y_series.max()
     # Assign metric to plot and get rid of NaNs.
-    x_series = x_series.fillna(-10000.)
-    y_series = y_series.fillna(-10000.)
+    # x_series = x_series.fillna(-10000.)
+    # y_series = y_series.fillna(-10000.)
 
     if type(nbins) == int:
         if l_same_axis_length:
@@ -133,8 +133,8 @@ def histogram_2d(x_series, y_series, nbins=None,
         # bin_edges = [np.linspace(start=-7., stop=4, num=nbins+1),
         #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
         xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
-        ylow, yupp = np.nanpercentile(y_series, q=6.), np.nanpercentile(y_series, q=94)
-        bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
+        ylow, yupp = np.nanpercentile(y_series, q=1.), np.nanpercentile(y_series, q=99)
+        bin_edges = [np.linspace(start=-10                       , stop=5                         , num=nbins + 1),
                      np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
@@ -154,7 +154,7 @@ def histogram_2d(x_series, y_series, nbins=None,
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=l_cut_off, cut_off=80000)#40)#60)#20)#75)#2600)
+                                                         l_cut_off=l_cut_off, cut_off=120000)#55)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -264,8 +264,8 @@ if __name__ == '__main__':
         xr.set_options(keep_attrs=True)
 
         var1 = ls['omega'].sel(lev=515) + ls_day['omega'].sel(lev=515).mean(dim='time')
-        # var2 = ls['RH']   .sel(lev=515) + ls_day['RH']   .sel(lev=515).mean(dim='time')
-        var2 = ls['PW']                 + ls_day['PW']                .mean(dim='time')
+        var2 = ls['RH']   .sel(lev=515) + ls_day['RH']   .sel(lev=515).mean(dim='time')
+        # var2 = ls['PW']                 + ls_day['PW']                .mean(dim='time')
 
         xr.set_options(keep_attrs=False)
 

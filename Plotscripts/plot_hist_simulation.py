@@ -16,19 +16,16 @@ plt.rc('font'  , size=20)
 rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
 rh500 = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 w500 = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/omega500.nc')
+# convert Pa/s to hPa/hour
+w500 = w500 * (1/100.) * 3600
 
-# rh_where_conv = xr.where(rome.notnull(), rh500, np.nan)
-rh_np = np.array(rh500)
-rh_where_conv = xr.DataArray(rh_np[rome.notnull()])
-rh =rh_where_conv.rename({'dim_0': 'time'})
+rh_where_conv = xr.where(rome.notnull(), rh500, np.nan)
+rh = rh_where_conv.stack({'x': ('time', 'lat', 'lon')})
+rh['x'] = np.arange(len(rh))
 
-w_np = np.array(w500)
-w_where_conv = xr.DataArray(w_np[rome.notnull()])
-w =w_where_conv.rename({'dim_0': 'time'})
-
-rome_np = np.array(rome)
-rome_where_conv = xr.DataArray(rome_np[rome.notnull()])
-r = rome_where_conv.rename({'dim_0': 'time'})
+w_where_conv = xr.where(rome.notnull(), w500, np.nan)
+w = w_where_conv.stack({'x': ('time', 'lat', 'lon')})
+w['x'] = np.arange(len(w))
 
 # make a 'scatter'-plot via a 2d-histogram
 fig, ax = plt.subplots(nrows=1, ncols=1)#, figsize=(5, 5))
