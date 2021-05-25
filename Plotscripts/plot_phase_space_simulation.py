@@ -12,24 +12,22 @@ home = expanduser("~")
 ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
 rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+rome_p90 = np.nanpercentile(rome, q=90)
 
-l_pick_surface = False
+l_pick_surface = True
 if l_pick_surface:
     land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
-    # coast_mask =   land_sea < 0.2 # ocean
-    coast_mask =  (0.2 < land_sea) & (land_sea < 0.8) # coast
+    coast_mask =   land_sea < 0.2 # ocean
+    # coast_mask =  (0.2 < land_sea) & (land_sea < 0.8) # coast
     # coast_mask =   land_sea > 0.8 # land
     coast_mask['lat'] = rome['lat']
     coast_mask['lon'] = rome['lon']
     rome = rome.where(coast_mask, other=np.nan)
 
 # rome = rome.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan) # North Pacific
-rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazonas delta
+# rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazonas delta
 # rome = rome.where((120 < rome['lon']) & (rome['lon'] < 134) & (-20 < rome['lat']) & (rome['lat'] < -10), other=np.nan) # West Australia
-# rome = rome.where((90 < rome['lon']) & (rome['lat']  < 0), other=np.nan) # South MC
-# rome = rome.where((90 < rome['lon']) & (rome['lon'] < 160), other=np.nan) # MC
-# rome = rome.where(rome['lon'] < -90, other=np.nan) # East Pacific
-# rome = rome.where((-80 < rome['lon']) & (rome['lon'] < -30), other=np.nan) # South America
+rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan)
 
 da = rome.stack({'x': ('time', 'lat', 'lon')})
 da['x'] = np.arange(len(da))
@@ -90,10 +88,10 @@ the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg
 
 # plt.xticks((-15, -10, -5, 0))
 
-plt.xlabel('$\omega_{515}$ [Pa/s]')
-plt.ylabel('RH$_{515}$ [1]')
+plt.xlabel('$\omega_{515}$ [hPa/hour]')
+plt.ylabel('RH$_{515}$ [%]')
 
-the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90}$ [1]')
+the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,ind}$ [1]')
 
 plt.savefig(home + '/Desktop/phase_space.pdf', transparent=True, bbox_inches='tight')
 plt.show()

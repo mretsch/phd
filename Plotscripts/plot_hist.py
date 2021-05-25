@@ -154,7 +154,7 @@ def histogram_2d(x_series, y_series, nbins=None,
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=l_cut_off, cut_off=120000)#55)#2600)
+                                                         l_cut_off=l_cut_off, cut_off=80000)#55)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
