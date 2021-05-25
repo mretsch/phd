@@ -37,7 +37,7 @@ rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
 # pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
 # pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
-
+rh_avg = rh.mean(dim='time')
 rome_avg = rome.sum(dim='time') / len(rome.time)
 rome_p90 = np.nanpercentile(rome, q=90)
 # rome_avg = rome.max(dim='time')
@@ -62,10 +62,10 @@ l_pick_surface = True
 if l_pick_surface:
     land_sea = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
 
-    coast_mask = land_sea < 0.2  # ocean
-    coast_mask['lat'] = rome['lat']
-    coast_mask['lon'] = rome['lon']
-    rome_ocean = rome.where(coast_mask, other=np.nan)
+    ocean_mask = land_sea < 0.2  # ocean
+    ocean_mask['lat'] = rome['lat']
+    ocean_mask['lon'] = rome['lon']
+    rome_ocean = rome.where(ocean_mask, other=np.nan)
 
     coast_mask = (0.2 < land_sea) & (land_sea < 0.8)  # coasts
     coast_mask['lat'] = rome['lat']
@@ -79,9 +79,23 @@ if l_plot_map:
     # North Pacific: .where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
     # South of India: .sel(lat=slice(-12, -6), lon=slice(77, 82))
 
+    pac = rh_avg.where(ocean_mask &
+                       ((160 < rome['lon']) | (rome['lon'] < -90)) &
+                       (0 < rome['lat']), other=0)
+    aus = rh_avg.where(coast_mask &
+                       ((120 < rome['lon']) & (rome['lon'] < 134)) &
+                       ((-20 < rome['lat']) & (rome['lat'] < -10)), other=0)
+    ama = rh_avg.where(((-52 < rome['lon']) & (rome['lon'] < -44)) &
+                       (( -1 < rome['lat']) & (rome['lat'] <   5)), other=0)
+    ind = rh_avg.where((( 77 < rome['lon']) & (rome['lon'] <  82)) &
+                       ((-12 < rome['lat']) & (rome['lat'] <  -6)), other=0)
+    allregions = pac + aus + ama + ind
+    allregions = xr.where(allregions != 0., 1, np.nan)
+
     # map_to_plot = rhlow_p90.sum(dim='time').sel(lat=slice(-1, 5), lon=slice(-52, -44))
     # map_to_plot = rhlow_p90.sum(dim='time').where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-    map_to_plot = rhlow_p90.sum(dim='time')
+    # map_to_plot = rhlow_p90.sum(dim='time')
+    map_to_plot = allregions
     # map_to_plot = pr_avg.squeeze()
     # map_to_plot = rome_avg.sel(lat=slice(-12, -6), lon=slice(77, 82))
 
@@ -101,7 +115,7 @@ if l_plot_map:
     ax.coastlines()
     # ax.axhline(y=0, color='r')
 
-    map_to_plot.plot(ax=ax, cmap='PuRd')# cmap='OrRd') #cmap='gist_earth_r')# cmap='GnBu')#, vmin=0. , vmax=2.143688
+    map_to_plot.plot(ax=ax, cmap='cool')# cmap='OrRd') #cmap='gist_earth_r')# cmap='GnBu')#, vmin=0. , vmax=2.143688
 
     ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
     # ax.collections[0].colorbar.set_label('ROME [km$^2$]')
