@@ -92,11 +92,40 @@ all_coordinates = aus + ind + ama + pac
 
 rome_3h, divrome_corr = [], []
 
-for lon_apprx, lat_apprx in all_coordinates:
+lag_map = xr.full_like(metric.isel(time=0), fill_value=np.nan)
+
+m_stack = metric.stack({'z': ('lon', 'lat')})
+
+# for lon_apprx, lat_apprx in list(m_stack['z'].values):
+# for lon_apprx, lat_apprx in all_coordinates:
+# for lon_apprx, lat_apprx in [(-16.71, -17.36)]:# all_coordinates: # in list(m_stack['z'].values): #
+for lon_apprx, lat_apprx in [(-142.81, 6.53)]:
+
     rome_series = metric.sel(lat=lat_apprx, lon=lon_apprx, method='nearest')
+    print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)}")
+
+    # do not take short series of ROME
+    if rome_series.count() < 500:
+        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} XXXXXXXXXXXXXXXXX")
+        continue
+
+    # coordinates with a MissingDimensionError:
+    if (round(lon_apprx, 2), round(lat_apprx, 2)) in [
+        (-166.71, -18.68),
+        (-164.06, 2.56),
+        (-17.36, -16.71),
+    ]:
+        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} WWWWWWWWWWWWWWWWW")
+        continue
+
     rome_3h.append(downsample_timeseries(rome_series, **kwa))
 
     div_domain = div.sel(lat=rome_series['lat'], lon=rome_series['lon'])
+
+    # do not take short series of divergence
+    if div_domain.count() < 100:
+        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} OOOOOOOOOOOOOOOOO")
+        continue
 
     div_both = div_domain.where(rome_3h[-1].notnull(), drop=True)
     rome_both = rome_3h[-1].where(div_both)
@@ -111,26 +140,29 @@ for lon_apprx, lat_apprx in all_coordinates:
                            divrome_corr[-1].sel(lag=0),
                            4)
 
-fig, axes = plt.subplots(nrows=4, ncols=4, sharex=True, sharey=True)
+    idx_anticorr = divrome_corr[-1].sel(lag=slice(-5, 5)).argmin()
+    lag_anticorr = divrome_corr[-1].sel(lag=slice(-5, 5))[idx_anticorr]['lag'].values
 
-for i, ax in enumerate(axes.flatten()):
-    ax.plot(
-        divrome_corr[i].sel(lag=slice(-5, 5))['lag'],
-        divrome_corr[i].sel(lag=slice(-5, 5))
-    )
-    ax.axhline(y=0, c='r')
-    ax.axvline(x=0, c='grey')
-    ax.set_title(f"{divrome_corr[i].attrs['lon'].round(2)}, {divrome_corr[i].attrs['lat'].round(2)}")
-
-plt.savefig(home+'/Desktop/corr_div_rome3hmaxavg.pdf')
+    lag_map.loc[{'lat': rome_series['lat'], 'lon': rome_series['lon']}] = lag_anticorr
 
 
+l_plot = False
+if l_plot:
+    fig, axes = plt.subplots(nrows=4, ncols=4, sharex=True, sharey=True)
 
+    for i, ax in enumerate(axes.flatten()):
+        ax.plot(
+            divrome_corr[i].sel(lag=slice(-5, 5))['lag'],
+            divrome_corr[i].sel(lag=slice(-5, 5))
+        )
+        ax.axhline(y=0, c='r')
+        ax.axvline(x=0, c='grey')
+        ax.set_title(f"{divrome_corr[i].attrs['lon'].round(2)}, {divrome_corr[i].attrs['lat'].round(2)}")
 
+    plt.savefig(home+'/Desktop/corr_div_rome3h.pdf')
 
-
-
-
+stop = timeit.default_timer()
+print('This script needed {} seconds.'.format(stop - start))
 
 # plt.plot(np.arange(-12, 12), drc[71: 95])
 # plt.axhline(y=0, c='r')
