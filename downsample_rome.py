@@ -8,7 +8,6 @@ import pandas as pd
 import seaborn as sns
 
 home = expanduser("~")
-start = timeit.default_timer()
 
 
 def maximum_time(x):
@@ -69,12 +68,12 @@ def average_around_max(series, m_max, **rsmpl):
     return m_max
 
 
-def downsample_timeseries(series,
-                          sample_period, closed_side, sample_center, center_time, n_sample):
+def downsample_timeseries(series, **kwargs):
+                          # sample_period, closed_side, sample_center, center_time, n_sample):
 
-    series_resample = series.resample(indexer={'time': sample_period}, skipna=False,
-                                      closed=closed_side, label=closed_side,
-                                      base=sample_center, loffset=center_time)
+    series_resample = series.resample(indexer={'time': kwargs['sample_period']}, skipna=False,
+                                      closed=kwargs['closed_side'], label=kwargs['closed_side'],
+                                      base=kwargs['sample_center'], loffset=kwargs['center_time'])
 
     # take means over 6 hours each, starting at 3, 9, 15, 21 h. The time labels are placed in the middle of
     # the averaging period. Thus the labels are aligned to the large scale data set.
@@ -82,7 +81,7 @@ def downsample_timeseries(series,
     # calculated averages. Overwrite manually with correct values.
     # Take sum and divide by 36 time steps (for 10 min intervals in 6 hours), to avoid one single value in 6 hours
     # (with the rest NaNs) to have that value as the average. sum()/36. treats NaNs as Zeros basically.
-    m_avg = series_resample.sum() / n_sample
+    m_avg = series_resample.sum() / kwargs['n_sample']
 
     # .sum() applied to NaNs in xarray yields Zero, not NaN as with .mean().
     # So put NaNs where .mean() yields NaNs.
@@ -104,75 +103,114 @@ def downsample_timeseries(series,
 
     m_max = series_resample.max()
 
-    m_maxavg = average_around_max(series, m_max, **kwa)
+    m_maxavg = average_around_max(series, m_max, **kwargs)
 
     return m_avg
 
+if __name__=='__main__':
 
-# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
-# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
-# metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc') \
-#        * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
-metric = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc') \
-    .sel(lat=-16, lon=126, method='nearest')
+    start = timeit.default_timer()
 
-kwa = {
-    'sample_period' : '3H'     , # '3H'   ,  # '6H'
-    'sample_center' : 1.5      , # 0      ,  # 3
-    'center_time'   : '1H30min', # '0H'   ,  # '3H'
-    'closed_side'   : 'left'   , # 'right',  # 'left'
-    'n_sample'      : 12       , # 12     ,  # 36
-}
+    # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_kilometres.nc')
+    # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_number.nc') \
+    #        * xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area.nc') * 6.25
+    metric = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc') \
+        # .sel(lat=-16, lon=126, method='nearest') # land-domain at Kimberley coast
+
+    kwa = {
+        'sample_period' : '3H'     , # '3H'   ,  # '6H'
+        'sample_center' : 1.5      , # 0      ,  # 3
+        'center_time'   : '1H30min', # '0H'   ,  # '3H'
+        'closed_side'   : 'left'   , # 'right',  # 'left'
+        'n_sample'      : 12       , # 12     ,  # 36
+    }
 
 
-m = downsample_timeseries(metric, **kwa)
+    # hand-pick 4 domains in each regions of interest
+
+    # Kimberley coast & Darwin
+    aus = [
+        [125.33, -16.02],
+        [125.33, -14.70],
+        [126.66, -14.70],
+        [131.97, -12.04],
+    ]
+
+    ind = [
+        [81.52, -6.73],
+        [80.20, -6.73],
+        [80.20, -8.06],
+        [81.52, -8.06],
+    ]
+
+    ama = [
+        [-51.22, 1.22],
+        [-49.89, 1.22],
+        [-48.56, 1.22],
+        [-45.91, 2.55],
+    ]
+
+    pac = [
+        [-136.18,  6.53],
+        [-142.81, 15.83],
+        [-142.81,  6.53],
+        [ 174.45,  6.53],
+    ]
+
+    all_coordinates = aus + ind + ama + pac
+
+    rome_3h = []
+    for lon, lat in all_coordinates:
+        domain_series = metric.sel(lat=lat, lon=lon, method='nearest')
+        rome_3h.append( downsample_timeseries(domain_series, **kwa) )
 
 
-#    # # get time difference of maximum ROME time and large-scale time
-#    # time_max_avail = time_of_max[l_time_available]
-#    # ls_time = m_max.sel(time=time_max_avail, method='nearest').time
-#    # time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
-#    # time_diff = xr.full_like(m_max, fill_value=np.nan)
-#    # time_diff[m_max.notnull()] = time_diff_list
-#    # time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
-#    # time_diff.attrs['units'] = 'seconds'
-#    # time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
-#    # del time_diff['percentile']
-#
-#
-#    l_split_and_redistribute = False
-#    if l_split_and_redistribute:
-#        # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
-#        metric = m_avg
-#
-#        # ROME-value at given percentile
-#        threshold = metric[abs((metric.percentile - 0.85)).argmin()]
-#        n_above_thresh = (metric > threshold).sum().item()
-#        sample_ind = xr.DataArray(np.zeros(shape=2 * n_above_thresh))
-#        sample_ind[:] = -1
-#
-#        # find arguments (meaning indizes) for the highest ROME-values
-#        m_present = metric.where(metric.notnull(), drop=True)
-#        sort_ind = m_present.argsort()
-#        sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
-#
-#        # stride through ROME-values (not the percentiles or sorted indizes) linearly
-#        # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
-#        # We sort that out below.
-#        check_values = np.linspace(6.25, threshold, n_above_thresh)
-#        for i, v in enumerate(check_values):
-#            ind = abs((m_present - v)).argmin()
-#            sample_ind[i] = ind
-#
-#        unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
-#
-#        # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
-#        # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
-#        sample_ind_unique = sample_ind[indizes]
-#
-#        metric_sample = m_present[sample_ind_unique.astype(int)]
-#        sample = metric_sample.rename({'dim_0': 'time'})
-#        sample.to_netcdf(home + '/Desktop/rom_sample.nc')
+    #    # # get time difference of maximum ROME time and large-scale time
+    #    # time_max_avail = time_of_max[l_time_available]
+    #    # ls_time = m_max.sel(time=time_max_avail, method='nearest').time
+    #    # time_diff_list = [(ls_time[i] - time_max_avail[i]).values.item() for i in range(len(ls_time))]
+    #    # time_diff = xr.full_like(m_max, fill_value=np.nan)
+    #    # time_diff[m_max.notnull()] = time_diff_list
+    #    # time_diff /= 60e9 # timedelta in minutes instead of nanoseconds
+    #    # time_diff.attrs['units'] = 'seconds'
+    #    # time_diff.attrs['long_name'] = 'timedelta_LargeScale_maxROME'
+    #    # del time_diff['percentile']
+    #
+    #
+    #    l_split_and_redistribute = False
+    #    if l_split_and_redistribute:
+    #        # metric = xr.open_dataarray('/Volumes/GoogleDrive/My Drive/Data_Analysis/rom_kilometres_avg6h.nc')
+    #        metric = m_avg
+    #
+    #        # ROME-value at given percentile
+    #        threshold = metric[abs((metric.percentile - 0.85)).argmin()]
+    #        n_above_thresh = (metric > threshold).sum().item()
+    #        sample_ind = xr.DataArray(np.zeros(shape=2 * n_above_thresh))
+    #        sample_ind[:] = -1
+    #
+    #        # find arguments (meaning indizes) for the highest ROME-values
+    #        m_present = metric.where(metric.notnull(), drop=True)
+    #        sort_ind = m_present.argsort()
+    #        sample_ind[-n_above_thresh:] = sort_ind[-n_above_thresh:]
+    #
+    #        # stride through ROME-values (not the percentiles or sorted indizes) linearly
+    #        # With this method some indizes might be taken twice as they have shortest distance to two ROME-values.
+    #        # We sort that out below.
+    #        check_values = np.linspace(6.25, threshold, n_above_thresh)
+    #        for i, v in enumerate(check_values):
+    #            ind = abs((m_present - v)).argmin()
+    #            sample_ind[i] = ind
+    #
+    #        unique, indizes, inverse, count = np.unique(sample_ind, return_index=True, return_inverse=True, return_counts=True)
+    #
+    #        # take the samples in samples_ind which recreate the outcome of the unique function, which orders the unique values.
+    #        # Here thats the order of indizes we use to get a sample from ROME-values. Hence they will be timely ordered. Okay.
+    #        sample_ind_unique = sample_ind[indizes]
+    #
+    #        metric_sample = m_present[sample_ind_unique.astype(int)]
+    #        sample = metric_sample.rename({'dim_0': 'time'})
+    #        sample.to_netcdf(home + '/Desktop/rom_sample.nc')
 
-stop = timeit.default_timer()
-print('This script needed {} seconds.'.format(stop-start))
+    stop = timeit.default_timer()
+    print('This script needed {} seconds.'.format(stop-start))
