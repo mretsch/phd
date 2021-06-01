@@ -96,35 +96,29 @@ lag_map = xr.full_like(metric.isel(time=0), fill_value=np.nan)
 
 m_stack = metric.stack({'z': ('lon', 'lat')})
 
-# for lon_apprx, lat_apprx in list(m_stack['z'].values):
+counter = 0
+
+for lon_apprx, lat_apprx in list(m_stack['z'].values):
 # for lon_apprx, lat_apprx in all_coordinates:
-# for lon_apprx, lat_apprx in [(-16.71, -17.36)]:# all_coordinates: # in list(m_stack['z'].values): #
-for lon_apprx, lat_apprx in [(-142.81, 6.53)]:
 
     rome_series = metric.sel(lat=lat_apprx, lon=lon_apprx, method='nearest')
     print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)}")
 
     # do not take short series of ROME
     if rome_series.count() < 500:
-        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} XXXXXXXXXXXXXXXXX")
         continue
 
-    # coordinates with a MissingDimensionError:
-    if (round(lon_apprx, 2), round(lat_apprx, 2)) in [
-        (-166.71, -18.68),
-        (-164.06, 2.56),
-        (-17.36, -16.71),
-    ]:
-        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} WWWWWWWWWWWWWWWWW")
+    try:
+        rome_3h.append(downsample_timeseries(rome_series, **kwa))
+    except xr.core.variable.MissingDimensionsError:
+        counter += 1
         continue
-
-    rome_3h.append(downsample_timeseries(rome_series, **kwa))
 
     div_domain = div.sel(lat=rome_series['lat'], lon=rome_series['lon'])
+    div_domain = div_domain[div_domain.notnull()]
 
     # do not take short series of divergence
     if div_domain.count() < 100:
-        print(f"lat: {round(lat_apprx, 2)}, lon: {round(lon_apprx, 2)} OOOOOOOOOOOOOOOOO")
         continue
 
     div_both = div_domain.where(rome_3h[-1].notnull(), drop=True)
@@ -164,27 +158,7 @@ if l_plot:
 stop = timeit.default_timer()
 print('This script needed {} seconds.'.format(stop - start))
 
-# plt.plot(np.arange(-12, 12), drc[71: 95])
-# plt.axhline(y=0, c='r')
 
-
-
-#    print(covariance(rome_both.values, div_both.values))
-#    print(pearson_correlation(rome_both.values, div_both.values))
-#
-# print(np.corrcoef(rome_both[:-2].values, div_both[2:].values))
-# print(np.corrcoef(rome_both[:-1].values, div_both[1:].values))
-# print(np.corrcoef(rome_both.values, div_both.values))
-# print(np.corrcoef(rome_both[1:].values, div_both[:-1].values))
-# print(np.corrcoef(rome_both[2:].values, div_both[:-2].values))
-#
-#
-#
-#
-#
-#
-#
-#
 #    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(24, 8))
 #
 #

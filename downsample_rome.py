@@ -12,33 +12,13 @@ home = expanduser("~")
 
 def maximum_time(x):
 
-    # x.name = 'soso'
-    # x = x.rename({'time', 'gonzo'})
-
     x_max = x[x == x.max()]
     if len(x_max) > 1:
         x_return = x_max[0]['time']
-        # print(f'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, {x_return}')
-        # x_return.load()
     else:
         x_return = x_max['time']
-        # print(f'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH, {x_return}')
-        # x_return.load()
-
-    # x_return.name = 'soso'
-    # x_return = x_return.rename({'time': 'gonzo'})
-
-    # if len(x_return.dims) > 1:
-    #     print('KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK')
-    # if len(x_return) > 1:
-    #     print('TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT')
 
     return x_return
-    # return x_return['gonzo']
-    # return x_return + np.timedelta64(1, 'm')
-    # return x_return.values # no, the numpy array does not have the time dimension attached
-    # return x[1]['time']
-    # if the 19:30 value is responsible, because the earlier max-time was 19:15, then change it by 1 minute
 
 
 def average_around_max(series, m_max, **rsmpl):
