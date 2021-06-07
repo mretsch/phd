@@ -215,6 +215,8 @@ if l_10min_frequency:
     predictor = predictor_inter[predictor_inter.time.isin(rome_10min.time)]
     target = rome_10min.sel(time= predictor.time)
 
+# days = np.unique(pd.to_datetime(predictor['time'].values).date)
+# daylist = [pd.to_datetime(t.values).date() in days for t in rome['time']]
 # target = target[::-1]
 # predictor = predictor[::-1]
 # target = (target - target.mean()) / target.std()
