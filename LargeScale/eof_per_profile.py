@@ -5,8 +5,6 @@ import numpy as np
 import xarray as xr
 from pathlib import Path
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
 from LargeScale.ls_at_metric import large_scale_at_metric_times
 from Plotscripts.colors_solarized import sol
 
@@ -37,8 +35,8 @@ def add_variable_symbol_string(dataset):
         'xxx',
         'C',
         'P',
-        'LH', #"'Q_h_sfc',
-        'SH', #'Q_s_sfc',
+        'LH',
+        'SH',
         'p',
         'p_centre',
         'T_2m',
@@ -48,7 +46,7 @@ def add_variable_symbol_string(dataset):
         'u_10m',
         'v_10m',
         'rad_sfc',
-        'OLR', #'LW_toa',
+        'OLR',
         'SW_toa',
         'SW_dn_toa',
         'c_low',
@@ -93,9 +91,6 @@ ds_ls = xr.open_dataset(home +
 metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
 
 add_variable_symbol_string(ds_ls)
-
-# take only large ROME values and the according LS variables then in the subroutine
-# metric = metric[metric.percentile > 0.95]
 
 ls_vars = [
     'omega',
@@ -195,14 +190,11 @@ fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3, 3* 0.25*wind_vector_plot_ra
 ax.axvline(x=0, color='grey')
 
 # signum chosen so that plotted profile has positive contribution in NN
-# ax.plot(w_eof[{'number':0}]   , w_eof.level, label='$\omega$ 1.EOF', lw=2.5, color=sol['blue'])
-# ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v 1.EOF', lw=2.5, color=sol['cyan'])
-# ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s 2.EOF', lw=2.5, color=sol['magenta'])
-# ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u 1.EOF', lw=2.5, color=sol['green'])
-ax.plot(shear_eof[{'number':0}], shear_eof.level, label='dUdz 1.EOF', lw=2.5, color=sol['blue'])
-ax.plot(shear_eof[{'number':1}], shear_eof.level, label='dUdz 2.EOF', lw=2.5, color=sol['cyan'])
-ax.plot(shear_eof[{'number':2}], shear_eof.level, label='dUdz 3.EOF', lw=2.5, color=sol['magenta'])
-ax.plot(shear_eof[{'number':3}], shear_eof.level, label='dUdz 4.EOF', lw=2.5, color=sol['violet'])
+ax.plot(w_eof[{'number':0}]   , w_eof.level, label='$\omega$ 1.EOF', lw=2.5, color=sol['blue'])
+ax.plot(v_eof[{'number':0}]*-1, w_eof.level, label='v 1.EOF', lw=2.5, color=sol['cyan'])
+ax.plot(s_eof[{'number':1}]*-1, w_eof.level, label='s 2.EOF', lw=2.5, color=sol['magenta'])
+ax.plot(u_eof[{'number':0}]*-1, w_eof.level, label='u 1.EOF', lw=2.5, color=sol['green'])
+ax.plot(shear_eof[{'number':1}], shear_eof.level, label='dUdz 2.EOF', lw=2.5, color=sol['orange'])
 
 # ax.plot(w_eof[{'number':2}], w_eof.level, label='$\omega$ 3.EOF', lw=2.5, color=sol['cyan'])
 # ax.plot(drdt_eof[{'number':1}], drdt_eof.level, label='drdt 2.EOF', lw=2.5, color=sol['magenta'])

@@ -51,39 +51,10 @@ def large_scale_at_metric_times(ds_largescale, timeseries,
         scalars = [
             'cin',
             'cape',
-            'd_cape',       # correlation to other variables higher than 0.8
-            'cld_low',
-            'lw_dn_srf',
-            'wspd_srf',
-            'v_srf',
-            'r_srf',
-            'lw_net_toa',   # without10important
-            'SH',           # without10important
-            'LWP',
-
-            'LH',           # without10important
-            'p_srf_aver',
-            'T_srf',
-            'T_skin',       # correlation to other variables higher than 0.8
-            'RH_srf',       # correlation to other variables higher than 0.8
-            'u_srf',
-            'rad_net_srf',  # correlation to other variables higher than 0.8
-            'sw_net_toa',   # correlation to other variables higher than 0.8
-            'cld_mid',
-            'cld_high',
-            'cld_tot',      # correlation to other variables higher than 0.8
-            'dh2odt_col',   # without10important
-            'h2o_adv_col',  # without10important
-            'evap_srf',     # correlation to other variables too high (according to statsmodels)
-            'dsdt_col',     # correlation to other variables higher than 0.8
-            's_adv_col',    # correlation to other variables too high (according to statsmodels)
-            'rad_heat_col', # correlation to other variables too high (according to statsmodels)
-            'LH_col',       # correlation to other variables higher than 0.8
-            's_srf',
+            'lw_net_toa',
+            'SH',
+            'LH',
             'PW',
-            'lw_up_srf',    # correlation to other variables higher than 0.8
-            'sw_up_srf',    # has same long_name as sw_dn_srf (according to statsmodels)
-            'sw_dn_srf',    # correlation to other variables higher than 0.8
         ]
 
         c2 = xr.concat([ds_largescale[scalar] for scalar in scalars], dim='concat_dims')
@@ -224,39 +195,10 @@ def subselect_ls_vars(large_scale, profiles, levels_in=None, large_scale_time=No
     scalars = [
         'Convective Inhibition',
         'Convective Available Potential Energy',
-        # '515 hPa Downward CAPE',                    # correlation to other variables higher than 0.8
-        # 'Satellite-measured low cloud',
-        # 'Surface downwelling LW',                   # correlated -0.64 to OLR
-        # '10m wind speed',
-        # '10m V component',
-        # '2m water vapour mixing ratio',
-        'TOA LW flux, upward positive',                # without10important; OLR is just chicken-egg so leave out
-        'Surface sensible heat flux, upward positive', # without10important
-        # 'MWR-measured cloud liquid water path',
-
+        'TOA LW flux, upward positive',
+        'Surface sensible heat flux, upward positive',
         'Surface latent heat flux, upward positive',
-        # 'Surface pressure averaged over the domain',
-        # '2m air temperature',
-        # 'Surface skin temperature',                 # correlation to other variables higher than 0.8
-        # '2m air relative humidity',                 # correlation to other variables higher than 0.8
-        # '10m U component',
-        # 'Surface net radiation, downward positive', # correlation to other variables higher than 0.8
-        # 'TOA net SW flux, downward positive',       # correlation to other variables higher than 0.8
-        # 'Satellite-measured middle cloud',
-        # 'Satellite-measured high cloud',
-        # 'Satellite-measured total cloud',           # correlation to other variables higher than 0.8
-        # 'Column-integrated dH2O/dt',                  # without10important; leave out TWP stuff
-        # 'Column-integrated H2O advection',            # without10important; dont understand its calculation so leave out
-        # 'Surface evaporation',                      # correlation to other variables too high (according to statsmodels)
-        # 'Column d(dry static energy)/dt',           # correlation to other variables higher than 0.8
-        # 'Column dry static energy advection',       # correlation to other variables too high (according to statsmodels)
-        # 'Column radiative heating',                 # correlation to other variables too high (according to statsmodels)
-        # 'Column latent heating',                    # correlation to other variables higher than 0.8
-        # '2m dry static energy',                       # without10important
         'MWR-measured column precipitable water',
-        # 'Surface upwelling LW',                     # correlation to other variables higher than 0.8
-        # 'Surface downwelling SW',                   # has same long_name as sw_dn_srf (according to statsmodels)
-        # 'Surface downwelling SW',                   # correlation to other variables higher than 0.8
     ]
 
     ls_list = []

@@ -1,13 +1,8 @@
 from os.path import expanduser
 import xarray as xr
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib_venn as plt_venn
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
-import metpy.calc as mpcalc
-import seaborn as sns
 from scipy import stats
 from Plotscripts.colors_solarized import sol
 
@@ -17,7 +12,8 @@ plt.rc('font', size=18)
 colours = ['yellow', 'orange', 'red', 'magenta', 'violet', 'blue', 'cyan', 'green', 'base01', 'base03']
 
 ls  = xr.open_dataset(home+
-                      '/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
+                      '/Documents/Data/LargeScaleState/'+
+                      'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_noDailyCycle.nc')
 
 ls_day = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                          'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
@@ -82,7 +78,7 @@ for i in range(10):
     ).values).to_pandas())
 
 df = pd.DataFrame(dataseries).transpose()
-# sns.boxplot(data=df)
+
 data_list = [df[i][df[i].notnull()] for i in range(df.shape[1])]
 fig, ax = plt.subplots(figsize=(4, 3))
 ax.boxplot(data_list, medianprops={'lw': 2.5, 'color': sol['magenta']}, showmeans=True,
