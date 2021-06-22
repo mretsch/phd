@@ -3,8 +3,10 @@ home = expanduser("~")
 import timeit
 import numpy as np
 import xarray as xr
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import cartopy.crs as ccrs
 import cartopy.io as cio
 from Plotscripts.colors_solarized import sol
@@ -25,11 +27,23 @@ plt.rc('font'  , size=20)
 
 rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
+# div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_dailycycle.nc')\
+#     .sel(time='2020-01-31T03:00:00')
 # precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_avg_0201to301.nc') * 3600
+# precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_20200210T0000_reggrid.nc')\
+#              .sel(time='20200210T19:45:00') * 3600
+# precip = xr.open_dataset(home+'/Documents/Data/Simulation/r2b10/pr_observations.HDF5', group='Grid')['precipitation']
+# precip = xr.open_dataset(home+
+#                          '/Documents/Data/Simulation/r2b10/3B-MO.MS.MRG.3IMERG.20200201-S000000-E235959.02.V06B.HDF5',
+#                          group='Grid')['precipitation'].sel(lat=slice(-20, 20)).transpose()
 
+
+# pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
+# pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
+# rh_avg = rh.mean(dim='time')
 # rome_avg = rome.sum(dim='time') / len(rome.time)
-# rome_avg = rome.max(dim='time')
-l_rome_p90 = (rome > np.nanpercentile(rome, q=90))
+rome_p90 = np.nanpercentile(rome, q=90)
+l_rome_p90 = (rome > rome_p90)
 rh_p90 = rh.where(l_rome_p90, other=np.nan)
 rhlow_p90 = (rh_p90 < 40)
 
@@ -48,55 +62,124 @@ rhlow_p90 = (rh_p90 < 40)
 
 l_pick_surface = False
 if l_pick_surface:
-    land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
-    # coast_mask = (0.2 < land_sea) & (land_sea < 0.8) # coasts
-    coast_mask =  land_sea < 0.2                     # ocean
+    land_sea = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
+
+    ocean_mask = land_sea < 0.2  # ocean
+    ocean_mask['lat'] = rome['lat']
+    ocean_mask['lon'] = rome['lon']
+    rome_ocean = rome.where(ocean_mask, other=np.nan)
+
+    coast_mask = (0.2 < land_sea) & (land_sea < 0.8)  # coasts
     coast_mask['lat'] = rome['lat']
     coast_mask['lon'] = rome['lon']
     rome_coast = rome.where(coast_mask, other=np.nan)
 
-# west Australia: .sel(lat=slice(-20, -10), lon=slice(120, 134))
-# Amazonas Delta: .sel(lat=slice(-1, 5), lon=slice(-52, -44))
-# North Pacific: .where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-# map_to_plot = rhlow_p90.sum(dim='time').sel(lat=slice(-1, 5), lon=slice(-52, -44))
-# map_to_plot = rhlow_p90.sum(dim='time').where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-# map_to_plot = precip.squeeze()
-map_to_plot = rhlow_p90.sum(dim='time')
+    # west Australia: .sel(lat=slice(-20, -10), lon=slice(120, 134))
+    # Amazonas Delta: .sel(lat=slice(-1, 5), lon=slice(-52, -44))
+    # North Pacific: .where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
+    # South of India: .sel(lat=slice(-12, -6), lon=slice(77, 82))
 
-# n_roll = 140
-# center_lat = map_to_plot[:, -n_roll-1]['lon'].item() + 180
-# map_to_plot = map_to_plot.roll(shifts={'lon': n_roll}, roll_coords=False)
+    pac = rome_avg.where(ocean_mask &
+                         ((160 < rome['lon']) | (rome['lon'] < -90)) &
+                         (0 < rome['lat']), other=0)
+    aus = rome_avg.where(coast_mask &
+                         ((120 < rome['lon']) & (rome['lon'] < 134)) &
+                         ((-20 < rome['lat']) & (rome['lat'] < -10)), other=0)
+    ama = rome_avg.where(((-52 < rome['lon']) & (rome['lon'] < -44)) &
+                         ((-1 < rome['lat']) & (rome['lat'] < 5)), other=0)
+    ind = rome_avg.where(((77 < rome['lon']) & (rome['lon'] < 82)) &
+                         ((-12 < rome['lat']) & (rome['lat'] < -6)), other=0)
+    allregions = pac + aus + ama + ind
 
-# exploit that lons are now a view only of the lon-values, i.e. point into its memory
-lons = map_to_plot['lon'].values
-lons -= 160
-lons = xr.where(lons < -180, lons + 360, lons)
+    allregions = xr.where(allregions != 0., 1, np.nan)
 
-fig, ax = make_map(projection=ccrs.PlateCarree(central_longitude=160))
-ax.coastlines()
-ax.axhline(y=0, color='r')
-map_to_plot.plot(ax=ax, cmap='rainbow')#, vmin=0. , vmax=2.5)# cmap='BrBG')#, )
-# ax.pcolormesh(map_to_plot)#, vmin=0. , vmax=2.5)# cmap='BrBG')#, )
-ax.collections[0].colorbar.set_label('Count ROME_p90 below 40% RH [1]')
-# ax.collections[0].colorbar.set_label('[mm/hour]')
-# ax.collections[0].colorbar.set_label('')
-# ax.set_title('Count ROME_p90 below 40% RH$_{500}$')
-# ax.set_title('Average precip Feb. 2020, DYAMOND-Winter nwp 2.5km')
-ax.set_title('')
+    allregions[:, :] = np.nan
+    allregions.loc[{'lon': rome_avg.sel(lon=126, method='nearest')['lon'],
+                    'lat': rome_avg.sel(lat=-16, method='nearest')['lat']}
+    ] = 1
 
-plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
-# plt.show()
+l_plot_map = True
+if l_plot_map:
 
-# fig, ax = plt.subplots(figsize=(48, 3))
-# # rome_southofindia.plot()
-# rome_domain = rome_coast.where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-# rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_domain, q=90), other=np.nan)
-# rome_avg = rome_domain_high.mean(dim='lat').mean(dim='lon')
-# rome_avg.plot()
-# ax.axhline(y=np.nanpercentile(rome_domain, q=90), color='r')
-# plt.title(f'P90 avg. NW-Aussie, p90_domainpixel={round(np.nanpercentile(rome_domain, q=90))}')
-# ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-# plt.savefig(home+'/Desktop/time.pdf', bbox_inches='tight', transparent=True)
+    map_to_plot = rhlow_p90.sum(dim='time')
+    # map_to_plot = div.squeeze()
+
+    # exploit that lons are now a view only of the lon-values, i.e. point into its memory
+    longitude_offset = 180
+    # lons = map_to_plot['lon'].values
+    # lons -= longitude_offset
+    map_to_plot['lon'] = map_to_plot['lon'] - longitude_offset
+    lons = map_to_plot['lon']
+    lons = xr.where(lons < -180, lons + 360, lons)
+
+    fig, ax = make_map(projection=ccrs.PlateCarree(central_longitude=longitude_offset))
+    ax.coastlines()
+    # ax.axhline(y=0, color='r')
+
+    map_to_plot.plot(ax=ax, cmap='PuRd')#, vmin=-0.0002, vmax=0.0002)
+                     # cmap='OrRd' #cmap='PuOr' # cmap='cool' #cmap='gist_earth_r')# cmap='GnBu')#,
+                     # vmin=0. , vmax=2.143688
+
+    # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
+
+    # ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
+    # ax.collections[0].colorbar.set_label('ROME [km$^2$]')
+    # ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
+    # ax.collections[0].colorbar.set_label('900 hP div. [1/s]')
+    # ax.collections[0].colorbar.ax.ticklabel_format(scilimits=(0, 0))
+
+    # ax.set_title('Count ROME_p90 below 40% RH$_{500}$')
+    # ax.set_title('Average precip Feb. 2020, DYAMOND-Winter nwp 2.5km')
+    ax.set_title('') # '12:30$\,$pm')
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+
+    # ax.collections[0].colorbar.ax.set_anchor((-0.25, 0.))
+    ax.set_xticks([30, 90, 150, 210, 270, 330], crs=ccrs.PlateCarree())
+    ax.set_yticks([-20, -10, 0, 10, 20], crs=ccrs.PlateCarree())
+    # ax.set_xticks([125, 135], crs=ccrs.PlateCarree())
+    # ax.set_yticks([-10, -20], crs=ccrs.PlateCarree())
+    ax.yaxis.set_ticks_position('both')
+    ax.xaxis.set_major_formatter(LongitudeFormatter())
+    ax.yaxis.set_major_formatter(LatitudeFormatter())
+    # ax.grid()
+
+    # plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
+
+l_plot_time = False
+if l_plot_time:
+    fig, ax = plt.subplots(figsize=(48, 3))
+    # rome_southofindia.plot()
+
+    rome_pac = rome_ocean.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
+    rome_ama = rome.sel(lat=slice(-1, 5), lon=slice(-52, -44))
+    rome_aus = rome_coast.sel(lat=slice(-20, -10), lon=slice(120, 134))
+    rome_ind = rome.sel(lat=slice(-12, -6), lon=slice(77, 82))
+
+    rome_domain = rome_aus
+    legend_text = 'NW Australia'
+
+    # rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_domain, q=90), other=np.nan)
+    rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
+    rome_avg = rome_domain_high.mean(dim='lat').mean(dim='lon')
+    # ax.plot(rome_avg['time'], rome_avg, color='k', label=legend_text)
+    rome_avg.plot(color='k', label=legend_text)
+    # n_high_pixels = rome_domain_high.notnull().sum(dim=('lat', 'lon'))
+    # total_domain = len(rome_domain['lat']) * len(rome_domain['lon'])
+    # (n_high_pixels / total_domain).plot(label=legend_text)
+
+    ax.axhline(y=rome_p90, color='r')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
+    plt.title(f'') #, p90_domainpixel={round(rome_p90)}')
+    plt.ylabel('ROME [km$^2$]')
+    plt.xlabel('Time')
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+    plt.legend(loc='upper left')
+    plt.savefig(home+'/Desktop/time.pdf', bbox_inches='tight', transparent=True)
+    # plt.show()
 
 stop = timeit.default_timer()
 print(f'Time used: {stop - start}')

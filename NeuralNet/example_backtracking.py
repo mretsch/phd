@@ -46,8 +46,8 @@ def three_inputs_and_target():
     # reconstruct the original data (at first 'time') via the pc time series and the patterns (EOFs)
     pattern_0_back = (pc_all[:, 0] @ eigenvectors.T) * (dimsize[1] - 1)
 
-    # Create specifically correlated data to x (x and y are 0-correlated by construction as PC-series)
-    # The equation below is an additive mixture, set by r, of x (for correlation) and y (for non-correlation).
+    # Create specifically correlated data to y (x and y are 0-correlated by construction as PC-series)
+    # The equation below is an additive mixture, set by r, of y (for correlation) and x (for non-correlation).
     y = pc_all[0]
     x = pc_all[1]
 
@@ -147,7 +147,7 @@ target = y
 inputs = np.stack((i_1, i_2, i_3), axis=1)
 # inputs = np.stack((i_1, i_2, i_3, i_4), axis=1)
 
-l_train_model = False
+l_train_model = True
 if l_train_model:
     model = kmodels.Sequential()
     model.add(klayers.Dense(150, activation='relu', input_shape=(inputs.shape[1],)))
