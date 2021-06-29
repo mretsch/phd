@@ -11,45 +11,37 @@ home = expanduser("~")
 # no open_mfdataset here, since dask causes runtime-warning in loop below: "invalid value encountered in true_divide"
 ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
-rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rome_p90 = np.nanpercentile(rome, q=90)
 
-l_pick_surface = True
+l_pick_surface = False
 if l_pick_surface:
     land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
-    coast_mask =   land_sea < 0.2 # ocean
-    # coast_mask =  (0.2 < land_sea) & (land_sea < 0.8) # coast
+    # coast_mask =   land_sea < 0.2 # ocean
+    coast_mask =  (0.2 < land_sea) & (land_sea < 0.8) # coast
     # coast_mask =   land_sea > 0.8 # land
     coast_mask['lat'] = rome['lat']
     coast_mask['lon'] = rome['lon']
     rome = rome.where(coast_mask, other=np.nan)
 
 # rome = rome.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan) # North Pacific
-# rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazonas delta
+# rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazon delta
 # rome = rome.where((120 < rome['lon']) & (rome['lon'] < 134) & (-20 < rome['lat']) & (rome['lat'] < -10), other=np.nan) # West Australia
-rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan)
+rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan) # india
 
 da = rome.stack({'x': ('time', 'lat', 'lon')})
 da['x'] = np.arange(len(da))
 da = da.rename({'x': 'time'})
 
-subselect = True
-if subselect:
-    # subselect specific times during a day
-    l_time_of_day = False
-    if l_time_of_day:
-        da.coords['hour'] = da.indexes['time'].hour
-        da_sub = da.where(da.hour.isin([6]), drop=True)
+# subselect on the times given in the histogram data
+l_histogram = True
+if l_histogram:
+    # da_sub = da.sel(time=ds_ps.time)
+    da = da[da.notnull()]
+    da_sub = da[da.time.isin(ds_ps.time)]
 
-    # subselect on the times given in the histogram data
-    l_histogram = True
-    if l_histogram:
-        # da_sub = da.sel(time=ds_ps.time)
-        da = da[da.notnull()]
-        da_sub = da[da.time.isin(ds_ps.time)]
-
-    da = da_sub
-    # rome = rome.where(da_sub)
+da = da_sub
+# rome = rome.where(da_sub)
 
 phase_space = ds_ps.hist_2D
 
@@ -61,7 +53,7 @@ overlay.coords['y_bins'] = ('time', ds_ps.y_series_bins[ds_ps.time.isin(da_sub.t
 
 phase_space_stack = phase_space.stack(z=('x', 'y'))
 
-ind_1, ind_2 =zip(*phase_space_stack.z.values)
+ind_1, ind_2 = zip(*phase_space_stack.z.values)
 phase_space_stack[:] = FORTRAN.phasespace(indices1=ind_1,
                                           indices2=ind_2,
                                           overlay=overlay,

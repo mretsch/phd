@@ -25,7 +25,7 @@ def make_map(projection=ccrs.PlateCarree()):
 start = timeit.default_timer()
 plt.rc('font'  , size=20)
 
-rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_dailycycle.nc')\
 #     .sel(time='2020-01-31T03:00:00')
@@ -41,7 +41,7 @@ rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
 # pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
 # rh_avg = rh.mean(dim='time')
-# rome_avg = rome.sum(dim='time') / len(rome.time)
+rome_avg = rome.sum(dim='time') / len(rome.time)
 rome_p90 = np.nanpercentile(rome, q=90)
 l_rome_p90 = (rome > rome_p90)
 rh_p90 = rh.where(l_rome_p90, other=np.nan)
@@ -102,7 +102,7 @@ l_plot_map = True
 if l_plot_map:
 
     map_to_plot = rhlow_p90.sum(dim='time')
-    # map_to_plot = div.squeeze()
+    # map_to_plot = rome_avg
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
     longitude_offset = 180
@@ -117,13 +117,13 @@ if l_plot_map:
     # ax.axhline(y=0, color='r')
 
     map_to_plot.plot(ax=ax, cmap='PuRd')#, vmin=-0.0002, vmax=0.0002)
-                     # cmap='OrRd' #cmap='PuOr' # cmap='cool' #cmap='gist_earth_r')# cmap='GnBu')#,
+                     # cmap='PuOr' #cmap='OrRd' # cmap='cool' #cmap='gist_earth_r')# cmap='GnBu')#,
                      # vmin=0. , vmax=2.143688
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
-    # ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
-    # ax.collections[0].colorbar.set_label('ROME [km$^2$]')
+    ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
+    # ax.collections[0].colorbar.set_label('Avg. ROME [km$^2$]')
     # ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
     # ax.collections[0].colorbar.set_label('900 hP div. [1/s]')
     # ax.collections[0].colorbar.ax.ticklabel_format(scilimits=(0, 0))
@@ -144,8 +144,8 @@ if l_plot_map:
     ax.yaxis.set_major_formatter(LatitudeFormatter())
     # ax.grid()
 
-    # plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
-    plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
+    plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
+    # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
 l_plot_time = False
 if l_plot_time:

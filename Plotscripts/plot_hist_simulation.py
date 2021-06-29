@@ -13,7 +13,7 @@ from Plotscripts.plot_hist import histogram_2d
 start = timeit.default_timer()
 plt.rc('font'  , size=20)
 
-rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_14mmhour.nc')
+rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rh500 = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 w500 = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/omega500.nc')
 # convert Pa/s to hPa/hour
