@@ -60,7 +60,7 @@ rhlow_p90 = (rh_p90 < 40)
 # delta_size = rome_ni - area
 # delta_prox = rome - rome_ni
 
-l_pick_surface = False
+l_pick_surface = True
 if l_pick_surface:
     land_sea = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
 
@@ -82,6 +82,15 @@ if l_pick_surface:
     pac = rome_avg.where(ocean_mask &
                          ((160 < rome['lon']) | (rome['lon'] < -90)) &
                          (0 < rome['lat']), other=0)
+    pa1 = rome_avg.where(ocean_mask &
+                         ((170 < rome['lon']) | (rome['lon'] < -178)) &
+                         ((6 < rome['lat']) & (rome['lat'] < 8)), other=0)
+    pa2 = rome_avg.where(ocean_mask &
+                         ((-145 < rome['lon']) & (rome['lon'] < -133)) &
+                         ((6 < rome['lat']) & (rome['lat'] < 8)), other=0)
+    pa3 = rome_avg.where(ocean_mask &
+                         ((-145 < rome['lon']) & (rome['lon'] < -139)) &
+                         ((14 < rome['lat']) & (rome['lat'] < 20)), other=0)
     aus = rome_avg.where(coast_mask &
                          ((120 < rome['lon']) & (rome['lon'] < 134)) &
                          ((-20 < rome['lat']) & (rome['lat'] < -10)), other=0)
@@ -89,20 +98,19 @@ if l_pick_surface:
                          ((-1 < rome['lat']) & (rome['lat'] < 5)), other=0)
     ind = rome_avg.where(((77 < rome['lon']) & (rome['lon'] < 82)) &
                          ((-12 < rome['lat']) & (rome['lat'] < -6)), other=0)
-    allregions = pac + aus + ama + ind
+    allregions = pa1 + pa2 + pa3 + aus + ama + ind
 
     allregions = xr.where(allregions != 0., 1, np.nan)
 
-    allregions[:, :] = np.nan
-    allregions.loc[{'lon': rome_avg.sel(lon=126, method='nearest')['lon'],
-                    'lat': rome_avg.sel(lat=-16, method='nearest')['lat']}
-    ] = 1
+    # allregions[:, :] = np.nan
+    # allregions.loc[{'lon': rome_avg.sel(lon=126, method='nearest')['lon'],
+    #                 'lat': rome_avg.sel(lat=-16, method='nearest')['lat']}] = 1
 
-l_plot_map = True
+l_plot_map = False
 if l_plot_map:
 
-    map_to_plot = rhlow_p90.sum(dim='time')
-    # map_to_plot = rome_avg
+    # map_to_plot = rhlow_p90.sum(dim='time')
+    map_to_plot = allregions
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
     longitude_offset = 180
@@ -116,13 +124,13 @@ if l_plot_map:
     ax.coastlines()
     # ax.axhline(y=0, color='r')
 
-    map_to_plot.plot(ax=ax, cmap='PuRd')#, vmin=-0.0002, vmax=0.0002)
-                     # cmap='PuOr' #cmap='OrRd' # cmap='cool' #cmap='gist_earth_r')# cmap='GnBu')#,
+    map_to_plot.plot(ax=ax, cmap='cool')#, vmin=-0.0002, vmax=0.0002)
+                     # cmap='PuOr' #cmap='OrRd' # cmap='PuRd' #cmap='gist_earth_r')# cmap='GnBu')#,
                      # vmin=0. , vmax=2.143688
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
-    ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
+    # ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
     # ax.collections[0].colorbar.set_label('Avg. ROME [km$^2$]')
     # ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
     # ax.collections[0].colorbar.set_label('900 hP div. [1/s]')
@@ -147,37 +155,49 @@ if l_plot_map:
     plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
     # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
-l_plot_time = False
+l_plot_time = True
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
-    # rome_southofindia.plot()
 
     rome_pac = rome_ocean.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
+    rome_pa1 = rome_ocean.where((( 170 < rome['lon']) | (rome['lon'] < -178)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
+    rome_pa2 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -133)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
+    rome_pa3 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -139)) & ((14 < rome['lat']) & (rome['lat'] < 20)), other=np.nan)
     rome_ama = rome.sel(lat=slice(-1, 5), lon=slice(-52, -44))
     rome_aus = rome_coast.sel(lat=slice(-20, -10), lon=slice(120, 134))
     rome_ind = rome.sel(lat=slice(-12, -6), lon=slice(77, 82))
 
-    rome_domain = rome_aus
-    legend_text = 'NW Australia'
+    rome_domain = rome_pa1
+    title_text = 'Pacific Region 1'
 
-    # rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_domain, q=90), other=np.nan)
     rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
     rome_avg = rome_domain_high.mean(dim='lat').mean(dim='lon')
-    # ax.plot(rome_avg['time'], rome_avg, color='k', label=legend_text)
-    rome_avg.plot(color='k', label=legend_text)
-    # n_high_pixels = rome_domain_high.notnull().sum(dim=('lat', 'lon'))
-    # total_domain = len(rome_domain['lat']) * len(rome_domain['lon'])
-    # (n_high_pixels / total_domain).plot(label=legend_text)
+    p0, = rome_avg.plot(color='k', label='ROME', lw=3)
+    ax.axhline(y=rome_p90, color='grey', label='High ROME')
 
-    ax.axhline(y=rome_p90, color='r')
+    # rh_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
+    # rh_domain = xr.where(rome_domain.notnull(), rh_cutout, np.nan)
+    rh_domain = xr.where(rome_domain.notnull(), rh       , np.nan)
+    # rh_domain_high = xr.where(rome_domain_high.notnull(), rh, np.nan)
+    rh_avg = rh_domain.mean(dim='lat').mean(dim='lon')
+
+    ax_1 = ax.twinx()
+    p1, = ax_1.plot(rh_avg['time'], rh_avg, color=sol['violet'], label='RH$_{500}$', lw=3)
+    ax_1.axhline(y=80, color='red')
+
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
-    plt.title(f'') #, p90_domainpixel={round(rome_p90)}')
-    plt.ylabel('ROME [km$^2$]')
-    plt.xlabel('Time')
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-    plt.legend(loc='upper left')
+    ax.set_title('')
+    ax.set_ylabel('ROME [km$^2$]')
+
+    ax_1.set_ylim(-2, 102)
+    ax_1.set_title(title_text) #, p90_domainpixel={round(rome_p90)}')
+    ax_1.set_ylabel('RH$_{500}$ [1]', fontdict={'color': sol['violet']})
+
+    plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
+    plt.xlabel('Time')
+    plt.legend([p0, p1], [p.get_label() for p in [p0, p1]], loc='upper left')
     plt.savefig(home+'/Desktop/time.pdf', bbox_inches='tight', transparent=True)
     # plt.show()
 

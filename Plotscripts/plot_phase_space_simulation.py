@@ -25,9 +25,12 @@ if l_pick_surface:
     rome = rome.where(coast_mask, other=np.nan)
 
 # rome = rome.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan) # North Pacific
+# rome = rome.where((( 170 < rome['lon']) | (rome['lon'] < -178)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan) # North Pacific region 1 (pa1)
+# rome = rome.where(((-145 < rome['lon']) & (rome['lon'] < -133)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan) # North Pacific region 2 (pa2)
+rome = rome.where(((-145 < rome['lon']) & (rome['lon'] < -139)) & ((14 < rome['lat']) & (rome['lat'] < 20)), other=np.nan) # North Pacific region 3 (pa3)
 # rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazon delta
 # rome = rome.where((120 < rome['lon']) & (rome['lon'] < 134) & (-20 < rome['lat']) & (rome['lat'] < -10), other=np.nan) # West Australia
-rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan) # india
+# rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan) # india
 
 da = rome.stack({'x': ('time', 'lat', 'lon')})
 da['x'] = np.arange(len(da))
@@ -83,7 +86,7 @@ the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg
 plt.xlabel('$\omega_{515}$ [hPa/hour]')
 plt.ylabel('RH$_{515}$ [%]')
 
-the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,ind}$ [1]')
+the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,pac3}$ [1]')
 
 plt.savefig(home + '/Desktop/phase_space.pdf', transparent=True, bbox_inches='tight')
 plt.show()
