@@ -21,11 +21,11 @@ def maximum_time(x):
     return x_return
 
 
-def average_around_max(series, m_max, **rsmpl):
+def average_around_max(series, m_max, **kwas):
 
-    series_rsmpl = series.resample(indexer={'time': rsmpl['sample_period']}, skipna=False,
-                                      closed=rsmpl['closed_side'], label=rsmpl['closed_side'],
-                                      base=rsmpl['sample_center'], loffset=rsmpl['center_time'])
+    series_rsmpl = series.resample(indexer={'time': kwas['sample_period']}, skipna=False,
+                                   closed=kwas['closed_side'], label=kwas['closed_side'],
+                                   base=kwas['sample_center'], loffset=kwas['center_time'])
 
     time_of_max = series_rsmpl.apply(maximum_time)
 
@@ -51,19 +51,23 @@ def average_around_max(series, m_max, **rsmpl):
     rome3 = series.sel(time=time_10min_after[l_time_available])
     # rome4 = metric.sel(time=time_20min_after [l_time_available])
     # array_rome = np.array([rome0, rome1, rome2, rome3, rome4])
-    array_rome = np.array([rome1, rome2, rome3])
 
-    avg_maximum = np.nanmean(array_rome, axis=0)
+    if 'rh_series' in kwas:
+        rh1 = kwas['rh_series'].sel(time=time_10min_before[l_time_available])
+        rh2 = kwas['rh_series'].sel(time=time_of_max[l_time_available])
+        rh3 = kwas['rh_series'].sel(time=time_10min_after[l_time_available])
+        assert (len(rh1) == len(rh2)) & (len(rh2) == len(rh3))
+        if len(rh1) != 0:
+            array_rh = np.array([rh1, rh2, rh3])
+            avg_maximum = np.nanmean(array_rh, axis=0)
+        else:
+            avg_maximum = np.nan
+    else:
+        array_rome = np.array([rome1, rome2, rome3])
+        avg_maximum = np.nanmean(array_rome, axis=0)
 
-
-    # For ROME from C-POL at Darwin
     m_max.loc[{'time': m_max.sel(time=time_not_available, method='nearest').time}] = np.nan
     m_max[m_max.notnull()] = avg_maximum
-
-    # For ROME from simulation
-    # m_maxavg = xr.full_like(m_max, fill_value=np.nan)
-    # m_maxavg.loc[{'time': m_max.sel(time=time_of_max[l_time_available], method='backfill').time}] = avg_maximum
-    # m_maxavg.loc[{'time': m_max.sel(time=time_of_max[l_time_available], method='nearest').time}] = avg_maximum
 
     m_max.coords['percentile'] = m_max.rank(dim='time', pct=True)
 
