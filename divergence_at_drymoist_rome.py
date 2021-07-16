@@ -71,13 +71,56 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, fillvalue):
     return small_region
 
 
+def a_few_times_in_regions(region):
+    if region == 'Pacific Region 1':
+        times = [
+            np.datetime64('2020-02-09T12:00'),
+            np.datetime64('2020-02-12T18:00'),
+            np.datetime64('2020-02-16T12:00'),
+            np.datetime64('2020-02-19T06:00'),
+            np.datetime64('2020-02-20T18:00'),
+        ]
+
+    if region == 'Pacific Region 2':
+        times = [
+            np.datetime64('2020-02-08T06:00'),
+            np.datetime64('2020-02-13T09:00'),
+            np.datetime64('2020-02-15T15:00'),
+            np.datetime64('2020-02-17T09:00'),
+            np.datetime64('2020-02-18T12:00'),
+        ]
+
+    if region == 'Pacific Region 3':
+        times = [
+            np.datetime64('2020-02-06T03:00'),
+            np.datetime64('2020-02-07T06:00'),
+            # np.datetime64('2020-02-08T06:00'),
+            # np.datetime64('2020-02-10T03:00'),
+            # np.datetime64('2020-02-10T03:00'), # original ROME-time is 02-19T23:15 but no div available at 00:00
+        ]
+
+    if region == 'NW Australia':
+        times = [
+            np.datetime64('2020-02-01T12:00'),
+            np.datetime64('2020-02-03T12:00'),
+            np.datetime64('2020-02-11T21:00'),
+            np.datetime64('2020-02-22T15:00'),
+            np.datetime64('2020-02-29T12:00'),
+        ]
+
+
+
+    return times
+
+
 start = timeit.default_timer()
 plt.rc('font'  , size=20)
 
 rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rome_3h = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour_3hmaxavg.nc')
 rh_3h = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500_3hmaxavg_by_rome10mm.nc')
-div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').transpose('time', 'lon', 'lat')
+div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
+    transpose('time', 'lon', 'lat')
 
 rome = rome_3h.sel(time=div['time'].values)
 rh   = rh_3h.  sel(time=div['time'].values)
@@ -93,7 +136,7 @@ rome_moist_mask = (rome > rome_thresh) &  (moist_thresh < rh)
 div_vector_list = []
 i=-1
 fig, ax = plt.subplots(1, 1)
-for r_mask, region in zip([rome_dry_mask], ['NW Australia']):
+for r_mask, region in zip([rome_dry_mask], ['Pacific Region 3']):
 
     i += 1
 
@@ -121,26 +164,60 @@ for r_mask, region in zip([rome_dry_mask], ['NW Australia']):
     else: # select by region
         region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type='coast',
                                              fillvalue=bool(0))
-        short_rome_mask = region_mask.isel({'time': slice(4, -4)}).values
 
-    avg_7timesteps, std_7timesteps = [], []
+    l_select_few_times = True and not l_whole_tropics
+    if l_select_few_times:
+        few_times = a_few_times_in_regions(region=region)
 
-    slices_int = [
-        slice(None,   -8),
-        slice(   1,   -7),
-        slice(   2,   -6),
-        slice(   3,   -5),
-        slice(   4,   -4),
-        slice(   5,   -3),
-        slice(   6,   -2),
-        slice(   7,   -1),
-        slice(   8, None),
-    ]
 
-    for time_ints in slices_int:
-        div_timeshifted = div.isel({'time': time_ints})
-        avg_7timesteps.append(div_timeshifted.where(short_rome_mask).mean())
-        std_7timesteps.append(div_timeshifted.where(short_rome_mask).std() )
+
+
+    single_7timesteps, avg_7timesteps, std_7timesteps = [], [], []
+
+    if not l_select_few_times:
+        timeselect = [
+            slice(None,   -8),
+            slice(   1,   -7),
+            slice(   2,   -6),
+            slice(   3,   -5),
+            slice(   4,   -4),
+            slice(   5,   -3),
+            slice(   6,   -2),
+            slice(   7,   -1),
+            slice(   8, None),
+        ]
+    else:
+        timeselect = [
+            np.timedelta64(-12, 'h'),
+            np.timedelta64(- 9, 'h'),
+            np.timedelta64(- 6, 'h'),
+            np.timedelta64(- 3, 'h'),
+            np.timedelta64(  0, 'h'),
+            np.timedelta64(  3, 'h'),
+            np.timedelta64(  6, 'h'),
+            np.timedelta64(  9, 'h'),
+            np.timedelta64( 12, 'h'),
+        ]
+
+    for t in timeselect:
+
+        # div_timeshifted = div.isel({'time': timeselect})
+        # avg_7timesteps.append(div_timeshifted.where(short_rome_mask).mean())
+        # std_7timesteps.append(div_timeshifted.where(short_rome_mask).std() )
+
+
+        # TODO too complicated approach, was okay for the whole time series, but not single times.
+        # TODO go along div.sel(time=slice(a, b)) for each indivudial time
+        shifted_times = [a_time + t for a_time in few_times if (a_time + t) in div['time']]
+        div_timeshifted = div.sel(time=shifted_times)
+
+        orig_times = [a_time - t for a_time in shifted_times]
+        div_timeshifted_regional = div_timeshifted.where(region_mask.sel(time=orig_times).values)
+
+        avg_7timesteps.append( div_timeshifted_regional.mean() )
+        std_7timesteps.append( div_timeshifted_regional.std() )
+
+        single_7timesteps.append( np.array(div_timeshifted_regional)[np.array(div_timeshifted_regional.notnull())] )
 
     if i==0:
         sol_col = sol['red']
@@ -161,7 +238,7 @@ plt.ylabel('Divergence [1/s]')
 plt.xlim(0, len(avg_7timesteps)-1)
 plt.xlabel('Time around high ROME [h]')
 plt.xticks(ticks=np.arange(len(avg_7timesteps)), labels=['-12', '-9', '-6', '-3', '0', '3', '6', '9', '12'])
-plt.savefig(home+'/Desktop/div_composite_tropics.pdf', bbox_inches='tight')
+plt.savefig(home+'/Desktop/div_composite_pa3.pdf', bbox_inches='tight')
 plt.show()
 
 # earliest_div = div.isel({'time': slice(None, -4)})
