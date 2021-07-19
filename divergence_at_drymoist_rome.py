@@ -94,9 +94,9 @@ def a_few_times_in_regions(region):
         times = [
             np.datetime64('2020-02-06T03:00'),
             np.datetime64('2020-02-07T06:00'),
-            # np.datetime64('2020-02-08T06:00'),
-            # np.datetime64('2020-02-10T03:00'),
-            # np.datetime64('2020-02-10T03:00'), # original ROME-time is 02-19T23:15 but no div available at 00:00
+            np.datetime64('2020-02-08T06:00'),
+            np.datetime64('2020-02-10T03:00'),
+            np.datetime64('2020-02-19T21:00'), # original ROME-time is 02-19T23:15 but no div available at 00:00
         ]
 
     if region == 'NW Australia':
@@ -108,9 +108,36 @@ def a_few_times_in_regions(region):
             np.datetime64('2020-02-29T12:00'),
         ]
 
-
-
     return times
+
+
+def composite_based_on_timeshift(list_of_arrays, n_hours, operation):
+
+    crunched_series = []
+
+    time_step = 3
+    for hour_shift in np.arange(-n_hours, n_hours + time_step, time_step):
+
+        timedelta = np.timedelta64(hour_shift, 'h')
+
+        raw_values = []
+        for series in list_of_arrays:
+            assert hasattr(series, 'coords')
+            assert 'timeshift' in series.coords
+            timeshift_as_dim = series.swap_dims({'time': 'timeshift'})
+
+            try:
+                raw_values.append(timeshift_as_dim.sel(timeshift=timedelta).values.ravel())
+            except KeyError:
+                continue
+
+        if operation == 'avg':
+            crunched_series.append( np.nanmean(np.concatenate(raw_values)) )
+
+        if operation == 'std':
+            crunched_series.append( np.nanstd(np.concatenate(raw_values)) )
+
+    return crunched_series
 
 
 start = timeit.default_timer()
@@ -133,6 +160,7 @@ moist_thresh = 70
 rome_dry_mask = (rome > rome_thresh) &  (rh < dry_thresh)
 rome_moist_mask = (rome > rome_thresh) &  (moist_thresh < rh)
 
+n_hours = 12
 div_vector_list = []
 i=-1
 fig, ax = plt.subplots(1, 1)
@@ -169,90 +197,56 @@ for r_mask, region in zip([rome_dry_mask], ['Pacific Region 3']):
     if l_select_few_times:
         few_times = a_few_times_in_regions(region=region)
 
+    single_timeslices, avg_7timesteps, std_7timesteps = [], [], []
+
+    for a_time in few_times:
+
+        divselect = div.sel(time=slice(a_time - np.timedelta64(n_hours, 'h'),
+                                       a_time + np.timedelta64(n_hours, 'h')))
+
+        divselect.coords['timeshift'] = 'time', (divselect['time'] - a_time)
+
+        single_timeslices.append(divselect.where(region_mask))
+
+    comp_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, operation='avg')
+    comp_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, operation='std')
+
+    composite_avg = xr.DataArray(np.zeros(len(comp_avg)),
+                                 coords={'timeshift': np.arange(-n_hours, n_hours + 3, 3)},
+                                 dims='timeshift')
+    composite_std = xr.zeros_like(composite_avg)
+
+    composite_avg[:] = comp_avg
+    composite_std[:] = comp_std
 
 
 
-    single_7timesteps, avg_7timesteps, std_7timesteps = [], [], []
-
-    if not l_select_few_times:
-        timeselect = [
-            slice(None,   -8),
-            slice(   1,   -7),
-            slice(   2,   -6),
-            slice(   3,   -5),
-            slice(   4,   -4),
-            slice(   5,   -3),
-            slice(   6,   -2),
-            slice(   7,   -1),
-            slice(   8, None),
-        ]
-    else:
-        timeselect = [
-            np.timedelta64(-12, 'h'),
-            np.timedelta64(- 9, 'h'),
-            np.timedelta64(- 6, 'h'),
-            np.timedelta64(- 3, 'h'),
-            np.timedelta64(  0, 'h'),
-            np.timedelta64(  3, 'h'),
-            np.timedelta64(  6, 'h'),
-            np.timedelta64(  9, 'h'),
-            np.timedelta64( 12, 'h'),
-        ]
-
-    for t in timeselect:
-
-        # div_timeshifted = div.isel({'time': timeselect})
-        # avg_7timesteps.append(div_timeshifted.where(short_rome_mask).mean())
-        # std_7timesteps.append(div_timeshifted.where(short_rome_mask).std() )
-
-
-        # TODO too complicated approach, was okay for the whole time series, but not single times.
-        # TODO go along div.sel(time=slice(a, b)) for each indivudial time
-        shifted_times = [a_time + t for a_time in few_times if (a_time + t) in div['time']]
-        div_timeshifted = div.sel(time=shifted_times)
-
-        orig_times = [a_time - t for a_time in shifted_times]
-        div_timeshifted_regional = div_timeshifted.where(region_mask.sel(time=orig_times).values)
-
-        avg_7timesteps.append( div_timeshifted_regional.mean() )
-        std_7timesteps.append( div_timeshifted_regional.std() )
-
-        single_7timesteps.append( np.array(div_timeshifted_regional)[np.array(div_timeshifted_regional.notnull())] )
 
     if i==0:
         sol_col = sol['red']
     else:
         sol_col = sol['blue']
-    plt.plot(np.array(avg_7timesteps), label=region, lw=2, color=sol_col)
-    plt.fill_between(x=np.arange(len(avg_7timesteps)),
-                     y1=np.array(avg_7timesteps)-np.array(std_7timesteps),
-                     y2=np.array(avg_7timesteps)+np.array(std_7timesteps),
+    plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2, color=sol_col)
+    plt.fill_between(x=composite_avg['timeshift'],
+                     y1=composite_avg - composite_std,
+                     y2=composite_avg + composite_std,
                      alpha=0.1,
                      color=sol_col)
 
-plt.axvline(x=len(avg_7timesteps)//2, color='lightgrey', zorder=0)
+    for series in single_timeslices:
+        series.stack({'z': ('lat', 'lon')})
+        series_avg.append()
+
+plt.axvline(x=0, color='lightgrey', zorder=0)
 plt.axhline(y=0, color='lightgrey', zorder=0)
 plt.legend()
 plt.ylim(-2e-5, 0.5e-5)
 plt.ylabel('Divergence [1/s]')
-plt.xlim(0, len(avg_7timesteps)-1)
+# plt.xlim(0, len(avg_7timesteps)-1)
 plt.xlabel('Time around high ROME [h]')
-plt.xticks(ticks=np.arange(len(avg_7timesteps)), labels=['-12', '-9', '-6', '-3', '0', '3', '6', '9', '12'])
-plt.savefig(home+'/Desktop/div_composite_pa3.pdf', bbox_inches='tight')
+# plt.xticks(ticks=np.arange(len(avg_7timesteps)), labels=['-12', '-9', '-6', '-3', '0', '3', '6', '9', '12'])
+plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
 plt.show()
-
-# earliest_div = div.isel({'time': slice(None, -4)})
-# early_div    = div.isel({'time': slice(   1, -3)})
-# same_div     = div.isel({'time': slice(   2, -2)})
-# late_div     = div.isel({'time': slice(   3, -1)})
-# latest_div   = div.isel({'time': slice(   4, None)})
-#
-# earliest_div_avg = earliest_div.where(short_rome_mask).mean()
-# early_div_avg = early_div.where(short_rome_mask).mean()
-# same_div_avg = same_div.where(short_rome_mask).mean()
-# late_div_avg = late_div.where(short_rome_mask).mean()
-# latest_div_avg = latest_div.where(short_rome_mask).mean()
-
 
 stop = timeit.default_timer()
 print(f'Time used: {stop - start}')
