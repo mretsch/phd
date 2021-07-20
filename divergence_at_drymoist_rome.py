@@ -52,7 +52,7 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, fillvalue):
                           ((  14 < field['lat']) & (field['lat'] <   20)),
                           other=fillvalue)
         small_region = pa3
-    if 'Amazon delta' in region:
+    if 'Amazon Delta' in region:
         ama = field.where((-52 < field['lon']) & (field['lon'] < -44) &
                           ( -1 < field['lat']) & (field['lat'] <   5),
                           other=fillvalue)
@@ -106,19 +106,40 @@ def a_few_times_in_regions(region):
             np.datetime64('2020-02-11T21:00'),
             np.datetime64('2020-02-22T15:00'),
             np.datetime64('2020-02-29T12:00'),
+            # daily cycle:
+            # np.datetime64('2020-02-23T15:00'),
+            # np.datetime64('2020-02-24T12:00'),
+            # np.datetime64('2020-02-25T15:00'),
+            # np.datetime64('2020-02-26T09:00'),
+            # np.datetime64('2020-02-27T18:00'),
+        ]
+
+    if region == 'Amazon Delta':
+        times = [
+            np.datetime64('2020-02-03T09:00'),
+            np.datetime64('2020-02-09T09:00'),
+            np.datetime64('2020-02-12T09:00'),
+            np.datetime64('2020-02-21T21:00'),
+            np.datetime64('2020-02-24T15:00'),
+        ]
+
+    if region == 'South of India':
+        times = [
+            np.datetime64('2020-02-06T18:00'),
+            np.datetime64('2020-02-09T21:00'), # original ROME-time is 02-10T00:15 but no div available at 00:00
+            np.datetime64('2020-02-10T21:00'), # original ROME-time is 02-10T22:45 but no div available at 00:00
+            np.datetime64('2020-02-13T18:00'),
+            np.datetime64('2020-02-15T03:00'),
         ]
 
     return times
 
 
-def composite_based_on_timeshift(list_of_arrays, n_hours, operation):
+def composite_based_on_timeshift(list_of_arrays, n_hours, step, operation):
 
     crunched_series = []
 
-    time_step = 3
-    for hour_shift in np.arange(-n_hours, n_hours + time_step, time_step):
-
-        timedelta = np.timedelta64(hour_shift, 'h')
+    for hour_shift in np.arange(-n_hours, n_hours + step, step):
 
         raw_values = []
         for series in list_of_arrays:
@@ -127,7 +148,7 @@ def composite_based_on_timeshift(list_of_arrays, n_hours, operation):
             timeshift_as_dim = series.swap_dims({'time': 'timeshift'})
 
             try:
-                raw_values.append(timeshift_as_dim.sel(timeshift=timedelta).values.ravel())
+                raw_values.append(timeshift_as_dim.sel(timeshift=hour_shift).values.ravel())
             except KeyError:
                 continue
 
@@ -157,62 +178,74 @@ dry_thresh = 40
 moist_thresh = 70
 
 # rome_rh_mask = (rome > rome_thresh) & ((rh < dry_thresh) | (moist_thresh < rh))
+rome_mask = rome > rome_thresh
 rome_dry_mask = (rome > rome_thresh) &  (rh < dry_thresh)
 rome_moist_mask = (rome > rome_thresh) &  (moist_thresh < rh)
 
 n_hours = 12
-div_vector_list = []
-i=-1
+hour_step = 3
+i = -1
 fig, ax = plt.subplots(1, 1)
-for r_mask, region in zip([rome_dry_mask], ['Pacific Region 3']):
+div_vector_list = []
+single_timeslices, avg_7timesteps, std_7timesteps = [], [], []
+r_mask = rome_mask
+# region = 'South of India'
+# region = 'Amazon Delta'
+region = 'NW Australia'
+# region = 'Pacific Region 1'
 
-    i += 1
 
-    l_whole_tropics = False
-    if l_whole_tropics:
-        short_rome_mask = r_mask.isel({'time': slice(4, -4)}).values
+l_whole_tropics = False
+if l_whole_tropics:
+    short_rome_mask = r_mask.isel({'time': slice(4, -4)}).values
 
-        rome_and_rh    = xr.where(r_mask, rome, np.nan)
-        div_at_rome    = xr.where(r_mask, div , np.nan)
-        rome_rh_div    = rome_and_rh.where(div_at_rome.notnull())
-        rh_div         = xr.         where(div_at_rome.notnull(), rh, np.nan)
+    rome_and_rh    = xr.where(r_mask, rome, np.nan)
+    div_at_rome    = xr.where(r_mask, div , np.nan)
+    rome_rh_div    = rome_and_rh.where(div_at_rome.notnull())
+    rh_div         = xr.         where(div_at_rome.notnull(), rh, np.nan)
 
-        l_concat_to_vectors = False
-        if l_concat_to_vectors:
-            div_flat  = xr.DataArray(np.ravel(div_at_rome))
-            rome_flat = xr.DataArray(np.ravel(rome_rh_div))
-            rh_flat   = xr.DataArray(np.ravel(rh_div))
+    l_concat_to_vectors = False
+    if l_concat_to_vectors:
+        div_flat  = xr.DataArray(np.ravel(div_at_rome))
+        rome_flat = xr.DataArray(np.ravel(rome_rh_div))
+        rh_flat   = xr.DataArray(np.ravel(rh_div))
 
-            div_vector_list.append(div_flat[div_flat.notnull()])
-            rome_vector = rome_flat[rome_flat.notnull()]
-            rh_vector   = rh_flat[rh_flat.notnull()]
+        div_vector_list.append(div_flat[div_flat.notnull()])
+        rome_vector = rome_flat[rome_flat.notnull()]
+        rh_vector   = rh_flat[rh_flat.notnull()]
 
-            ax.hist(div_vector_list[-1], bins=np.linspace(-5e-5, 2.5e-5, 40), density=True)
+        ax.hist(div_vector_list[-1], bins=np.linspace(-5e-5, 2.5e-5, 40), density=True)
 
-    else: # select by region
-        region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type='coast',
-                                             fillvalue=bool(0))
+else: # select by region
+    region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type='coast',
+                                         fillvalue=bool(0))
 
-    l_select_few_times = True and not l_whole_tropics
-    if l_select_few_times:
-        few_times = a_few_times_in_regions(region=region)
-
-    single_timeslices, avg_7timesteps, std_7timesteps = [], [], []
+l_select_few_times = True and not l_whole_tropics
+if l_select_few_times:
+    few_times = a_few_times_in_regions(region=region)
 
     for a_time in few_times:
 
         divselect = div.sel(time=slice(a_time - np.timedelta64(n_hours, 'h'),
-                                       a_time + np.timedelta64(n_hours, 'h')))
+                                       a_time + np.timedelta64(n_hours, 'h'))
+                            ).load()
 
-        divselect.coords['timeshift'] = 'time', (divselect['time'] - a_time)
+        divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
 
-        single_timeslices.append(divselect.where(region_mask))
+        latlon_mask = region_mask.sel(time=a_time)
+        assert latlon_mask.sum() > 0
 
-    comp_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, operation='avg')
-    comp_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, operation='std')
+        for t in divselect['time']:
+
+            divselect.loc[{'time': t}] = divselect.sel(time=t).where(latlon_mask)
+
+        single_timeslices.append(divselect)
+
+    comp_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    comp_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='std')
 
     composite_avg = xr.DataArray(np.zeros(len(comp_avg)),
-                                 coords={'timeshift': np.arange(-n_hours, n_hours + 3, 3)},
+                                 coords={'timeshift': np.arange(-n_hours, n_hours + hour_step, hour_step)},
                                  dims='timeshift')
     composite_std = xr.zeros_like(composite_avg)
 
@@ -221,31 +254,30 @@ for r_mask, region in zip([rome_dry_mask], ['Pacific Region 3']):
 
 
 
+##### PLOTS ######
 
-    if i==0:
-        sol_col = sol['red']
-    else:
-        sol_col = sol['blue']
-    plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2, color=sol_col)
-    plt.fill_between(x=composite_avg['timeshift'],
-                     y1=composite_avg - composite_std,
-                     y2=composite_avg + composite_std,
-                     alpha=0.1,
-                     color=sol_col)
+sol_col = sol['red']
+plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2.5, color=sol_col)
 
-    for series in single_timeslices:
-        series.stack({'z': ('lat', 'lon')})
-        series_avg.append()
+# plt.fill_between(x=composite_avg['timeshift'],
+#                  y1=composite_avg - composite_std,
+#                  y2=composite_avg + composite_std,
+#                  alpha=0.1,
+#                  color=sol_col)
+
+sol_col = [sol['yellow'], sol['magenta'], sol['violet'], sol['blue'], sol['cyan'], ]
+for i, series in enumerate(single_timeslices):
+    series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
+    plt.plot(series_avg['timeshift'], series_avg, color=sol_col[i], lw=0.5, marker='o', alpha=0.5)
 
 plt.axvline(x=0, color='lightgrey', zorder=0)
 plt.axhline(y=0, color='lightgrey', zorder=0)
 plt.legend()
-plt.ylim(-2e-5, 0.5e-5)
+plt.ylim(-6e-5, 1.5e-5)
 plt.ylabel('Divergence [1/s]')
-# plt.xlim(0, len(avg_7timesteps)-1)
 plt.xlabel('Time around high ROME [h]')
-# plt.xticks(ticks=np.arange(len(avg_7timesteps)), labels=['-12', '-9', '-6', '-3', '0', '3', '6', '9', '12'])
-plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
+plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
+plt.savefig(home+'/Desktop/div_composite_aus_daily.pdf', bbox_inches='tight')
 plt.show()
 
 stop = timeit.default_timer()
