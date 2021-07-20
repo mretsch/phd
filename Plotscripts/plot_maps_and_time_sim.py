@@ -36,7 +36,11 @@ rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # precip = xr.open_dataset(home+
 #                          '/Documents/Data/Simulation/r2b10/3B-MO.MS.MRG.3IMERG.20200201-S000000-E235959.02.V06B.HDF5',
 #                          group='Grid')['precipitation'].sel(lat=slice(-20, 20)).transpose()
-
+l_get_divergence_series_as_rh = False
+if l_get_divergence_series_as_rh:
+    rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour_3hmaxavg.nc')
+    rh = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc')
+    rome = rome.sel(time=rome['time'][[t.values in rh['time'] for t in rome['time']]])
 
 # pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
 # pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
@@ -163,27 +167,82 @@ if l_plot_time:
     rome_pa1 = rome_ocean.where((( 170 < rome['lon']) | (rome['lon'] < -178)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
     rome_pa2 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -133)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
     rome_pa3 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -139)) & ((14 < rome['lat']) & (rome['lat'] < 20)), other=np.nan)
-    rome_ama = rome.sel(lat=slice(-1, 5), lon=slice(-52, -44))
+    rome_ama = rome      .sel(lat=slice(-1, 5), lon=slice(-52, -44))
     rome_aus = rome_coast.sel(lat=slice(-20, -10), lon=slice(120, 134))
-    rome_ind = rome.sel(lat=slice(-12, -6), lon=slice(77, 82))
+    rome_ind = rome      .sel(lat=slice(-12, -6), lon=slice(77, 82))
 
-    rome_domain = rome_pa1
-    title_text = 'Pacific Region 1'
+    rome_domain = rome_aus
+    title_text = 'NW Australia'
+
+    rome_times = [
+        # np.datetime64('2020-02-01T10:45'),  # Australia
+        # np.datetime64('2020-02-03T10:45'),  # Australia
+        # np.datetime64('2020-02-11T19:45'),  # Australia
+        # np.datetime64('2020-02-22T14:30'),  # Australia
+        # np.datetime64('2020-02-29T11:45'),  # Australia
+
+        np.datetime64('2020-02-23T13:45'),  # Australia daily
+        np.datetime64('2020-02-24T11:00'),  # Australia daily
+        np.datetime64('2020-02-25T15:00'),  # Australia daily
+        np.datetime64('2020-02-26T10:00'),  # Australia daily
+        np.datetime64('2020-02-27T18:00'),  # Australia daily
+
+        # np.datetime64('2020-02-06T19:30'),  # South of India
+        # np.datetime64('2020-02-10T00:15'),  # South of India
+        # np.datetime64('2020-02-10T22:45'),  # South of India
+        # np.datetime64('2020-02-13T17:00'),  # South of India
+        # np.datetime64('2020-02-15T04:00'),  # South of India
+
+        # np.datetime64('2020-02-03T09:00'),  # Amazon Delta
+        # np.datetime64('2020-02-09T09:45'),  # Amazon Delta
+        # np.datetime64('2020-02-12T09:00'),  # Amazon Delta
+        # np.datetime64('2020-02-20T21:45'),  # Amazon Delta
+        # np.datetime64('2020-02-24T14:15'),  # Amazon Delta
+
+        # np.datetime64('2020-02-09T12:45'),  # Pacific Region 1
+        # np.datetime64('2020-02-12T18:30'),  # Pacific Region 1
+        # np.datetime64('2020-02-16T11:30'),  # Pacific Region 1
+        # np.datetime64('2020-02-19T06:00'),  # Pacific Region 1
+        # np.datetime64('2020-02-20T17:15'),  # Pacific Region 1
+
+        # np.datetime64('2020-02-08T05:45'),  # Pacific Region 2
+        # np.datetime64('2020-02-13T09:00'),  # Pacific Region 2
+        # np.datetime64('2020-02-15T16:00'),  # Pacific Region 2
+        # np.datetime64('2020-02-17T08:15'),  # Pacific Region 2
+        # np.datetime64('2020-02-18T11:15'),  # Pacific Region 2
+
+        # np.datetime64('2020-02-06T03:45'),  # Pacific Region 3
+        # np.datetime64('2020-02-07T04:45'),  # Pacific Region 3
+        # np.datetime64('2020-02-08T07:00'),  # Pacific Region 3
+        # np.datetime64('2020-02-10T03:30'),  # Pacific Region 3
+        # np.datetime64('2020-02-19T23:15'),  # Pacific Region 3
+    ]
 
     rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
     rome_avg = rome_domain_high.mean(dim='lat').mean(dim='lon')
     p0, = rome_avg.plot(color='k', label='ROME', lw=3)
     ax.axhline(y=rome_p90, color='grey', label='High ROME')
 
-    # rh_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
-    # rh_domain = xr.where(rome_domain.notnull(), rh_cutout, np.nan)
-    rh_domain = xr.where(rome_domain.notnull(), rh       , np.nan)
+    rh_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
+    rh_domain = xr.where(rome_domain.notnull(), rh_cutout, np.nan)
+    # rh_domain = xr.where(rome_domain.notnull(), rh       , np.nan)
     # rh_domain_high = xr.where(rome_domain_high.notnull(), rh, np.nan)
-    rh_avg = rh_domain.mean(dim='lat').mean(dim='lon')
+
+    rh_avg = rh_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
+
+    for t in rome_times:
+        if rh_avg.sel(time=t) < 40.:
+            colour = sol['red']
+        elif rh_avg.sel(time=t) > 70.:
+            colour = sol['blue']
+        else:
+            colour = sol['yellow']
+        ax.plot(rome_avg.sel(time=t)['time'], rome_avg.sel(time=t),
+                ls='', marker='o', ms=17, color=colour, alpha=0.5)
 
     ax_1 = ax.twinx()
     p1, = ax_1.plot(rh_avg['time'], rh_avg, color=sol['violet'], label='RH$_{500}$', lw=3)
-    ax_1.axhline(y=80, color='red')
+    # ax_1.axhline(y=80, color='red')
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -199,7 +258,7 @@ if l_plot_time:
     plt.xlabel('Time')
     plt.legend([p0, p1], [p.get_label() for p in [p0, p1]], loc='upper left')
     plt.savefig(home+'/Desktop/time.pdf', bbox_inches='tight', transparent=True)
-    # plt.show()
+    plt.show()
 
 stop = timeit.default_timer()
 print(f'Time used: {stop - start}')

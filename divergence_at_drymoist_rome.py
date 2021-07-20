@@ -101,17 +101,17 @@ def a_few_times_in_regions(region):
 
     if region == 'NW Australia':
         times = [
-            np.datetime64('2020-02-01T12:00'),
-            np.datetime64('2020-02-03T12:00'),
-            np.datetime64('2020-02-11T21:00'),
-            np.datetime64('2020-02-22T15:00'),
-            np.datetime64('2020-02-29T12:00'),
+            # np.datetime64('2020-02-01T12:00'),
+            # np.datetime64('2020-02-03T12:00'),
+            # np.datetime64('2020-02-11T21:00'),
+            # np.datetime64('2020-02-22T15:00'),
+            # np.datetime64('2020-02-29T12:00'),
             # daily cycle:
-            # np.datetime64('2020-02-23T15:00'),
-            # np.datetime64('2020-02-24T12:00'),
-            # np.datetime64('2020-02-25T15:00'),
-            # np.datetime64('2020-02-26T09:00'),
-            # np.datetime64('2020-02-27T18:00'),
+            np.datetime64('2020-02-23T15:00'),
+            np.datetime64('2020-02-24T12:00'),
+            np.datetime64('2020-02-25T15:00'),
+            np.datetime64('2020-02-26T09:00'),
+            np.datetime64('2020-02-27T18:00'),
         ]
 
     if region == 'Amazon Delta':
@@ -192,7 +192,7 @@ r_mask = rome_mask
 # region = 'South of India'
 # region = 'Amazon Delta'
 region = 'NW Australia'
-# region = 'Pacific Region 1'
+# region = 'Pacific Region 3'
 
 
 l_whole_tropics = False
@@ -256,8 +256,7 @@ if l_select_few_times:
 
 ##### PLOTS ######
 
-sol_col = sol['red']
-plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2.5, color=sol_col)
+plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2.5, color='k')
 
 # plt.fill_between(x=composite_avg['timeshift'],
 #                  y1=composite_avg - composite_std,
@@ -265,14 +264,22 @@ plt.plot(composite_avg['timeshift'], composite_avg, label=region, lw=2.5, color=
 #                  alpha=0.1,
 #                  color=sol_col)
 
-sol_col = [sol['yellow'], sol['magenta'], sol['violet'], sol['blue'], sol['cyan'], ]
+# sol_col = [sol['yellow'], sol['blue'], sol['red'], sol['red'], sol['yellow'], ]  # Australia
+sol_col = [sol['red'], sol['red'], sol['yellow'], sol['red'], sol['yellow'], ]  # Australia daily
+# sol_col = [sol['blue'], sol['blue'], sol['blue'], sol['blue'], sol['blue'], ]  # South of India
+# sol_col = [sol['red'], sol['yellow'], sol['yellow'], sol['yellow'], sol['yellow'], ]  # Amazon
+# sol_col = [sol['yellow'], sol['red'], sol['red'], sol['red'], sol['red'], ]  # Pacific 1
+# sol_col = [sol['yellow'], sol['blue'], sol['red'], sol['blue'], sol['yellow'], ]  # Pacific 2
+# sol_col = [sol['blue'], sol['yellow'], sol['red'], sol['red'], sol['blue'], ]  # Pacific 3
+
 for i, series in enumerate(single_timeslices):
     series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
     plt.plot(series_avg['timeshift'], series_avg, color=sol_col[i], lw=0.5, marker='o', alpha=0.5)
 
 plt.axvline(x=0, color='lightgrey', zorder=0)
 plt.axhline(y=0, color='lightgrey', zorder=0)
-plt.legend()
+# plt.legend()
+plt.title(region)
 plt.ylim(-6e-5, 1.5e-5)
 plt.ylabel('Divergence [1/s]')
 plt.xlabel('Time around high ROME [h]')
