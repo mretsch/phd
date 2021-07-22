@@ -10,6 +10,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import cartopy.crs as ccrs
 import cartopy.io as cio
 from Plotscripts.colors_solarized import sol
+from divergence_at_drymoist_rome import smallregion_in_tropics
 
 
 def make_map(projection=ccrs.PlateCarree()):
@@ -36,16 +37,11 @@ rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # precip = xr.open_dataset(home+
 #                          '/Documents/Data/Simulation/r2b10/3B-MO.MS.MRG.3IMERG.20200201-S000000-E235959.02.V06B.HDF5',
 #                          group='Grid')['precipitation'].sel(lat=slice(-20, 20)).transpose()
-l_get_divergence_series_as_rh = False
-if l_get_divergence_series_as_rh:
-    rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour_3hmaxavg.nc')
-    rh = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc')
-    rome = rome.sel(time=rome['time'][[t.values in rh['time'] for t in rome['time']]])
 
 # pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
 # pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
 # rh_avg = rh.mean(dim='time')
-rome_avg = rome.sum(dim='time') / len(rome.time)
+rome_spatial_avg = rome.sum(dim='time') / len(rome.time)
 rome_p90 = np.nanpercentile(rome, q=90)
 l_rome_p90 = (rome > rome_p90)
 rh_p90 = rh.where(l_rome_p90, other=np.nan)
@@ -64,47 +60,20 @@ rhlow_p90 = (rh_p90 < 40)
 # delta_size = rome_ni - area
 # delta_prox = rome - rome_ni
 
-l_pick_surface = True
-if l_pick_surface:
-    land_sea = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
+l_pick_region = True
+if l_pick_region:
 
-    ocean_mask = land_sea < 0.2  # ocean
-    ocean_mask['lat'] = rome['lat']
-    ocean_mask['lon'] = rome['lon']
-    rome_ocean = rome.where(ocean_mask, other=np.nan)
+    pa1 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 1', 'ocean', fillvalue=0.)
+    pa2 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 2', 'ocean', fillvalue=0.)
+    pa3 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 3', 'ocean', fillvalue=0.)
+    aus = smallregion_in_tropics(rome_spatial_avg, 'NW Australia'    , 'coast', fillvalue=0.)
+    ama = smallregion_in_tropics(rome_spatial_avg, 'Amazon Delta'    , 'all'  , fillvalue=0.)
+    ind = smallregion_in_tropics(rome_spatial_avg, 'South of India'  , 'ocean', fillvalue=0.)
 
-    coast_mask = (0.2 < land_sea) & (land_sea < 0.8)  # coasts
-    coast_mask['lat'] = rome['lat']
-    coast_mask['lon'] = rome['lon']
-    rome_coast = rome.where(coast_mask, other=np.nan)
+    allregions = xr.zeros_like(rome_spatial_avg)
+    # allregions = pa1 + pa2 + pa3 + aus + ama + ind
 
-    # west Australia: .sel(lat=slice(-20, -10), lon=slice(120, 134))
-    # Amazonas Delta: .sel(lat=slice(-1, 5), lon=slice(-52, -44))
-    # North Pacific: .where(coast_mask & ((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-    # South of India: .sel(lat=slice(-12, -6), lon=slice(77, 82))
-
-    pac = rome_avg.where(ocean_mask &
-                         ((160 < rome['lon']) | (rome['lon'] < -90)) &
-                         (0 < rome['lat']), other=0)
-    pa1 = rome_avg.where(ocean_mask &
-                         ((170 < rome['lon']) | (rome['lon'] < -178)) &
-                         ((6 < rome['lat']) & (rome['lat'] < 8)), other=0)
-    pa2 = rome_avg.where(ocean_mask &
-                         ((-145 < rome['lon']) & (rome['lon'] < -133)) &
-                         ((6 < rome['lat']) & (rome['lat'] < 8)), other=0)
-    pa3 = rome_avg.where(ocean_mask &
-                         ((-145 < rome['lon']) & (rome['lon'] < -139)) &
-                         ((14 < rome['lat']) & (rome['lat'] < 20)), other=0)
-    aus = rome_avg.where(coast_mask &
-                         ((120 < rome['lon']) & (rome['lon'] < 134)) &
-                         ((-20 < rome['lat']) & (rome['lat'] < -10)), other=0)
-    ama = rome_avg.where(((-52 < rome['lon']) & (rome['lon'] < -44)) &
-                         ((-1 < rome['lat']) & (rome['lat'] < 5)), other=0)
-    ind = rome_avg.where(((77 < rome['lon']) & (rome['lon'] < 82)) &
-                         ((-12 < rome['lat']) & (rome['lat'] < -6)), other=0)
-    allregions = pa1 + pa2 + pa3 + aus + ama + ind
-
-    allregions = xr.where(allregions != 0., 1, np.nan)
+    # allregions = xr.where(allregions != 0., 1, np.nan)
 
     # allregions[:, :] = np.nan
     # allregions.loc[{'lon': rome_avg.sel(lon=126, method='nearest')['lon'],
@@ -163,13 +132,12 @@ l_plot_time = True
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
-    rome_pac = rome_ocean.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan)
-    rome_pa1 = rome_ocean.where((( 170 < rome['lon']) | (rome['lon'] < -178)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
-    rome_pa2 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -133)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan)
-    rome_pa3 = rome_ocean.where(((-145 < rome['lon']) & (rome['lon'] < -139)) & ((14 < rome['lat']) & (rome['lat'] < 20)), other=np.nan)
-    rome_ama = rome      .sel(lat=slice(-1, 5), lon=slice(-52, -44))
-    rome_aus = rome_coast.sel(lat=slice(-20, -10), lon=slice(120, 134))
-    rome_ind = rome      .sel(lat=slice(-12, -6), lon=slice(77, 82))
+    rome_pa1 = smallregion_in_tropics(rome, 'Pacific Region 1', 'ocean', fillvalue=np.nan)
+    rome_pa2 = smallregion_in_tropics(rome, 'Pacific Region 2', 'ocean', fillvalue=np.nan)
+    rome_pa3 = smallregion_in_tropics(rome, 'Pacific Region 3', 'ocean', fillvalue=np.nan)
+    rome_aus = smallregion_in_tropics(rome, 'NW Australia'    , 'coast', fillvalue=np.nan)
+    rome_ama = smallregion_in_tropics(rome, 'Amazon Delta'    , 'all'  , fillvalue=np.nan)
+    rome_ind = smallregion_in_tropics(rome, 'South of India'  , 'ocean', fillvalue=np.nan)
 
     rome_domain = rome_aus
     title_text = 'NW Australia'
@@ -219,21 +187,18 @@ if l_plot_time:
     ]
 
     rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
-    rome_avg = rome_domain_high.mean(dim='lat').mean(dim='lon')
+    rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
     p0, = rome_avg.plot(color='k', label='ROME', lw=3)
     ax.axhline(y=rome_p90, color='grey', label='High ROME')
 
-    rh_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
-    rh_domain = xr.where(rome_domain.notnull(), rh_cutout, np.nan)
-    # rh_domain = xr.where(rome_domain.notnull(), rh       , np.nan)
-    # rh_domain_high = xr.where(rome_domain_high.notnull(), rh, np.nan)
-
-    rh_avg = rh_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
+    relhum_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
+    relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
+    relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
     for t in rome_times:
-        if rh_avg.sel(time=t) < 40.:
+        if relhum_avg.sel(time=t) < 40.:
             colour = sol['red']
-        elif rh_avg.sel(time=t) > 70.:
+        elif relhum_avg.sel(time=t) > 70.:
             colour = sol['blue']
         else:
             colour = sol['yellow']
@@ -241,7 +206,7 @@ if l_plot_time:
                 ls='', marker='o', ms=17, color=colour, alpha=0.5)
 
     ax_1 = ax.twinx()
-    p1, = ax_1.plot(rh_avg['time'], rh_avg, color=sol['violet'], label='RH$_{500}$', lw=3)
+    p1, = ax_1.plot(relhum_avg['time'], relhum_avg, color=sol['violet'], label='RH$_{500}$', lw=3)
     # ax_1.axhline(y=80, color='red')
 
     ax.spines['top'].set_visible(False)
