@@ -29,7 +29,7 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, fillvalue):
         field = tropic_wide_field
 
     if 'Pacific Region 1' in region:
-        selected_lons = field.where(((170 < field['lon']) | (field['lon'] < -178)), other=fillvalue)
+        selected_lons = field['lon'][((170 < field['lon']) | (field['lon'] < -178))]
         small_region = field.sel(lat=slice(6, 8), lon=selected_lons['lon'].values)
 
     if 'Pacific Region 2' in region:
@@ -194,10 +194,10 @@ if __name__ == '__main__':
     div_vector_list = []
     single_timeslices = []
     r_mask = rome_mask
-    region = 'South of India'
+    # region = 'South of India'
     # region = 'Amazon Delta'
     # region = 'NW Australia'
-    # region = 'Pacific Region 1'
+    region = 'Pacific Region 1'
     surfacetype = 'ocean'
 
 
@@ -249,7 +249,7 @@ if __name__ == '__main__':
         few_moist_times = nearest_div_time(moist_maxtimes, div)
 
         cmp_avg, cmp_std, slice_avg = [], [], []
-        for few_times in [few_dry_times, few_moist_times, few_more_times]:
+        for few_times in [few_more_times]:#, few_moist_times, few_more_times]:
 
             if len(few_times) == 0:
                 continue
@@ -307,8 +307,8 @@ if __name__ == '__main__':
     alphas  = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=[0.3  , 0.0     , 0.3   ],
                      ordered=False)
 
-    # plt.plot(cmp_avg[0]['timeshift'], cmp_avg[0], label=region, lw=2.5, color=sol['red'])
-    plt.plot(cmp_avg[1]['timeshift'], cmp_avg[1], label=region, lw=2.5, color=sol['blue'])
+    plt.plot(cmp_avg[0]['timeshift'], cmp_avg[0], label=region, lw=2.5, color=sol['red'])
+    # plt.plot(cmp_avg[1]['timeshift'], cmp_avg[1], label=region, lw=2.5, color=sol['blue'])
 
     # plt.plot(slice_avg[0]['timeshift'], slice_avg[0], label=region, lw=2.5, color=sol['red'])
     # plt.plot(slice_avg[1]['timeshift'], slice_avg[1], label=region, lw=2.5, color=sol['blue'])
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     plt.ylabel('Divergence [1/s]')
     plt.xlabel('Time around high ROME [h]')
     plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
-    plt.savefig(home+'/Desktop/div_composite_ind.pdf', bbox_inches='tight')
+    plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
     plt.show()
 
     stop = timeit.default_timer()
