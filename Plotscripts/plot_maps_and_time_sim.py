@@ -41,13 +41,17 @@ rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
 # pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
 # rh_avg = rh.mean(dim='time')
-rome_spatial_avg = rome.sum(dim='time') / len(rome.time)
+
+# rome = rome.where(rome.notnull(), other=0.)
+# rome_time_avg = rome.median(dim='time')
+rome_time_avg = rome.sum(dim='time') / len(rome['time'])
 rome_p90 = np.nanpercentile(rome, q=90)
+rome_p20 = np.nanpercentile(rome, q=20)
 l_rome_p90 = (rome > rome_p90)
 rh_p90 = rh.where(l_rome_p90, other=np.nan)
 rhlow_p90 = (rh_p90 < 40)
+rome_p90_count = l_rome_p90.sum(dim='time')
 
-# rome_p90_count = (rome > np.nanpercentile(rome, q=90)).sum(dim='time')
 # highest count of rome above 90th percentile
 # rome_southofindia = rome.sel(lat=-8.064, lon=80.18, method='nearest')
 
@@ -63,26 +67,23 @@ rhlow_p90 = (rh_p90 < 40)
 l_pick_region = True
 if l_pick_region:
 
-    pa1 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 1', 'ocean', fillvalue=0.)
-    pa2 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 2', 'ocean', fillvalue=0.)
-    pa3 = smallregion_in_tropics(rome_spatial_avg, 'Pacific Region 3', 'ocean', fillvalue=0.)
-    aus = smallregion_in_tropics(rome_spatial_avg, 'NW Australia'    , 'coast', fillvalue=0.)
-    ama = smallregion_in_tropics(rome_spatial_avg, 'Amazon Delta'    , 'all'  , fillvalue=0.)
-    ind = smallregion_in_tropics(rome_spatial_avg, 'South of India'  , 'ocean', fillvalue=0.)
+    pa1 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 1', 'ocean', fillvalue=0.)
+    pa2 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 2', 'ocean', fillvalue=0.)
+    pa3 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 3', 'ocean', fillvalue=0.)
+    aus = smallregion_in_tropics(rome_time_avg, 'NW Australia'    , 'coast', fillvalue=0.)
+    ama = smallregion_in_tropics(rome_time_avg, 'Amazon Delta'    , 'all'  , fillvalue=0.)
+    ind = smallregion_in_tropics(rome_time_avg, 'South of India'  , 'ocean', fillvalue=0.)
 
-    allregions = xr.zeros_like(rome_spatial_avg)
-    # allregions = pa1 + pa2 + pa3 + aus + ama + ind
+    allregions = xr.zeros_like(rome_time_avg)
 
-    # allregions = xr.where(allregions != 0., 1, np.nan)
+    for region in [pa1, pa2, pa3, aus, ama, ind]:
+        allregions.loc[{'lat': region['lat'], 'lon': region['lon']}] = region
 
-    # allregions[:, :] = np.nan
-    # allregions.loc[{'lon': rome_avg.sel(lon=126, method='nearest')['lon'],
-    #                 'lat': rome_avg.sel(lat=-16, method='nearest')['lat']}] = 1
+    allregions = xr.where(allregions != 0., 1., np.nan)
 
-l_plot_map = False
+l_plot_map = True
 if l_plot_map:
 
-    # map_to_plot = rhlow_p90.sum(dim='time')
     map_to_plot = allregions
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
@@ -97,9 +98,8 @@ if l_plot_map:
     ax.coastlines()
     # ax.axhline(y=0, color='r')
 
-    map_to_plot.plot(ax=ax, cmap='cool')#, vmin=-0.0002, vmax=0.0002)
-                     # cmap='PuOr' #cmap='OrRd' # cmap='PuRd' #cmap='gist_earth_r')# cmap='GnBu')#,
-                     # vmin=0. , vmax=2.143688
+    map_to_plot.plot(ax=ax,cmap='cool')#, vmin=0. , vmax=rome.mean(dim='time').max())#, vmin=-0.0002, vmax=0.0002)
+                     # cmap='PuOr' cmap='GnBu' # cmap='PuRd' # cmap='OrRd' #cmap='gist_earth_r')# cmap='GnBu')#,
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
@@ -115,7 +115,7 @@ if l_plot_map:
     ax.set_xlabel('')
     ax.set_ylabel('')
 
-    # ax.collections[0].colorbar.ax.set_anchor((-0.25, 0.))
+    ax.collections[0].colorbar.ax.set_anchor((-0.25, 0.))
     ax.set_xticks([30, 90, 150, 210, 270, 330], crs=ccrs.PlateCarree())
     ax.set_yticks([-20, -10, 0, 10, 20], crs=ccrs.PlateCarree())
     # ax.set_xticks([125, 135], crs=ccrs.PlateCarree())
@@ -128,7 +128,7 @@ if l_plot_map:
     plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
     # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
-l_plot_time = True
+l_plot_time = False
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
