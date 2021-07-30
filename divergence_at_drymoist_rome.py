@@ -9,7 +9,7 @@ import matplotlib.ticker as ticker
 from Plotscripts.colors_solarized import sol
 
 
-def smallregion_in_tropics(tropic_wide_field, region, surface_type, fillvalue):
+def smallregion_in_tropics(tropic_wide_field, region, surface_type, other_surface_fillvalue):
 
     land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
 
@@ -18,13 +18,13 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, fillvalue):
 
     if surface_type == 'ocean':
         surface_mask = land_sea < 0.2
-        field = tropic_wide_field.where(surface_mask, other=fillvalue)
+        field = tropic_wide_field.where(surface_mask, other=other_surface_fillvalue)
     elif surface_type == 'coast':
         surface_mask = (0.2 < land_sea) & (land_sea < 0.8)
-        field = tropic_wide_field.where(surface_mask, other=fillvalue)
+        field = tropic_wide_field.where(surface_mask, other=other_surface_fillvalue)
     elif surface_type == 'land':
         surface_mask = land_sea > 0.8
-        field = tropic_wide_field.where(surface_mask, other=fillvalue)
+        field = tropic_wide_field.where(surface_mask, other=other_surface_fillvalue)
     else:
         field = tropic_wide_field
 
@@ -200,108 +200,90 @@ if __name__ == '__main__':
     region = 'Pacific Region 1'
     surfacetype = 'ocean'
 
+    region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type=surfacetype,
+                                         other_surface_fillvalue=bool(0))
 
-    l_whole_tropics = False
-    if l_whole_tropics:
-        short_rome_mask = r_mask.isel({'time': slice(4, -4)}).values
+    rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
+                                         other_surface_fillvalue=np.nan)
+    rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_highfreq, 90), other=np.nan)
+    rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-        rome_and_rh    = xr.where(r_mask, rome, np.nan)
-        div_at_rome    = xr.where(r_mask, div , np.nan)
-        rome_rh_div    = rome_and_rh.where(div_at_rome.notnull())
-        rh_div         = xr.         where(div_at_rome.notnull(), rh, np.nan)
+    relhum_cutout = rh_highfreq.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
+    relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
+    relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-        l_concat_to_vectors = False
-        if l_concat_to_vectors:
-            div_flat  = xr.DataArray(np.ravel(div_at_rome))
-            rome_flat = xr.DataArray(np.ravel(rome_rh_div))
-            rh_flat   = xr.DataArray(np.ravel(rh_div))
 
-            div_vector_list.append(div_flat[div_flat.notnull()])
-            rome_vector = rome_flat[rome_flat.notnull()]
-            rh_vector   = rh_flat[rh_flat.notnull()]
 
-            ax.hist(div_vector_list[-1], bins=np.linspace(-5e-5, 2.5e-5, 40), density=True)
+    # TODO get surrounding time in div for each single RE-domain, not only region
+    spatial_stack = rome_domain_high.stack({'z': ('lat', 'lon')})
+    for latlon in spatial_stack['z']:
+        domain_rome_series = spatial_stack.sel(z=latlon)
+        daily_maxrome_time(domain_rome_series)
 
-    else: # select by region
-        region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type=surfacetype,
-                                             fillvalue=bool(0))
 
-    l_select_few_times = True and not l_whole_tropics
-    if l_select_few_times:
 
-        rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype, fillvalue=np.nan)
-        rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_highfreq, 90), other=np.nan)
-        rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-        relhum_cutout = rh_highfreq.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
-        relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
-        relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-        daily_maxtimes = daily_maxrome_time(rome_avg)
+    daily_maxtimes = daily_maxrome_time(rome_avg)
 
-        l_dry_times   = (relhum_avg.sel(time=daily_maxtimes) < dry_thresh).values
-        l_moist_times = (relhum_avg.sel(time=daily_maxtimes) > moist_thresh).values
-        dry_maxtimes   = np.array(daily_maxtimes)[l_dry_times]
-        moist_maxtimes = np.array(daily_maxtimes)[l_moist_times]
+    l_dry_times   = (relhum_avg.sel(time=daily_maxtimes) < dry_thresh).values
+    l_moist_times = (relhum_avg.sel(time=daily_maxtimes) > moist_thresh).values
+    dry_maxtimes   = np.array(daily_maxtimes)[l_dry_times]
+    moist_maxtimes = np.array(daily_maxtimes)[l_moist_times]
 
-        few_more_times  = nearest_div_time(daily_maxtimes, div)
-        few_dry_times   = nearest_div_time(dry_maxtimes  , div)
-        few_moist_times = nearest_div_time(moist_maxtimes, div)
+    few_more_times  = nearest_div_time(daily_maxtimes, div)
+    few_dry_times   = nearest_div_time(dry_maxtimes  , div)
+    few_moist_times = nearest_div_time(moist_maxtimes, div)
 
-        cmp_avg, cmp_std, slice_avg = [], [], []
-        for few_times in [few_more_times]:#, few_moist_times, few_more_times]:
+    cmp_avg, cmp_std, slice_avg = [], [], []
+    for few_times in [few_more_times]:#, few_moist_times, few_more_times]:
 
-            if len(few_times) == 0:
+        if len(few_times) == 0:
+            continue
+
+        single_timeslices = []
+        for a_time in few_times:
+
+            divselect = div.sel(time=slice(a_time - np.timedelta64(n_hours, 'h'),
+                                           a_time + np.timedelta64(n_hours, 'h')),
+                                lat=region_mask['lat'],
+                                lon=region_mask['lon']
+                                ).load()
+
+            divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
+
+            latlon_mask = region_mask.sel(time=a_time)
+            if latlon_mask.sum() == 0:
                 continue
 
-            single_timeslices = []
-            for a_time in few_times:
+            for t in divselect['time']:
 
-                divselect = div.sel(time=slice(a_time - np.timedelta64(n_hours, 'h'),
-                                               a_time + np.timedelta64(n_hours, 'h')),
-                                    lat=region_mask['lat'],
-                                    lon=region_mask['lon']
-                                    ).load()
+                divselect.loc[{'time': t}] = divselect.sel(time=t).where(latlon_mask)
 
-                divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
+            single_timeslices.append(divselect)
 
-                latlon_mask = region_mask.sel(time=a_time)
-                if latlon_mask.sum() == 0:
-                    continue
+        composite_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+        composite_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='std')
 
-                for t in divselect['time']:
+        comp_avg = xr.DataArray(np.zeros(len(composite_avg)),
+                                     coords={'timeshift': np.arange(-n_hours, n_hours + hour_step, hour_step)},
+                                     dims='timeshift')
+        comp_std = xr.zeros_like(comp_avg)
+        comp_avg[:] = composite_avg
+        comp_std[:] = composite_std
 
-                    divselect.loc[{'time': t}] = divselect.sel(time=t).where(latlon_mask)
+        cmp_avg.append(comp_avg)
+        cmp_std.append(comp_std)
 
-                single_timeslices.append(divselect)
-
-            composite_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
-            composite_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='std')
-
-            comp_avg = xr.DataArray(np.zeros(len(composite_avg)),
-                                         coords={'timeshift': np.arange(-n_hours, n_hours + hour_step, hour_step)},
-                                         dims='timeshift')
-            comp_std = xr.zeros_like(comp_avg)
-            comp_avg[:] = composite_avg
-            comp_std[:] = composite_std
-
-            cmp_avg.append(comp_avg)
-            cmp_std.append(comp_std)
-
-            sum_by_singleslices   = xr.zeros_like(cmp_avg[0])
-            count_by_singleslices = xr.zeros_like(cmp_avg[0])
-            for series in single_timeslices:
-                series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
-                sum_by_singleslices.loc[{'timeshift': series['timeshift']}] += series_avg.values
-                count_by_singleslices.loc[{'timeshift': series['timeshift']}] += 1
-            slice_avg.append(sum_by_singleslices / count_by_singleslices)
-
-
-
+        sum_by_singleslices   = xr.zeros_like(cmp_avg[0])
+        count_by_singleslices = xr.zeros_like(cmp_avg[0])
+        for series in single_timeslices:
+            series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
+            sum_by_singleslices.loc[{'timeshift': series['timeshift']}] += series_avg.values
+            count_by_singleslices.loc[{'timeshift': series['timeshift']}] += 1
+        slice_avg.append(sum_by_singleslices / count_by_singleslices)
 
     ##### PLOTS ######
-
-
 
     colours = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=['red', 'yellow', 'blue'])
     alphas  = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=[0.3  , 0.0     , 0.3   ],

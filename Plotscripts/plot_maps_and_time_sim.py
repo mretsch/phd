@@ -67,12 +67,12 @@ rome_p90_count = l_rome_p90.sum(dim='time')
 l_pick_region = True
 if l_pick_region:
 
-    pa1 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 1', 'ocean', fillvalue=0.)
-    pa2 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 2', 'ocean', fillvalue=0.)
-    pa3 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 3', 'ocean', fillvalue=0.)
-    aus = smallregion_in_tropics(rome_time_avg, 'NW Australia'    , 'coast', fillvalue=0.)
-    ama = smallregion_in_tropics(rome_time_avg, 'Amazon Delta'    , 'all'  , fillvalue=0.)
-    ind = smallregion_in_tropics(rome_time_avg, 'South of India'  , 'ocean', fillvalue=0.)
+    pa1 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 1', 'ocean', other_surface_fillvalue=0.)
+    pa2 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 2', 'ocean', other_surface_fillvalue=0.)
+    pa3 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 3', 'ocean', other_surface_fillvalue=0.)
+    aus = smallregion_in_tropics(rome_time_avg, 'NW Australia'    , 'coast', other_surface_fillvalue=0.)
+    ama = smallregion_in_tropics(rome_time_avg, 'Amazon Delta'    , 'all'  , other_surface_fillvalue=0.)
+    ind = smallregion_in_tropics(rome_time_avg, 'South of India'  , 'ocean', other_surface_fillvalue=0.)
 
     allregions = xr.zeros_like(rome_time_avg)
 
@@ -132,12 +132,12 @@ l_plot_time = False
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
-    rome_pa1 = smallregion_in_tropics(rome, 'Pacific Region 1', 'ocean', fillvalue=np.nan)
-    rome_pa2 = smallregion_in_tropics(rome, 'Pacific Region 2', 'ocean', fillvalue=np.nan)
-    rome_pa3 = smallregion_in_tropics(rome, 'Pacific Region 3', 'ocean', fillvalue=np.nan)
-    rome_aus = smallregion_in_tropics(rome, 'NW Australia'    , 'coast', fillvalue=np.nan)
-    rome_ama = smallregion_in_tropics(rome, 'Amazon Delta'    , 'all'  , fillvalue=np.nan)
-    rome_ind = smallregion_in_tropics(rome, 'South of India'  , 'ocean', fillvalue=np.nan)
+    rome_pa1 = smallregion_in_tropics(rome, 'Pacific Region 1', 'ocean', other_surface_fillvalue=np.nan)
+    rome_pa2 = smallregion_in_tropics(rome, 'Pacific Region 2', 'ocean', other_surface_fillvalue=np.nan)
+    rome_pa3 = smallregion_in_tropics(rome, 'Pacific Region 3', 'ocean', other_surface_fillvalue=np.nan)
+    rome_aus = smallregion_in_tropics(rome, 'NW Australia'    , 'coast', other_surface_fillvalue=np.nan)
+    rome_ama = smallregion_in_tropics(rome, 'Amazon Delta'    , 'all'  , other_surface_fillvalue=np.nan)
+    rome_ind = smallregion_in_tropics(rome, 'South of India'  , 'ocean', other_surface_fillvalue=np.nan)
 
     rome_domain = rome_aus
     title_text = 'NW Australia'
