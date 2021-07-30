@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 import timeit
 import sub as FORTRAN
+from divergence_at_drymoist_rome import smallregion_in_tropics
 
 start = timeit.default_timer()
 home = expanduser("~")
@@ -14,45 +15,28 @@ ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rome_p90 = np.nanpercentile(rome, q=90)
 
-l_pick_surface = False
-if l_pick_surface:
-    land_sea = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/land_sea_avg.nc')
-    # coast_mask =   land_sea < 0.2 # ocean
-    coast_mask =  (0.2 < land_sea) & (land_sea < 0.8) # coast
-    # coast_mask =   land_sea > 0.8 # land
-    coast_mask['lat'] = rome['lat']
-    coast_mask['lon'] = rome['lon']
-    rome = rome.where(coast_mask, other=np.nan)
+l_take_small_region = True
+if l_take_small_region:
+    region = smallregion_in_tropics(rome, 'Pacific Region 1', 'ocean', other_surface_fillvalue=np.nan)
+    rome_copy = xr.full_like(rome, fill_value=np.nan)
+    rome_copy.loc[{'lat': region['lat'], 'lon': region['lon']}] = region
+    rome = rome_copy
 
-# rome = rome.where(((160 < rome['lon']) | (rome['lon'] < -90)) & (0 < rome['lat']), other=np.nan) # North Pacific
-# rome = rome.where((( 170 < rome['lon']) | (rome['lon'] < -178)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan) # North Pacific region 1 (pa1)
-# rome = rome.where(((-145 < rome['lon']) & (rome['lon'] < -133)) & ((6 < rome['lat']) & (rome['lat'] < 8)), other=np.nan) # North Pacific region 2 (pa2)
-rome = rome.where(((-145 < rome['lon']) & (rome['lon'] < -139)) & ((14 < rome['lat']) & (rome['lat'] < 20)), other=np.nan) # North Pacific region 3 (pa3)
-# rome = rome.where((-52 < rome['lon']) & (rome['lon'] < -44) & (-1 < rome['lat']) & (rome['lat'] < 5), other=np.nan) # Amazon delta
-# rome = rome.where((120 < rome['lon']) & (rome['lon'] < 134) & (-20 < rome['lat']) & (rome['lat'] < -10), other=np.nan) # West Australia
-# rome = rome.where(( 77 < rome['lon']) & (rome['lon'] <  82) & (-12 < rome['lat']) & (rome['lat'] <  -6), other=np.nan) # india
-
-da = rome.stack({'x': ('time', 'lat', 'lon')})
-da['x'] = np.arange(len(da))
-da = da.rename({'x': 'time'})
+overlay = rome.stack({'x': ('time', 'lat', 'lon')})
+overlay['x'] = np.arange(len(overlay))
+overlay = overlay.rename({'x': 'time'})
 
 # subselect on the times given in the histogram data
 l_histogram = True
 if l_histogram:
-    # da_sub = da.sel(time=ds_ps.time)
-    da = da[da.notnull()]
-    da_sub = da[da.time.isin(ds_ps.time)]
-
-da = da_sub
-# rome = rome.where(da_sub)
+    overlay = overlay[overlay.notnull()]
+    overlay = overlay[overlay.time.isin(ds_ps.time)]
 
 phase_space = ds_ps.hist_2D
 
-overlay = da
-
 # give the overlay time series information about the placements of the bins for each time step
-overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins[ds_ps.time.isin(da_sub.time)].values)
-overlay.coords['y_bins'] = ('time', ds_ps.y_series_bins[ds_ps.time.isin(da_sub.time)].values)
+overlay.coords['x_bins'] = ('time', ds_ps.x_series_bins[ds_ps.time.isin(overlay.time)].values)
+overlay.coords['y_bins'] = ('time', ds_ps.y_series_bins[ds_ps.time.isin(overlay.time)].values)
 
 phase_space_stack = phase_space.stack(z=('x', 'y'))
 
@@ -65,8 +49,6 @@ phase_space_stack[:] = FORTRAN.phasespace(indices1=ind_1,
                                           l_probability=True,
                                           upper_bound=100000.,
                                           lower_bound=np.nanpercentile(overlay, q=90))
-                                          # upper_bound=np.percentile(overlay, q=10),
-                                          # lower_bound=-10000.)
 
 # set NaNs to the special values set in the Fortran-routine
 phase_space_stack = phase_space_stack.where((phase_space_stack < -1e10) ^ (-9999999998.0 < phase_space_stack))
@@ -77,16 +59,17 @@ ps_overlay = phase_space_stack.unstack('z')
 plt.rc('font'  , size=26)
 plt.rc('legend', fontsize=18)
 
-the_plot = ps_overlay.T.plot(cmap='rainbow', #'gray_r', #'gnuplot2', #'gist_yarg_r', # 'inferno',# (robust=True)  # (cmap='coolwarm_r', 'tab20c')
+the_plot = ps_overlay.T.plot(cmap='rainbow',
                              vmin=ps_overlay.min(), vmax=ps_overlay.max())
                              # vmin=0.0028409857748265717, vmax=0.4935537724163929)
 
 # plt.xticks((-15, -10, -5, 0))
 
+plt.title('Pacific Region 1')
 plt.xlabel('$\omega_{515}$ [hPa/hour]')
 plt.ylabel('RH$_{515}$ [%]')
 
-the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,pac3}$ [1]')
+the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,pa1}$ [1]')
 
 plt.savefig(home + '/Desktop/phase_space.pdf', transparent=True, bbox_inches='tight')
 plt.show()
