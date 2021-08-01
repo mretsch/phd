@@ -24,7 +24,7 @@ def make_map(projection=ccrs.PlateCarree()):
 
 
 start = timeit.default_timer()
-plt.rc('font'  , size=20)
+plt.rc('font'  , size=27)
 
 rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
@@ -52,18 +52,6 @@ rh_p90 = rh.where(l_rome_p90, other=np.nan)
 rhlow_p90 = (rh_p90 < 40)
 rome_p90_count = l_rome_p90.sum(dim='time')
 
-# highest count of rome above 90th percentile
-# rome_southofindia = rome.sel(lat=-8.064, lon=80.18, method='nearest')
-
-# area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_14mmhour.nc')
-# area_avg = area.sum(dim='time') / len(area.time)
-
-# number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_14mmhour.nc')
-
-# rome_ni = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_ni_14mmhour.nc')
-# delta_size = rome_ni - area
-# delta_prox = rome - rome_ni
-
 l_pick_region = True
 if l_pick_region:
 
@@ -81,7 +69,7 @@ if l_pick_region:
 
     allregions = xr.where(allregions != 0., 1., np.nan)
 
-l_plot_map = True
+l_plot_map = False
 if l_plot_map:
 
     map_to_plot = allregions
@@ -128,7 +116,7 @@ if l_plot_map:
     plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
     # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
-l_plot_time = False
+l_plot_time = True
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
@@ -139,8 +127,8 @@ if l_plot_time:
     rome_ama = smallregion_in_tropics(rome, 'Amazon Delta'    , 'all'  , other_surface_fillvalue=np.nan)
     rome_ind = smallregion_in_tropics(rome, 'South of India'  , 'ocean', other_surface_fillvalue=np.nan)
 
-    rome_domain = rome_aus
-    title_text = 'NW Australia'
+    rome_domain = rome_pa3
+    title_text = 'Pacific Region 3'
 
     rome_times = [
         # np.datetime64('2020-02-01T10:45'),  # Australia
@@ -188,42 +176,50 @@ if l_plot_time:
 
     rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
     rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
-    p0, = rome_avg.plot(color='k', label='ROME', lw=3)
-    ax.axhline(y=rome_p90, color='grey', label='High ROME')
+    p0, = rome_avg.plot(color='k', label='Avg. high ROME', lw=4)
+    ax.axhline(y=rome_p90, color='grey')
+    ax.set_ylim(0, None)
 
     relhum_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
     relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
     relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-    for t in rome_times:
-        if relhum_avg.sel(time=t) < 40.:
-            colour = sol['red']
-        elif relhum_avg.sel(time=t) > 70.:
-            colour = sol['blue']
-        else:
-            colour = sol['yellow']
-        ax.plot(rome_avg.sel(time=t)['time'], rome_avg.sel(time=t),
-                ls='', marker='o', ms=17, color=colour, alpha=0.5)
+    l_plot_dots_at_local_maximum = False
+    if l_plot_dots_at_local_maximum:
+        for t in rome_times:
+            if relhum_avg.sel(time=t) < 40.:
+                colour = sol['red']
+            elif relhum_avg.sel(time=t) > 70.:
+                colour = sol['blue']
+            else:
+                colour = sol['yellow']
+            ax.plot(rome_avg.sel(time=t)['time'], rome_avg.sel(time=t),
+                    ls='', marker='o', ms=17, color=colour, alpha=0.5)
 
     ax_1 = ax.twinx()
-    p1, = ax_1.plot(relhum_avg['time'], relhum_avg, color=sol['violet'], label='RH$_{500}$', lw=3)
-    # ax_1.axhline(y=80, color='red')
+    p1, = ax_1.plot(relhum_avg['time'], relhum_avg, color=sol['blue'], label='Avg. RH$_{500}$', lw=4)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+    # for tick in ax.xaxis.get_major_ticks():
+    #     tick.label1.set_visible(False)
+    ax.tick_params(length=8)
     ax.set_title('')
     ax.set_ylabel('ROME [km$^2$]')
+    ax.set_xlabel('Time')
+    ax.set_ylim(0, 3735)
+    ax.set_yticks([0, 1000, 2000, 3000])
 
     ax_1.set_ylim(-2, 102)
     ax_1.set_title(title_text) #, p90_domainpixel={round(rome_p90)}')
-    ax_1.set_ylabel('RH$_{500}$ [1]', fontdict={'color': sol['violet']})
+    ax_1.set_ylabel('RH$_{500}$ [1]', fontdict={'color': sol['blue']})
+    ax_1.set_xlabel('')
 
     plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
-    plt.xlabel('Time')
     plt.legend([p0, p1], [p.get_label() for p in [p0, p1]], loc='upper left')
-    plt.savefig(home+'/Desktop/time.pdf', bbox_inches='tight', transparent=True)
-    plt.show()
+    plt.savefig(home+'/Desktop/time_pa3.pdf', bbox_inches='tight', transparent=True)
+    # plt.show()
 
 stop = timeit.default_timer()
 print(f'Time used: {stop - start}')
