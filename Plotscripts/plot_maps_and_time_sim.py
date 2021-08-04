@@ -175,14 +175,18 @@ if l_plot_time:
     ]
 
     rome_domain_high = rome_domain.where(rome_domain > rome_p90, other=np.nan)
-    rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
-    p0, = rome_avg.plot(color='k', label='Avg. high ROME', lw=4)
+    rome_domain_low  = rome_domain.where(rome_domain < rome_p90, other=np.nan)
+    rome_avg     = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
+    rome_avg_low = rome_domain_low. stack({'z': ('lat', 'lon')}).mean(dim='z')
+
+    p0, = rome_avg.plot(color='green', label='Avg. high ROME', lw=4, alpha=0.)
     ax.axhline(y=rome_p90, color='grey')
-    ax.set_ylim(0, None)
+    ax.set_ylim(-50, 3735)
 
     relhum_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
-    relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
+    relhum_domain = xr.where(rome_domain_high.notnull(), relhum_cutout, np.nan)
     relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
+    relhum_avg_all = relhum_cutout.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
     l_plot_dots_at_local_maximum = False
     if l_plot_dots_at_local_maximum:
@@ -197,7 +201,20 @@ if l_plot_time:
                     ls='', marker='o', ms=17, color=colour, alpha=0.5)
 
     ax_1 = ax.twinx()
-    p1, = ax_1.plot(relhum_avg['time'], relhum_avg, color=sol['blue'], label='Avg. RH$_{500}$', lw=4)
+    ax_2 = ax.twinx()
+    ax_3 = ax.twinx()
+    ax_4 = ax.twinx()
+
+    p1, = ax_1.plot(relhum_avg_all['time'], relhum_avg_all, color=sol['violet'], label='RH$_{500}$ in region', lw=8, alpha=0.5)
+    # p2, = ax_2.plot(rome_avg_low['time']  , rome_avg_low  , color='grey'       , label='Avg. low ROME', lw=5)
+    p3, = ax_3.plot(rome_avg['time']      , rome_avg      , color='k'          , label='Avg. high ROME', lw=4)
+    p4, = ax_4.plot(relhum_avg['time']    , relhum_avg    , color=sol['cyan']  , label='RH$_{500}$ at high ROME', lw=4,)
+
+    ax_2.set_ylim(-50, 3735)
+    ax_2.set_axis_off()
+    ax_3.set_ylim(-50, 3735)
+    ax_3.set_axis_off()
+    ax_4.set_axis_off()
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -208,17 +225,16 @@ if l_plot_time:
     ax.set_title('')
     ax.set_ylabel('ROME [km$^2$]')
     ax.set_xlabel('Time')
-    ax.set_ylim(0, 3735)
     ax.set_yticks([0, 1000, 2000, 3000])
 
     ax_1.set_ylim(-2, 102)
     ax_1.set_title(title_text) #, p90_domainpixel={round(rome_p90)}')
-    ax_1.set_ylabel('RH$_{500}$ [1]', fontdict={'color': sol['blue']})
+    ax_1.set_ylabel('RH$_{500}$ [1]', fontdict={'color': sol['cyan']})
     ax_1.set_xlabel('')
 
     plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
-    plt.legend([p0, p1], [p.get_label() for p in [p0, p1]], loc='upper left')
-    plt.savefig(home+'/Desktop/time_pa3.pdf', bbox_inches='tight', transparent=True)
+    plt.legend([p3, p4, p1], [p.get_label() for p in [p3, p4, p1]], loc='upper left')
+    plt.savefig(home+f'/Desktop/time_pa3.pdf', bbox_inches='tight', transparent=True)
     # plt.show()
 
 stop = timeit.default_timer()
