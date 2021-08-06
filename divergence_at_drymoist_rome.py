@@ -137,7 +137,12 @@ def composite_based_on_timeshift(list_of_arrays, n_hours, step, operation):
         if operation == 'std':
             crunched_series.append( np.nanstd(np.concatenate(raw_values)) )
 
-    return crunched_series
+    composite = xr.DataArray(np.zeros(len(crunched_series)),
+                             coords={'timeshift': np.arange(-n_hours, n_hours + hour_step, hour_step)},
+                             dims='timeshift')
+    composite[:] = crunched_series
+
+    return composite
 
 
 def daily_maxrome_time(high_freq_field):
@@ -169,131 +174,74 @@ if __name__ == '__main__':
     plt.rc('font'  , size=20)
 
     rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
-    rome_3h = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour_3hmaxavg.nc')
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
-    rh_3h = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500_3hmaxavg_by_rome10mm.nc')
     div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
         transpose('time', 'lon', 'lat')
-
-    rome = rome_3h.sel(time=div['time'].values)
-    rh   = rh_3h.  sel(time=div['time'].values)
 
     rome_thresh = np.nanpercentile(rome_highfreq, 90)
     dry_thresh = 40
     moist_thresh = 70
-
-    # rome_rh_mask = (rome > rome_thresh) & ((rh < dry_thresh) | (moist_thresh < rh))
-    rome_mask = rome > rome_thresh
-    rome_dry_mask = (rome > rome_thresh) &  (rh < dry_thresh)
-    rome_moist_mask = (rome > rome_thresh) &  (moist_thresh < rh)
-
     n_hours = 12
     hour_step = 3
-    i = -1
     fig, ax = plt.subplots(1, 1)
-    div_vector_list = []
+    relhum_at_maxtime = []
     single_timeslices = []
-    r_mask = rome_mask
-    # region = 'South of India'
+    region = 'South of India'
     # region = 'Amazon Delta'
     # region = 'NW Australia'
-    region = 'Pacific Region 1'
+    # region = 'Pacific Region 3'
     surfacetype = 'ocean'
-
-    region_mask = smallregion_in_tropics(tropic_wide_field=r_mask, region=region, surface_type=surfacetype,
-                                         other_surface_fillvalue=bool(0))
 
     rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
                                          other_surface_fillvalue=np.nan)
-    rome_domain_high = rome_domain.where(rome_domain > np.nanpercentile(rome_highfreq, 90), other=np.nan)
-    rome_avg = rome_domain_high.stack({'z': ('lat', 'lon')}).mean(dim='z')
+    rome_domain_high = rome_domain.where(rome_domain > rome_thresh, other=np.nan)
 
     relhum_cutout = rh_highfreq.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
     relhum_domain = xr.where(rome_domain.notnull(), relhum_cutout, np.nan)
-    relhum_avg = relhum_domain.stack({'z': ('lat', 'lon')}).mean(dim='z')
 
-
-
-    # TODO get surrounding time in div for each single RE-domain, not only region
     spatial_stack = rome_domain_high.stack({'z': ('lat', 'lon')})
+
     for latlon in spatial_stack['z']:
+
         domain_rome_series = spatial_stack.sel(z=latlon)
-        daily_maxrome_time(domain_rome_series)
+        domain_maxtimes = daily_maxrome_time(domain_rome_series)
+        domain_even_maxtimes = nearest_div_time(domain_maxtimes, div)
 
+        lat, lon = latlon.values.item()[0], latlon.values.item()[1]
 
-
-
-
-    daily_maxtimes = daily_maxrome_time(rome_avg)
-
-    l_dry_times   = (relhum_avg.sel(time=daily_maxtimes) < dry_thresh).values
-    l_moist_times = (relhum_avg.sel(time=daily_maxtimes) > moist_thresh).values
-    dry_maxtimes   = np.array(daily_maxtimes)[l_dry_times]
-    moist_maxtimes = np.array(daily_maxtimes)[l_moist_times]
-
-    few_more_times  = nearest_div_time(daily_maxtimes, div)
-    few_dry_times   = nearest_div_time(dry_maxtimes  , div)
-    few_moist_times = nearest_div_time(moist_maxtimes, div)
-
-    cmp_avg, cmp_std, slice_avg = [], [], []
-    for few_times in [few_more_times]:#, few_moist_times, few_more_times]:
-
-        if len(few_times) == 0:
-            continue
-
-        single_timeslices = []
-        for a_time in few_times:
+        for a_time in domain_even_maxtimes:
 
             divselect = div.sel(time=slice(a_time - np.timedelta64(n_hours, 'h'),
                                            a_time + np.timedelta64(n_hours, 'h')),
-                                lat=region_mask['lat'],
-                                lon=region_mask['lon']
+                                lat=lat,
+                                lon=lon
                                 ).load()
-
             divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
 
-            latlon_mask = region_mask.sel(time=a_time)
-            if latlon_mask.sum() == 0:
-                continue
-
-            for t in divselect['time']:
-
-                divselect.loc[{'time': t}] = divselect.sel(time=t).where(latlon_mask)
-
             single_timeslices.append(divselect)
+            relhum_at_maxtime.append( relhum_domain.sel(time=a_time, lat=lat, lon=lon) )
 
-        composite_avg = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
-        composite_std = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='std')
+    assert len(relhum_at_maxtime) == len(single_timeslices)
+    moist_indices = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) > moist_thresh)]
+    moist_timeslices = [single_timeslices[j] for j in moist_indices]
+    dry_indices   = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) < dry_thresh)]
+    dry_timeslices   = [single_timeslices[k] for k in   dry_indices]
 
-        comp_avg = xr.DataArray(np.zeros(len(composite_avg)),
-                                     coords={'timeshift': np.arange(-n_hours, n_hours + hour_step, hour_step)},
-                                     dims='timeshift')
-        comp_std = xr.zeros_like(comp_avg)
-        comp_avg[:] = composite_avg
-        comp_std[:] = composite_std
+    composite_avg_all = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    composite_avg_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    composite_avg_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
 
-        cmp_avg.append(comp_avg)
-        cmp_std.append(comp_std)
-
-        sum_by_singleslices   = xr.zeros_like(cmp_avg[0])
-        count_by_singleslices = xr.zeros_like(cmp_avg[0])
-        for series in single_timeslices:
-            series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
-            sum_by_singleslices.loc[{'timeshift': series['timeshift']}] += series_avg.values
-            count_by_singleslices.loc[{'timeshift': series['timeshift']}] += 1
-        slice_avg.append(sum_by_singleslices / count_by_singleslices)
 
     ##### PLOTS ######
 
-    colours = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=['red', 'yellow', 'blue'])
-    alphas  = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=[0.3  , 0.0     , 0.3   ],
-                     ordered=False)
+    colours = pd.cut(x=relhum_at_maxtime, bins=[0, dry_thresh, moist_thresh, 100], labels=['red', 'yellow', 'blue'])
+    # alphas  = pd.cut(x=relhum_avg.sel(time=daily_maxtimes), bins=[0, 40, 70, 100], labels=[0.3  , 0.0     , 0.3   ],
+    #                  ordered=False)
 
-    plt.plot(cmp_avg[0]['timeshift'], cmp_avg[0], label=region, lw=2.5, color=sol['red'])
-    # plt.plot(cmp_avg[1]['timeshift'], cmp_avg[1], label=region, lw=2.5, color=sol['blue'])
+    # plt.plot(composite_avg_all['timeshift'], composite_avg_all, label=region, lw=2.5, color=sol['yellow'])
+    plt.plot(composite_avg_moist['timeshift'], composite_avg_moist, label=region, lw=2.5, color=sol['blue'])
+    plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
 
-    # plt.plot(slice_avg[0]['timeshift'], slice_avg[0], label=region, lw=2.5, color=sol['red'])
-    # plt.plot(slice_avg[1]['timeshift'], slice_avg[1], label=region, lw=2.5, color=sol['blue'])
 
     # plt.fill_between(x=composite_avg['timeshift'],
     #                  y1=composite_avg - composite_std,
@@ -301,18 +249,12 @@ if __name__ == '__main__':
     #                  alpha=0.1,
     #                  color=sol_col)
 
-    # sol_col = [sol['yellow'], sol['blue'], sol['red'], sol['red'], sol['yellow'], ]  # Australia
-    # sol_col = [sol['red'], sol['red'], sol['yellow'], sol['red'], sol['yellow'], ]  # Australia daily
-    # sol_col = [sol['blue'], sol['blue'], sol['blue'], sol['blue'], sol['blue'], ]  # South of India
-    # sol_col = [sol['red'], sol['yellow'], sol['yellow'], sol['yellow'], sol['yellow'], ]  # Amazon
-    # sol_col = [sol['yellow'], sol['red'], sol['red'], sol['red'], sol['red'], ]  # Pacific 1
-    # sol_col = [sol['yellow'], sol['blue'], sol['red'], sol['blue'], sol['yellow'], ]  # Pacific 2
-    # sol_col = [sol['blue'], sol['yellow'], sol['red'], sol['red'], sol['blue'], ]  # Pacific 3
 
+    for i, series in enumerate(moist_timeslices):
+        plt.plot(series['timeshift'], series, color=sol['blue'], lw=0.5, marker='o', alpha=0.2)
 
-    for i, series in enumerate(single_timeslices):
-        series_avg = series.stack({'z': ('lat', 'lon')}).mean(dim='z')
-        plt.plot(series_avg['timeshift'], series_avg, color=sol[colours[i]], lw=0.5, marker='o', alpha=alphas[i])
+    for i, series in enumerate(dry_timeslices):
+        plt.plot(series['timeshift'], series, color=sol['red'], lw=0.5, marker='o', alpha=0.2)
 
     plt.axvline(x=0, color='lightgrey', zorder=0)
     plt.axhline(y=0, color='lightgrey', zorder=0)
