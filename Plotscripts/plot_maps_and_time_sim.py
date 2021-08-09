@@ -26,7 +26,11 @@ def make_map(projection=ccrs.PlateCarree()):
 start = timeit.default_timer()
 plt.rc('font'  , size=27)
 
-rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+# rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+rome = number * area
+
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_dailycycle.nc')\
 #     .sel(time='2020-01-31T03:00:00')
@@ -52,7 +56,7 @@ rh_p90 = rh.where(l_rome_p90, other=np.nan)
 rhlow_p90 = (rh_p90 < 40)
 rome_p90_count = l_rome_p90.sum(dim='time')
 
-l_pick_region = True
+l_pick_region = False
 if l_pick_region:
 
     pa1 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 1', 'ocean', other_surface_fillvalue=0.)
@@ -72,7 +76,7 @@ if l_pick_region:
 l_plot_map = False
 if l_plot_map:
 
-    map_to_plot = allregions
+    map_to_plot = rhlow_p90.sum(dim='time')
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
     longitude_offset = 180
@@ -86,8 +90,8 @@ if l_plot_map:
     ax.coastlines()
     # ax.axhline(y=0, color='r')
 
-    map_to_plot.plot(ax=ax,cmap='cool')#, vmin=0. , vmax=rome.mean(dim='time').max())#, vmin=-0.0002, vmax=0.0002)
-                     # cmap='PuOr' cmap='GnBu' # cmap='PuRd' # cmap='OrRd' #cmap='gist_earth_r')# cmap='GnBu')#,
+    map_to_plot.plot(ax=ax, cmap= 'PuRd')#, vmin=0. , vmax=rome.mean(dim='time').max())#, vmin=-0.0002, vmax=0.0002)
+                     #'gist_earth_r''OrRd' cmap='PuOr' 'rainbow' 'cool'  'GnBu'
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
@@ -181,7 +185,7 @@ if l_plot_time:
 
     p0, = rome_avg.plot(color='green', label='Avg. high ROME', lw=4, alpha=0.)
     ax.axhline(y=rome_p90, color='grey')
-    ax.set_ylim(-50, 3735)
+    # ax.set_ylim(-50, 3735)
 
     relhum_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
     relhum_domain = xr.where(rome_domain_high.notnull(), relhum_cutout, np.nan)
@@ -207,12 +211,12 @@ if l_plot_time:
 
     p1, = ax_1.plot(relhum_avg_all['time'], relhum_avg_all, color=sol['violet'], label='RH$_{500}$ in region', lw=8, alpha=0.5)
     # p2, = ax_2.plot(rome_avg_low['time']  , rome_avg_low  , color='grey'       , label='Avg. low ROME', lw=5)
-    p3, = ax_3.plot(rome_avg['time']      , rome_avg      , color='k'          , label='Avg. high ROME', lw=4)
-    p4, = ax_4.plot(relhum_avg['time']    , relhum_avg    , color=sol['cyan']  , label='RH$_{500}$ at high ROME', lw=4,)
+    p3, = ax_3.plot(rome_avg['time']      , rome_avg      , color='k'          , label='Avg. high TCA', lw=4)
+    p4, = ax_4.plot(relhum_avg['time']    , relhum_avg    , color=sol['cyan']  , label='RH$_{500}$ at high TCA', lw=4,)
 
-    ax_2.set_ylim(-50, 3735)
+    # ax_2.set_ylim(-50, 3735)
     ax_2.set_axis_off()
-    ax_3.set_ylim(-50, 3735)
+    # ax_3.set_ylim(-50, 3735)
     ax_3.set_axis_off()
     ax_4.set_axis_off()
 
@@ -223,9 +227,9 @@ if l_plot_time:
     #     tick.label1.set_visible(False)
     ax.tick_params(length=8)
     ax.set_title('')
-    ax.set_ylabel('ROME [km$^2$]')
+    ax.set_ylabel('TCA [km$^2$]')
     ax.set_xlabel('Time')
-    ax.set_yticks([0, 1000, 2000, 3000])
+    # ax.set_yticks([0, 1000, 2000, 3000])
 
     ax_1.set_ylim(-2, 102)
     ax_1.set_title(title_text) #, p90_domainpixel={round(rome_p90)}')
@@ -234,7 +238,7 @@ if l_plot_time:
 
     plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
     plt.legend([p3, p4, p1], [p.get_label() for p in [p3, p4, p1]], loc='upper left')
-    plt.savefig(home+f'/Desktop/time_pa3.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(home+f'/Desktop/tca_pa3.pdf', bbox_inches='tight', transparent=True)
     # plt.show()
 
 stop = timeit.default_timer()

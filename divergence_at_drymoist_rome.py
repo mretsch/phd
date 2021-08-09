@@ -173,8 +173,14 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     plt.rc('font'  , size=20)
 
-    rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+    # rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+
+    area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+    number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+    rome_highfreq = area * number
+
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
+
     div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
         transpose('time', 'lon', 'lat')
 
@@ -186,10 +192,10 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1, 1)
     relhum_at_maxtime = []
     single_timeslices = []
-    region = 'South of India'
+    # region = 'South of India'
     # region = 'Amazon Delta'
     # region = 'NW Australia'
-    # region = 'Pacific Region 3'
+    region = 'Pacific Region 3'
     surfacetype = 'ocean'
 
     rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
@@ -228,8 +234,10 @@ if __name__ == '__main__':
     dry_timeslices   = [single_timeslices[k] for k in   dry_indices]
 
     composite_avg_all = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
-    composite_avg_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
-    composite_avg_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    if len(moist_indices) != 0:
+        composite_avg_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    if len(dry_indices) != 0:
+        composite_avg_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
 
 
     ##### PLOTS ######
@@ -239,8 +247,10 @@ if __name__ == '__main__':
     #                  ordered=False)
 
     # plt.plot(composite_avg_all['timeshift'], composite_avg_all, label=region, lw=2.5, color=sol['yellow'])
-    plt.plot(composite_avg_moist['timeshift'], composite_avg_moist, label=region, lw=2.5, color=sol['blue'])
-    plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
+    if len(moist_indices) != 0:
+        plt.plot(composite_avg_moist['timeshift'], composite_avg_moist, label=region, lw=2.5, color=sol['blue'])
+    if len(dry_indices) != 0:
+        plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
 
 
     # plt.fill_between(x=composite_avg['timeshift'],
