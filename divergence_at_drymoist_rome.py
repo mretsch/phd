@@ -47,6 +47,9 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, other_surfac
     if 'South of India' in region:
         small_region = field.sel(lat=slice(-12, -6), lon=slice(77, 82))
 
+    if 'Tropic' in region:
+        small_region = field
+
     return small_region
 
 
@@ -195,7 +198,8 @@ if __name__ == '__main__':
     # region = 'South of India'
     # region = 'Amazon Delta'
     # region = 'NW Australia'
-    region = 'Pacific Region 3'
+    region = 'Pacific Region 1'
+    # region = 'Tropical land'
     surfacetype = 'ocean'
 
     rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
@@ -233,11 +237,20 @@ if __name__ == '__main__':
     dry_indices   = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) < dry_thresh)]
     dry_timeslices   = [single_timeslices[k] for k in   dry_indices]
 
-    composite_avg_all = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+    print('Timeslices done.')
+
+    # composite_avg_all = composite_based_on_timeshift(single_timeslices, n_hours=n_hours, step=hour_step,
+    #                                                  operation='avg')
     if len(moist_indices) != 0:
-        composite_avg_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+        composite_avg_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step,
+                                                           operation='avg')
+        composite_std_moist = composite_based_on_timeshift(moist_timeslices, n_hours=n_hours, step=hour_step,
+                                                           operation='std')
     if len(dry_indices) != 0:
-        composite_avg_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step, operation='avg')
+        composite_avg_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step,
+                                                         operation='avg')
+        composite_std_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step,
+                                                           operation='std')
 
 
     ##### PLOTS ######
@@ -248,33 +261,35 @@ if __name__ == '__main__':
 
     # plt.plot(composite_avg_all['timeshift'], composite_avg_all, label=region, lw=2.5, color=sol['yellow'])
     if len(moist_indices) != 0:
+        plt.fill_between(x=composite_avg_moist['timeshift'],
+                         y1=composite_avg_moist - composite_std_moist,
+                         y2=composite_avg_moist + composite_std_moist,
+                         alpha=0.1,
+                         color=sol['blue'])
         plt.plot(composite_avg_moist['timeshift'], composite_avg_moist, label=region, lw=2.5, color=sol['blue'])
     if len(dry_indices) != 0:
+        plt.fill_between(x=composite_avg_dry['timeshift'],
+                         y1=composite_avg_dry - composite_std_dry,
+                         y2=composite_avg_dry + composite_std_dry,
+                         alpha=0.1,
+                         color=sol['red'])
         plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
 
-
-    # plt.fill_between(x=composite_avg['timeshift'],
-    #                  y1=composite_avg - composite_std,
-    #                  y2=composite_avg + composite_std,
-    #                  alpha=0.1,
-    #                  color=sol_col)
-
-
-    for i, series in enumerate(moist_timeslices):
-        plt.plot(series['timeshift'], series, color=sol['blue'], lw=0.5, marker='o', alpha=0.2)
-
-    for i, series in enumerate(dry_timeslices):
-        plt.plot(series['timeshift'], series, color=sol['red'], lw=0.5, marker='o', alpha=0.2)
+    # for i, series in enumerate(moist_timeslices):
+    #     plt.plot(series['timeshift'], series, color=sol['blue'], lw=0.5, marker='o', alpha=0.2)
+    #
+    # for i, series in enumerate(dry_timeslices):
+    #     plt.plot(series['timeshift'], series, color=sol['red'], lw=0.5, marker='o', alpha=0.2)
 
     plt.axvline(x=0, color='lightgrey', zorder=0)
     plt.axhline(y=0, color='lightgrey', zorder=0)
-    # plt.legend()
+    plt.legend([f'Moist ({len(moist_timeslices)} samples)', f'Dry ({len(dry_timeslices)} samples)'])
     plt.title(region)
-    plt.ylim(-6e-5, 1.5e-5)
+    plt.ylim(-4e-5, 5.e-6)
     plt.ylabel('Divergence [1/s]')
-    plt.xlabel('Time around high ROME [h]')
+    plt.xlabel('Time around high TCA [h]')
     plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
-    plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
+    plt.savefig(home+'/Desktop/div_composite_new.pdf', bbox_inches='tight')
     plt.show()
 
     stop = timeit.default_timer()
