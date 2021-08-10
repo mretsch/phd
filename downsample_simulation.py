@@ -1,22 +1,16 @@
 from os.path import expanduser
 import timeit
 import numpy as np
-import numpy.testing as npt
 import xarray as xr
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import pandas as pd
-import seaborn as sns
-from basic_stats import covariance, pearson_correlation
 from downsample_rome import downsample_timeseries
-from scipy.signal import correlate
-
 
 home = expanduser("~")
 start = timeit.default_timer()
 
-# rome_3h = xr.open_dataarray(home+'/Desktop/rome_3h_kimberley.nc')
-metric = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+# metric = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+metric = area * number
 div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc')
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
