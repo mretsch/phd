@@ -5,6 +5,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import stats
 import matplotlib.ticker as ticker
 from Plotscripts.colors_solarized import sol
 
@@ -176,11 +177,11 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     plt.rc('font'  , size=20)
 
-    # rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+    rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 
-    area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
-    number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
-    rome_highfreq = area * number
+    # area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+    # number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+    # rome_highfreq = area * number
 
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
@@ -196,11 +197,11 @@ if __name__ == '__main__':
     relhum_at_maxtime = []
     single_timeslices = []
     # region = 'South of India'
-    # region = 'Amazon Delta'
+    region = 'Amazon Delta'
     # region = 'NW Australia'
-    region = 'Pacific Region 1'
-    # region = 'Tropical land'
-    surfacetype = 'ocean'
+    # region = 'Pacific Region 1'
+    # region = 'Tropical coast'
+    surfacetype = 'all'
 
     rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
                                          other_surface_fillvalue=np.nan)
@@ -252,6 +253,18 @@ if __name__ == '__main__':
         composite_std_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step,
                                                            operation='std')
 
+    if len(dry_timeslices) != 0 & len(moist_timeslices) != 0:
+        pvalue_ttest = []
+        for shift in composite_avg_dry['timeshift']:
+            pvalue_ttest.append(stats.ttest_ind_from_stats(
+                mean1=composite_avg_dry.sel(timeshift=shift),
+                std1=composite_std_dry.sel(timeshift=shift),
+                nobs1=len(dry_timeslices),
+                mean2=composite_avg_moist.sel(timeshift=shift),
+                std2=composite_std_moist.sel(timeshift=shift),
+                nobs2=len(moist_timeslices),
+                equal_var=False
+            ))
 
     ##### PLOTS ######
 
@@ -275,6 +288,13 @@ if __name__ == '__main__':
                          color=sol['red'])
         plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
 
+    l_plot_significance = True
+    if l_plot_significance:
+        ps = np.array([testresult.pvalue for testresult in pvalue_ttest])
+        l_p_below_005 = ps < 0.05
+        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(-3.9e-5, repeats=l_p_below_005.sum()),
+                 ls='', marker='x', color='k')
+
     # for i, series in enumerate(moist_timeslices):
     #     plt.plot(series['timeshift'], series, color=sol['blue'], lw=0.5, marker='o', alpha=0.2)
     #
@@ -287,9 +307,9 @@ if __name__ == '__main__':
     plt.title(region)
     plt.ylim(-4e-5, 5.e-6)
     plt.ylabel('Divergence [1/s]')
-    plt.xlabel('Time around high TCA [h]')
+    plt.xlabel('Time around high ROME [h]')
     plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
-    plt.savefig(home+'/Desktop/div_composite_new.pdf', bbox_inches='tight')
+    plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
     plt.show()
 
     stop = timeit.default_timer()
