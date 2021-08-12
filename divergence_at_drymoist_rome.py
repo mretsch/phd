@@ -177,15 +177,15 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     plt.rc('font'  , size=20)
 
-    rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+    # rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 
-    # area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
-    # number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
-    # rome_highfreq = area * number
+    area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+    number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+    rome_highfreq = area * number
 
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
-    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
+    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_std.nc').\
         transpose('time', 'lon', 'lat')
 
     rome_thresh = np.nanpercentile(rome_highfreq, 90)
@@ -197,11 +197,11 @@ if __name__ == '__main__':
     relhum_at_maxtime = []
     single_timeslices = []
     # region = 'South of India'
-    region = 'Amazon Delta'
-    # region = 'NW Australia'
+    # region = 'Amazon Delta'
+    region = 'NW Australia'
     # region = 'Pacific Region 1'
     # region = 'Tropical coast'
-    surfacetype = 'all'
+    surfacetype = 'coast'
 
     rome_domain = smallregion_in_tropics(rome_highfreq, region, surface_type=surfacetype,
                                          other_surface_fillvalue=np.nan)
@@ -253,7 +253,7 @@ if __name__ == '__main__':
         composite_std_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step,
                                                            operation='std')
 
-    if len(dry_timeslices) != 0 & len(moist_timeslices) != 0:
+    if (len(dry_timeslices) != 0) & (len(moist_timeslices) != 0):
         pvalue_ttest = []
         for shift in composite_avg_dry['timeshift']:
             pvalue_ttest.append(stats.ttest_ind_from_stats(
@@ -292,7 +292,7 @@ if __name__ == '__main__':
     if l_plot_significance:
         ps = np.array([testresult.pvalue for testresult in pvalue_ttest])
         l_p_below_005 = ps < 0.05
-        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(-3.9e-5, repeats=l_p_below_005.sum()),
+        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(5.e-6, repeats=l_p_below_005.sum()),
                  ls='', marker='x', color='k')
 
     # for i, series in enumerate(moist_timeslices):
@@ -305,9 +305,11 @@ if __name__ == '__main__':
     plt.axhline(y=0, color='lightgrey', zorder=0)
     plt.legend([f'Moist ({len(moist_timeslices)} samples)', f'Dry ({len(dry_timeslices)} samples)'])
     plt.title(region)
-    plt.ylim(-4e-5, 5.e-6)
-    plt.ylabel('Divergence [1/s]')
-    plt.xlabel('Time around high ROME [h]')
+    # plt.ylim(-4e-5, 5.e-6)
+    plt.ylim(0., None)
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+    plt.ylabel('Avg. std-dev of divergence [1/s]')
+    plt.xlabel('Time around high TCA [h]')
     plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
     plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
     plt.show()
