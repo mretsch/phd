@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import seaborn as sns
 import statsmodels.api as sm
-from NeuralNet.backtracking import mlp_backtracking_maxnode, high_correct_predictions
-from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
-from basic_stats import into_pope_regimes, root_mean_square_error
+from NeuralNet.regre_net import input_output_for_mlp
+from NeuralNet.backtracking import high_correct_predictions
 from Plotscripts.colors_solarized import sol
 from Plotscripts.plot_contribution_whisker import contribution_whisker
 
@@ -62,53 +61,10 @@ if __name__ == "__main__":
 
     # ===== the large scale state and ROME ======
 
-    ghome = home+'/Google Drive File Stream/My Drive'
-
-    # assemble the large scale dataset
-    ds_ls = xr.open_dataset(home+'/Documents/Data/LargeScaleState/CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape.nc')
-    metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_avg6h_nanzero.nc')
-
-    ls_vars = [
-               'omega',
-               'u',
-               'v',
-               's',
-               'RH',
-               's_adv_h',
-               'r_adv_h',
-               'dsdt',
-               'drdt',
-               'dwind_dz'
-               ]
-    long_names = [ds_ls[var].long_name for var in ls_vars]
-    ls_times = 'same_and_earlier_time'
-    predictor, target, _ = large_scale_at_metric_times(ds_largescale=ds_ls,
-                                                       timeseries=metric,
-                                                       chosen_vars=ls_vars,
-                                                       l_take_scalars=True,
-                                                       large_scale_time=ls_times)
-
-    l_subselect = True
-    if l_subselect:
-        levels = [215, 515, 990]
-        predictor = subselect_ls_vars(predictor, profiles=long_names, levels_in=levels, large_scale_time=ls_times)
-
-    l_eof_input = False
-    if l_eof_input:
-        n_pattern_for_prediction = 20 # 10  #
-        pcseries = xr.open_dataarray(home + '/Documents/Data/LargeScaleState/eof_pcseries_all.nc')
-        eof_late = pcseries.sel(number=list(range(n_pattern_for_prediction)),
-                                time=predictor.time).rename({'number': 'lev'}).T
-        eof_early = pcseries.sel(number=list(range(n_pattern_for_prediction)),
-                                 time=eof_late.time - np.timedelta64(6, 'h')).rename({'number': 'lev'}).T
-
-        predictor = xr.DataArray(np.zeros((eof_late.shape[0], eof_late.shape[1] * 2)),
-                                 coords=[eof_late['time'], np.concatenate([eof_late['lev'], eof_late['lev']], axis=0)],
-                                 dims=['time', 'lev'])
-
-        predictor[:, :] = np.concatenate([eof_early, eof_late], axis=1)
-        predictor = predictor[target.notnull()]
-        target = target[target.notnull()]
+    largescale_times = 'same_time'
+    l_profiles_as_eof = True
+    predictor, target, metric, height_dim = input_output_for_mlp(ls_times=largescale_times,
+                                                                 l_profiles_as_eof=l_profiles_as_eof)
 
     l_compute_correlations = False
     if l_compute_correlations:
