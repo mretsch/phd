@@ -38,7 +38,8 @@ class MyHyperModel(HyperModel):
 largescale_times = 'same_time'
 l_profiles_as_eof = True
 predictor, target, metric, height_dim = input_output_for_mlp(ls_times=largescale_times,
-                                                             l_profiles_as_eof=l_profiles_as_eof)
+                                                             l_profiles_as_eof=l_profiles_as_eof,
+                                                             target='tca')
 
 ##################################
 # Slice and dice the whole dataset

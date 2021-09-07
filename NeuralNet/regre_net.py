@@ -110,7 +110,7 @@ def remove_diurnal(series, dailycycle):
     return adjusted
 
 
-def input_output_for_mlp(ls_times, l_profiles_as_eof):
+def input_output_for_mlp(ls_times, l_profiles_as_eof, target=None):
 
     if l_profiles_as_eof:
         height_dim = 'number'
@@ -121,9 +121,13 @@ def input_output_for_mlp(ls_times, l_profiles_as_eof):
     ds_ls  = xr.open_dataset(home +
                              '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_noDailyCycle_profilesEOF.nc')
-    metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
-    # metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
 
+    if target == 'rome':
+        metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    elif target == 'tca':
+        metric = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+    else:
+        print("Provide either 'rome' or 'tca' as the argument for target.")
 
     # add quantity symbols to large-scale dataset
     ds_ls = add_variable_symbol_string(ds_ls)
@@ -181,7 +185,8 @@ if __name__=='__main__':
     largescale_times = 'same_time'
     l_profiles_as_eof = True
     predictor, target, metric, height_dim = input_output_for_mlp(ls_times=largescale_times,
-                                                                 l_profiles_as_eof=l_profiles_as_eof)
+                                                                 l_profiles_as_eof=l_profiles_as_eof,
+                                                                 target='tca')
 
     n_lev = len(predictor[height_dim])
 
@@ -218,7 +223,7 @@ if __name__=='__main__':
         # fit the model
         model.fit(x=trainset[0], y=trainset[1],
                   validation_data=(valset[0], valset[1]),
-                  epochs=39,
+                  epochs=61, #39,
                   batch_size=32,
                   callbacks=callbacks_list)
 
