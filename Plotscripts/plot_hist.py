@@ -21,7 +21,7 @@ def histogram_1d(data, nbins=None, l_adjust_bins=False, l_xlog=False, x_label=''
 
     fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
     linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
-    color = [col.sol['blue'], col.sol['red'], col.sol['green'], col.sol['yellow'], col.sol['magenta'], col.sol['cyan']]
+    color = [ col.sol['yellow'], col.sol['blue'], 'k',col.sol['green'], col.sol['red'], col.sol['magenta'], col.sol['cyan']]
     lw = [1., 2., 2., 2., 2., 2.]
 
     for i, var in enumerate(data):
@@ -31,7 +31,7 @@ def histogram_1d(data, nbins=None, l_adjust_bins=False, l_xlog=False, x_label=''
             bins = np.linspace(start=var.min(), stop=var.max(), num=nbins+1)  # 50
         else:
             if l_adjust_bins:
-                bins = np.linspace(start=m.sqrt(var.min()), stop=m.sqrt(var.max()), num=18)**2
+                bins = np.linspace(start=m.sqrt(max(0, var.min())), stop=m.sqrt(var.max()), num=20)**2
             else:
                 bins = nbins[i]
 
@@ -83,7 +83,7 @@ def histogram_1d(data, nbins=None, l_adjust_bins=False, l_xlog=False, x_label=''
 
     plt.ylabel(y_label)
     plt.xlabel(x_label)#, **font)
-    if l_pope:
+    if len(legend_label) != 0:
         lg = plt.legend(legend_label, fontsize=14)
         # this sets only the legend background color to transparent (not the surrounding box)
         lg.get_frame().set_facecolor('none')
@@ -232,7 +232,7 @@ def histogram_2d(x_series, y_series, nbins=None,
 if __name__ == '__main__':
     start = timeit.default_timer()
 
-    hist_2d = True
+    hist_2d = False
     if hist_2d:
         ls = xr.open_dataset(home + '/Documents/Data/LargeScaleState/' +
                              'CPOL_large-scale_forcing_cape990hPa_cin990hPa_rh_shear_dcape_NoDailyCycle.nc')#.nc')#
@@ -304,45 +304,46 @@ if __name__ == '__main__':
         fig_h_2d.savefig(home+'/Desktop/hist.pdf', transparent=True, bbox_inches='tight')
         h_2d.to_netcdf(home+'/Desktop/hist.nc', mode='w')
 
-    hist_1d = False
+    hist_1d = True
     if hist_1d:
-        #var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
+        # var1 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/sic.nc')
         # var2 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/rom_kilometres.nc')
-        #var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
-        #del var1['percentile']
-        #del var2['percentile']
+        # var3 = xr.open_dataarray(home+'/Data/Analysis/No_Boundary/cop.nc')
+        # del var1['percentile']
+        # del var2['percentile']
         # ds = xr.Dataset({'rom': var2})
-        #ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
-        #ds = xr.Dataset({'rom': var2})#, 'cop': var3})
+        # ds = xr.Dataset({'sic': var1, 'rom': var2, 'cop': var3})
+        # ds = xr.Dataset({'rom': var2})#, 'cop': var3})
 
-        ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_3mmhour.nc')
-        sim_in_3mm = ds_sim['pr']*3600
-        del ds_sim
-        ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_7mmhour.nc')
-        sim_in_7mm = ds_sim['pr']*3600
-        del ds_sim
-        ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_14mmhour.nc')
-        sim_in_14mm = ds_sim['pr']*3600
-        del ds_sim
-        # ds = sim_in_mm.to_dataset(name='rain_sim')
-        var = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_rain_radar.nc')
-        var_gt0 = var.where(var != 0., drop=True)
+        # ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_3mmhour.nc')
+        # sim_in_3mm = ds_sim['pr']*3600
+        # del ds_sim
+        # ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_7mmhour.nc')
+        # sim_in_7mm = ds_sim['pr']*3600
+        # del ds_sim
+        # ds_sim = xr.open_dataset(home+'/Documents/Data/Analysis/With_Boundary/r2b10/conv_rain_values_14mmhour.nc')
+        # sim_in_14mm = ds_sim['pr']*3600
+        # del ds_sim
+        # # ds = sim_in_mm.to_dataset(name='rain_sim')
+        # var = xr.open_dataarray(home+'/Documents/Data/Analysis/With_Boundary/conv_rain_radar.nc')
+        # var_gt0 = var.where(var != 0., drop=True)
 
+        rome = xr.open_dataarray(
+            home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+        model_path = '/Desktop/'
+        predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
+        mlr_predicted = xr.open_dataarray(home + model_path + 'mlr_predicted.nc')
 
-        fig_h_1d = histogram_1d([sim_in_3mm, sim_in_7mm, sim_in_14mm, var_gt0], l_xlog=True, l_adjust_bins=False,
-                                # nbins=int(np.ceil(ds['pr'].max())), #555, #
-                                nbins=[np.arange(int(np.floor(sim_in_3mm.min()))+0.00003,
-                                                 int(np.ceil(sim_in_3mm.max()))+0.00003, 1),
-                                       np.arange(int(np.floor(sim_in_7mm.min())) + 0.00003,
-                                                 int(np.ceil(sim_in_7mm.max())) + 0.00003, 1),
-                                       np.arange(int(np.floor(sim_in_14mm.min())) + 0.00003,
-                                                 int(np.ceil(sim_in_14mm.max())) + 0.00003, 1),
-                                       np.arange(var_gt0.min(), int(np.ceil(var_gt0.max()))+var_gt0.min(), 1)],
+        fig_h_1d = histogram_1d([mlr_predicted, predicted, rome], l_xlog=True, l_adjust_bins=True,
+                                nbins=[
+                                    np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2,
+                                    np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2,
+                                    np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2
+                                ],
                                 l_percentage=False,
-                                x_label='$P_\mathrm{conv}$ [mm/hour]',
-                                # y_label='d$\mathcal{P}$ / d($P_\mathrm{conv}$) [hour/mm]',
-                                y_label='d$\mathcal{P}$ / dlog($P_\mathrm{conv}$) [hour/mm]',
-                                # legend_label=[''],
+                                x_label='ROME [km$^2$]',
+                                y_label='d$\mathcal{P}$ / dlog(ROME) [km$^{-2}$]',
+                                legend_label=['R$_\mathrm{MLR}$', 'R$_\mathrm{NN}$', 'ROME'],
                                 l_color=False)
 
         fig_h_1d.show()
