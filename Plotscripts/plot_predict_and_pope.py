@@ -147,6 +147,20 @@ if l_scatter_plot:
     ax.set_aspect(abs((rome.max()-rome.min())/(predicted.max()-predicted.min())))
     fig.savefig(home+'/Desktop/predicted_scatter.pdf', bbox_inches='tight')
 
+    plt.close()
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.scatter(rome[test_index],     predicted[test_index], marker='X', c=sol['blue'])
+    ax.scatter(rome[test_index], mlr_predicted[test_index], marker='X', c=sol['yellow'], alpha=0.6)
+    # ax.scatter(rome,     predicted, marker='X', c=sol['blue'], alpha=0.7)
+    # ax.scatter(rome, mlr_predicted, marker='X', c=sol['yellow'], alpha=0.4)
+    ax.set_xlabel('ROME in test set [km$^2$]')
+    ax.set_ylabel('Predictions [km$^2$]')
+    ax.set_aspect('equal')
+    # ax.set_xticks([0, 200, 400, 600, 800])
+    ax.legend(['R$_\mathrm{NN}$', 'R$_\mathrm{MLR}$'], fontsize=19, facecolor='lightgrey')
+    plt.savefig(home+'/Desktop/scatter.pdf', bbox_inches='tight', transparent=True)
+
+
 l_area_plot = False
 if l_area_plot:
     rome_area_diff = rome      - area
