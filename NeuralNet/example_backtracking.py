@@ -147,7 +147,7 @@ target = y
 inputs = np.stack((i_1, i_2, i_3), axis=1)
 # inputs = np.stack((i_1, i_2, i_3, i_4), axis=1)
 
-l_train_model = True
+l_train_model = False
 if l_train_model:
     model = kmodels.Sequential()
     model.add(klayers.Dense(150, activation='relu', input_shape=(inputs.shape[1],)))
@@ -187,25 +187,54 @@ else:
     lrp10 = innv.create_analyzer(name='lrp.alpha_1_beta_0_IB', model=model)
     lrp21 = innv.create_analyzer(name='lrp.alpha_2_beta_1_IB', model=model)
 
-    bach10_input_percentages = np.zeros_like(inputs)
-    bach21_input_percentages = np.zeros_like(inputs)
-    lrp10_input_percentages = np.zeros_like(inputs)
-    lrp21_input_percentages = np.zeros_like(inputs)
+    bach10_input = np.zeros_like(inputs)
+    bach21_input = np.zeros_like(inputs)
+    bach32_input = np.zeros_like(inputs)
+    lrp10_input  = np.zeros_like(inputs)
+    lrp21_input  = np.zeros_like(inputs)
     for i, iput in enumerate(inputs):
-        bach10_input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
-        bach21_input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=2, beta=1)[0]
-        lrp10_input_percentages[i, :] = lrp10.analyze(np.array([iput]))
-        lrp21_input_percentages[i, :] = lrp21.analyze(np.array([iput]))
+        # bach10_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
+        # bach21_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=2, beta=1)[0]
+        # bach32_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=3, beta=2)[0]
+        lrp10_input[i, :] = lrp10.analyze(np.array([iput]))
+        # lrp21_input[i, :] = lrp21.analyze(np.array([iput]))
 
+    lrp_sum = lrp10_input.sum(axis=1)
+    sum_enlarge = np.broadcast_to(lrp_sum, (3, 125000))
+    lrp_percentages = lrp10_input / sum_enlarge.transpose()
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
+sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
+# sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
+ax.set_ylim(-150, 250)
+ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
+ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
+# ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
+plt.title('Percentage-backtracking')
+ax.set_xlabel('Input')
+ax.set_ylabel('Contributing percentage [%]')
+plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
 
 # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
-# sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
+# sns.boxplot(data=lrp_percentages*100, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
 # # sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
-# ax.set_ylim(-150, 250)
+# ax.set_ylim(-350, 350)
 # ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
 # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
 # # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
-# plt.title('Percentage-backtracking')
+# plt.title('Normalised LRP$_{\\alpha=3, \\beta=2}$')
 # ax.set_xlabel('Input')
 # ax.set_ylabel('Contributing percentage [%]')
-# plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
+# plt.savefig(home+'/Desktop/backtracking_example_lrp32.pdf', bbox_inches='tight')
+#
+# plt.close()
+# width =  10
+# count, bins, _ = plt.hist(input_percentages[:, 1], bins=np.arange(-350, 360, step=width))
+# plt.close()
+# plt.bar((bins[:-1] + bins[1:])/2., count/125000., width)
+# plt.ylabel('Histogram [1]')
+# plt.xlabel('Contributing percent by input x$_1$ [%]')
+# # plt.title(f'Normalised LRP$_{{\\alpha=3, \\beta=2}}$, '
+# plt.title(f'Percentage-backtracking, '
+#           f'showing {round((count/125000.).sum()*100)}% of data')
+# plt.savefig(home+'/Desktop/hist_lrp.pdf', bbox_inches='tight')
