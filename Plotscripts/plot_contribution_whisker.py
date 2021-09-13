@@ -69,7 +69,7 @@ def contribution_whisker(input_percentages, levels, long_names,
             dfsr['high_pred'] = highpred_series
 
             # seaborn's distribution estimate with kernel density (kde) has problems with outliers
-            dfsr.iloc[np.arange(len(dfsr.index))[abs(dfsr[0]) > 150], 1] = np.nan
+            # dfsr.iloc[np.arange(len(dfsr.index))[abs(dfsr[0]) > 150], 1] = np.nan
 
             # copy the input data for high predictions
             df_highpred = dfsr.loc[dfsr['high_pred']]
@@ -90,10 +90,9 @@ def contribution_whisker(input_percentages, levels, long_names,
 
         ax.set_xlim(-xlim, xlim)
         ax.axvline(x=0, color='lightgray', lw=2.5, zorder=-100)
-        ax.hlines([0, 1, 2, 3, 4, 5], xmin=-xlim, xmax=xlim,
-                  color='gray', lw=2, zorder=-100)
-        # ax.set_xticks([-60, -30, 0, 30, 60])
-        ax.set_xticks([-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150])
+        # ax.hlines([0, 1, 2, 3, 4, 5], xmin=-xlim, xmax=xlim,
+        #           color='gray', lw=2, zorder=-100)
+        # ax.set_xticks([-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150])
 
         label_list = []
         for element1, element2 in zip(long_names.values, levels):
@@ -125,7 +124,8 @@ def contribution_whisker(input_percentages, levels, long_names,
             #          bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
             ax.axes.set_title('6 hours before')
 
-        ax.set_xlabel('Contribution to predicted value [%]', fontdict={'fontsize': 16})
+        # ax.set_xlabel('Contribution to predicted value [%]', fontdict={'fontsize': 16})
+        ax.set_xlabel('Contribution [km$^2$]', fontdict={'fontsize': 16})
         ax.set_ylabel('')
         ax.set_ylim(n_profile_vars - 0.5, -0.5)
 

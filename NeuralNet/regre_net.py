@@ -12,6 +12,7 @@ import keras.callbacks as kcallbacks
 import NeuralNet.backtracking as bcktrck
 from LargeScale.ls_at_metric import large_scale_at_metric_times, subselect_ls_vars
 from Plotscripts.plot_contribution_whisker import contribution_whisker
+from NeuralNet.IntegratedGradients import *
 # import pandas as pd
 
 home = expanduser("~")
@@ -186,7 +187,7 @@ if __name__=='__main__':
     l_profiles_as_eof = True
     predictor, target, metric, height_dim = input_output_for_mlp(ls_times=largescale_times,
                                                                  l_profiles_as_eof=l_profiles_as_eof,
-                                                                 target='tca')
+                                                                 target='rome')
 
     n_lev = len(predictor[height_dim])
 
@@ -254,38 +255,47 @@ if __name__=='__main__':
         predicted = xr.open_dataarray(model_path + 'predicted.nc')
         # predicted = predicted[predicted.time.isin(predictor.time)]
 
+        # 'baseline'-input which results in a prediction of 0.076. Needed for Integrated-Gradients method.
+        baseline_input = predictor.sel(time='2014-11-14T00')
+        ig = integrated_gradients(model)
+
         l_high_values = True
         if l_high_values:
             _, predicted_high = bcktrck.high_correct_predictions(target=metric, predictions=predicted,
                                                                  target_percentile=0.9, prediction_offset=0.3)
             # predicted = predicted_high
 
-        input_percentages = xr.zeros_like(predictor.sel(time=predicted.time))
+        input_attribution = xr.zeros_like(predictor.sel(time=predicted.time))
         l_input_positive  = xr.full_like (predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
         for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
-            input_percentages[i, :] = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
-            # input_percentages[i, :] = bcktrck.mlp_backtracking_relevance(model, model_input, alpha=2, beta=1)[0]
+            # single_attribution = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
+            # lrp                = bcktrck.mlp_backtracking_relevance(model, model_input, alpha=2, beta=1)[0]
+            # single_attribution = lrp / lrp.sum()
+            single_attribution = ig.explain(np.array(model_input), reference=np.array(baseline_input))
+
+            input_attribution[i, :] = single_attribution
+
             l_input_positive [i, :] = (model_input > 0.).values
 
-        positive_positive_ratio = xr.zeros_like(input_percentages[:2, :])
+        positive_positive_ratio = xr.zeros_like(input_attribution[:2, :])
         for i, _ in enumerate(positive_positive_ratio[height_dim]):
-            positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_percentages[:, i] > 0.)).sum() \
+            positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_attribution[:, i] > 0.)).sum() \
                                           /  l_input_positive[:, i].sum()
-            positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_percentages[:, i] < 0.)).sum() \
+            positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_attribution[:, i] < 0.)).sum() \
                                           /  (l_input_positive[:, i] == False).sum()
 
         if l_high_values:
-            input_percentages.coords['high_pred'] = ('time', np.full_like(input_percentages[:, 0], False, dtype='bool'))
-            input_percentages['high_pred'].loc[dict(time=predicted_high.time)] = True
+            input_attribution.coords['high_pred'] = ('time', np.full_like(input_attribution[:, 0], False, dtype='bool'))
+            input_attribution['high_pred'].loc[dict(time=predicted_high.time)] = True
 
-        p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_percentages.T])
-        p50 = xr.DataArray([nth_percentile(series, 0.50) for series in input_percentages.T])
-        p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_percentages.T])
+        p75 = xr.DataArray([nth_percentile(series, 0.75) for series in input_attribution.T])
+        p50 = xr.DataArray([nth_percentile(series, 0.50) for series in input_attribution.T])
+        p25 = xr.DataArray([nth_percentile(series, 0.25) for series in input_attribution.T])
         spread = p75 - p25
         # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
-        high_spread_vars = input_percentages[0, np.unique(spread, return_index=True)[1][-10:]].long_name
-        p50_high = xr.DataArray([nth_percentile(series[input_percentages['high_pred']], 0.50)
-                                 for series in input_percentages.T])
+        high_spread_vars = input_attribution[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+        p50_high = xr.DataArray([nth_percentile(series[input_attribution['high_pred']], 0.50)
+                                 for series in input_attribution.T])
 
         l_sort_input_percentage = True
         if l_sort_input_percentage:
@@ -299,15 +309,16 @@ if __name__=='__main__':
 
             if largescale_times == 'same_time':
                 # sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
-                sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
+                # sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
+                sort_index = np.unique(abs(p50_high[:(n_lev)]), return_index=True)[1][::-1]
 
-            input_percentages = input_percentages[:, sort_index]
+            input_attribution = input_attribution[:, sort_index]
 
         # ===== Plots =====================
 
         l_violins = True \
                     and l_high_values
-        plot = contribution_whisker(input_percentages=input_percentages,
+        plot = contribution_whisker(input_percentages=input_attribution,
                                     levels=predictor[height_dim].values[sort_index],
                                     long_names=predictor['symbol'][sort_index],
                                     ls_times='same_time',
@@ -317,6 +328,8 @@ if __name__=='__main__':
                                     bg_color='mistyrose',
                                     l_violins=l_violins,
                                     )
+
+        plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
 
         # l_show_correlationmatrix = False
         # if l_show_correlationmatrix:
@@ -332,8 +345,6 @@ if __name__=='__main__':
         #     corrmatrix = df.corr()
         #     sns.heatmap(abs(corrmatrix), annot=corrmatrix, fmt='.2f', cmap='Spectral')
         #     plt.savefig(home + '/Desktop/corrmatrix.pdf', bbox_inches='tight')
-
-        plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
 
     stop = timeit.default_timer()
     print('This script needed {} seconds.'.format(stop-start))
