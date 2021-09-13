@@ -62,7 +62,7 @@ def best_model_threshold_by_roc(df, percentiles):
     plt.ylabel('True positive rate (True positives / Target positive)')
     plt.title('Predictions of ROME by KitchenSink-NN and varying threshold for high organisation.')
     plt.axes().set_aspect('equal')
-    plt.savefig(home + '/Desktop/ROC.pdf', bbox_inches='tight')
+    plt.savefig(home + '/Desktop/ROC', dpi=400, bbox_inches='tight')
 
     # Distance to point (0, 1)
     dist = np.sqrt((0 - np.array(fpr))**2 + (1 - np.array(tpr))**2)
@@ -80,6 +80,7 @@ def best_model_threshold_by_roc(df, percentiles):
 if __name__=='__main__':
 
     rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+    # rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
     model_path = '/Desktop/'
     predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
 
@@ -118,7 +119,9 @@ if __name__=='__main__':
     matrix = cm.to_dataframe()
     matrix.index.rename('ROME decile', inplace=True)
     matrix.columns.rename('R$_\mathrm{NN}$ decile', inplace=True)
+
+    plt.close()
     # sns.heatmap(matrix / (len(predicted)//10) , cmap='Greys', annot=matrix, fmt='d')
     ax = sns.heatmap(matrix / (len(predicted)//10) , annot=matrix, fmt='d', cmap='gray_r')
     ax.collections[0].colorbar.set_label("Percentage in decile [1]")
-    plt.savefig(home+'/Desktop/conf_matrix.pdf', bbox_inches='tight')
+    plt.savefig(home+'/Desktop/conf_matrix', dpi=400, bbox_inches='tight')
