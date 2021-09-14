@@ -67,20 +67,7 @@ if __name__ == "__main__":
                                                                  l_profiles_as_eof=l_profiles_as_eof,
                                                                  target='tca')
 
-    l_compute_correlations = False
-    if l_compute_correlations:
-        corr = list(gen_correlation(predictor))
-        t0, t1, t2 = zip(*corr)
-        corr_r = xr.DataArray(list(t2))
-        corr_r['partner0'] = ('dim_0', list(t0))
-        corr_r['partner1'] = ('dim_0', list(t1))
-        high_corr = corr_r[abs(corr_r) > 0.8]
-        log = []
-        for s in corr_r['partner0'].values:
-            log.append('CAPE' in s.item())
-        corr_select = corr_r[log]
-
-    l_load_model = False
+    l_load_model = True
     if not l_load_model:
 
         mlreg_predictor = sm.add_constant(predictor.values)
@@ -94,7 +81,7 @@ if __name__ == "__main__":
         with open(home+'/Desktop/mlr_coeff.csv', 'w') as csv_file:
             csv_file.write(mlr_summ.as_csv())
     else:
-        model_path = home + '/Documents/Data/NN_Models/ROME_Models/Kitchen_WithoutFirst10/'
+        model_path = home + '/Desktop/'
         mlr_coeff_bias = pd.read_csv(model_path+'mlr_coeff.csv',
                                      header=None, skiprows=11, skipfooter=7) # skipfooter=9) #
         mlr_bias = mlr_coeff_bias.iloc[0, 1]
@@ -108,113 +95,77 @@ if __name__ == "__main__":
 
         # ===== plots ==========
 
-        l_percentage_plots = False
-        if l_percentage_plots:
+        # take the predictions of NN instead of MLR, to subselect high NN-predictions (apples to apples)
+        predicted = xr.open_dataarray(model_path + 'predicted.nc')
 
-            # predicted = xr.open_dataarray(model_path + 'mlr_predicted.nc')
-            # take the predictions of NN instead of MLR, to subselect high NN-predictions (apples to apples)
-            predicted = xr.open_dataarray(model_path + 'predicted.nc')
+        l_high_values = True
+        if l_high_values:
+            _, predicted_high = high_correct_predictions(target=metric, predictions=predicted,
+                                                         target_percentile=0.9, prediction_offset=0.3)
+            # predicted = predicted_high
 
-            l_high_values = True
-            if l_high_values:
-                _, predicted_high = high_correct_predictions(target=metric, predictions=predicted,
-                                                             target_percentile=0.9, prediction_offset=0.3)
-                # predicted = predicted_high
+        input_attribution = xr.zeros_like(predictor.sel(time=predicted.time))
+        l_input_positive = xr.full_like(predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
+        for i, model_input in enumerate(predictor.sel(time=predicted.time)):
 
-            input_percentages_list = []
-            for model_input in predictor.sel(time=predicted.time):
-                input_percentages_list.append(mlr_coeff['coeff'] * model_input /
-                                              (np.dot(mlr_coeff['coeff'], model_input) + mlr_bias) * 100)
+            single_attribution = mlr_coeff['coeff'] * model_input
 
-            input_percentages       = xr.zeros_like(predictor.sel(time=predicted.time))
-            input_percentages[:, :] = input_percentages_list
+            input_attribution[i, :] = single_attribution
 
-            if l_high_values:
-                input_percentages.coords['high_pred'] = (
-                    'time', np.full_like(input_percentages[:, 0], False, dtype='bool'))
-                input_percentages['high_pred'].loc[dict(time=predicted_high.time)] = True
+            l_input_positive[i, :] = (model_input > 0.).values
 
-            l_violins = True and l_high_values
-            plot = contribution_whisker(input_percentages=input_percentages,
-                                        levels=predictor.lev.values,
-                                        long_names=predictor['long_name'],
-                                        ls_times='same_and_earlier_time',
-                                        n_lev_total=n_lev,
-                                        n_profile_vars=27,
-                                        xlim=100,
-                                        bg_color='mistyrose',
-                                        l_eof_input=l_eof_input,
-                                        l_violins=l_violins,
-                                        )
+        positive_positive_ratio = xr.zeros_like(input_attribution[:2, :])
+        for i, _ in enumerate(positive_positive_ratio[height_dim]):
+            positive_positive_ratio[0, i] = (l_input_positive[:, i] & (input_attribution[:, i] > 0.)).sum() \
+                                            / l_input_positive[:, i].sum()
+            positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (
+                    input_attribution[:, i] < 0.)).sum() \
+                                            / (l_input_positive[:, i] == False).sum()
 
-            plot.savefig(home + '/Desktop/mlr_whisker.pdf', bbox_inches='tight', transparent=True)
+        if l_high_values:
+            input_attribution.coords['high_pred'] = (
+                'time', np.full_like(input_attribution[:, 0], False, dtype='bool'))
+            input_attribution['high_pred'].loc[dict(time=predicted_high.time)] = True
 
-        else:
-            plt.rc('font', size=28)
+        p75 = xr.DataArray([np.nanpercentile(series, 75) for series in input_attribution.T])
+        p50 = xr.DataArray([np.nanpercentile(series, 50) for series in input_attribution.T])
+        p25 = xr.DataArray([np.nanpercentile(series, 25) for series in input_attribution.T])
+        spread = p75 - p25
+        # exploiting that np.unique() also sorts ascendingly, but also returns the matching index, unlike np.sort()
+        high_spread_vars = input_attribution[0, np.unique(spread, return_index=True)[1][-10:]].long_name
+        p50_high = xr.DataArray([np.nanpercentile(series[input_attribution['high_pred']], 50)
+                                 for series in input_attribution.T])
 
-            n_profile_vars = 26 # 30 # 23 # 9 #
-            if ls_times == 'same_and_earlier_time':
-                fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 29))
-                n_lev_onetime =  n_lev//2 #11 #
-            else:
-                fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 29))
-                axes = [axes]
-                n_lev_onetime = n_lev
+        l_sort_input_percentage = True
+        if l_sort_input_percentage:
+            # sort the first time step, which is first half of data. Reverse index because I want descending order.
+            first_half_order = np.unique(spread[:(n_lev // 2)], return_index=True)[1][::-1]
+            # first_half_order = np.unique(abs(p50[:(n_lev // 2)]), return_index=True)[1][::-1]
 
-            for i, ax in enumerate(axes):
+            # apply same order to second time step, which is in second half of data
+            second_half_order = first_half_order + (n_lev // 2)
+            sort_index = np.concatenate((first_half_order, second_half_order))
 
-                if i == 0:
-                    # var_to_plot_1 = [1, 15, 17, 18, 20, 26                    ] # profile variables
-                    # var_to_plot_2 = [                       28, 34, 35, 44, 45] # scalars
-                    var_to_plot_1 = list(range(n_profile_vars))
-                    var_to_plot_2 = list(range(n_profile_vars, n_lev_onetime))
-                    if l_eof_input:
-                        var_to_plot = list(range(n_lev_onetime))
-                else:
-                    # var_to_plot_1 = [50, 64, 66, 67, 69, 75                    ]
-                    # var_to_plot_2 = [                        77, 83, 84, 93, 94]
-                    var_to_plot_1 = list(range(n_lev_onetime                 , n_lev_onetime + n_profile_vars))
-                    var_to_plot_2 = list(range(n_lev_onetime + n_profile_vars, n_lev                         ))
-                    if l_eof_input:
-                        var_to_plot = list(range(n_lev_onetime, n_lev))
-                if not l_eof_input:
-                    var_to_plot = var_to_plot_1 + var_to_plot_2
+            if largescale_times == 'same_time':
+                # sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
+                # sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
+                sort_index = np.unique(abs(p50_high[:(n_lev)]), return_index=True)[1][::-1]
 
-                ax.plot(mlr_coeff['coeff'][var_to_plot], list(range(len(var_to_plot))), marker='p', ms=16., ls='', color='k')
+            input_attribution = input_attribution[:, sort_index]
 
-                ax.axvline(x=0, color='r', lw=1.5)
+        # ===== Plots =====================
 
-                if l_eof_input:
-                    label_list = [integer + 1 for integer in var_to_plot]
-                else:
-                    label_list1 = [element1.replace('            ', '') + ', ' + str(int(element2)) + ' hPa ' for element1, element2 in
-                                  zip(predictor['long_name'][var_to_plot_1].values, predictor.lev[var_to_plot_1].values)]
-                    label_list2 = [element1.replace('            ', '') + ' ' for element1, element2 in
-                                   zip(predictor['long_name'][var_to_plot_2].values, predictor.lev.values)]
-                    label_list = label_list1 + label_list2
+        l_violins = True \
+                    and l_high_values
+        plot = contribution_whisker(input_percentages=input_attribution,
+                                    levels=predictor[height_dim].values[sort_index],
+                                    long_names=predictor['symbol'][sort_index],
+                                    ls_times='same_time',
+                                    n_lev_total=n_lev,
+                                    n_profile_vars=n_lev,  # 47,#5,#13,# 50, #30, #26, #9, #23, #
+                                    xlim=150,
+                                    bg_color='mistyrose',
+                                    l_violins=l_violins,
+                                    )
 
-                ax.set_yticks(list(range(len(var_to_plot))))
-                if i == 0:
-                    ax.set_yticklabels(label_list)
-                    plt.text(0.75, 0.85, 'Same\ntime', transform=ax.transAxes,
-                             bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-                else:
-                    ax.set_yticklabels([])
-                    plt.text(0.75, 0.85, '6 hours\nearlier', transform=ax.transAxes,
-                             bbox={'edgecolor': 'k', 'facecolor': 'w', 'alpha': 0.5})
-
-                ax.set_xlabel('Coefficients for MLR [km$^2$]')
-
-                ax.invert_yaxis()
-                ax.set_ylim(n_lev_onetime-0.5, -0.5)
-
-            xlim_low = min(axes[0].get_xlim()[0], axes[1].get_xlim()[0])
-            xlim_upp = max(axes[0].get_xlim()[1], axes[1].get_xlim()[1])
-            for ax in axes:
-                ax.set_xlim(xlim_low, xlim_upp)
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-                ax.grid(axis='x')
-
-            plt.subplots_adjust(wspace=0.05)
-
-            plt.savefig(home + '/Desktop/mlr_coeff.pdf', bbox_inches='tight', transparent=True)
+        plot.savefig(home + '/Desktop/nn_whisker.pdf', bbox_inches='tight', transparent=True)
