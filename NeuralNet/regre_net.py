@@ -189,6 +189,26 @@ if __name__=='__main__':
                                                                  l_profiles_as_eof=l_profiles_as_eof,
                                                                  target='rome')
 
+
+    l_subselect_input = True
+    if l_subselect_input:
+        l1 = ((predictor['long_name']=='vertical velocity            ') &
+              (predictor['number']==0))
+        l2 = ((predictor['long_name']=='vertical velocity            ') &
+              (predictor['number']==2))
+        l3 = ((predictor['long_name']=='Horizontal wind U component            ') &
+              (predictor['number']==0))
+        l4 = ((predictor['long_name']=='Horizontal wind V component            ') &
+              (predictor['number']==0))
+        l5 = ((predictor['long_name']=='Dry static energy            ') &
+              (predictor['number']==1))
+        l6 = ((predictor['long_name']=='TOA LW flux, upward positive            '))
+
+        l_all = l1 + l2 + l3 + l4 + l5 + l6
+
+        predictor = predictor.isel(number=np.logical_not(l6))
+
+
     n_lev = len(predictor[height_dim])
 
     l_loading_model = True
@@ -224,7 +244,7 @@ if __name__=='__main__':
         # fit the model
         model.fit(x=trainset[0], y=trainset[1],
                   validation_data=(valset[0], valset[1]),
-                  epochs=61, #39,
+                  epochs=39, #61, #
                   batch_size=32,
                   callbacks=callbacks_list)
 
@@ -268,10 +288,10 @@ if __name__=='__main__':
         input_attribution = xr.zeros_like(predictor.sel(time=predicted.time))
         l_input_positive  = xr.full_like (predictor.sel(time=predicted.time), fill_value=False, dtype='bool')
         for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
-            # single_attribution = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
+            single_attribution = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
             # lrp                = bcktrck.mlp_backtracking_relevance(model, model_input, alpha=2, beta=1)[0]
             # single_attribution = lrp / lrp.sum()
-            single_attribution = ig.explain(np.array(model_input), reference=np.array(baseline_input))
+            # single_attribution = ig.explain(np.array(model_input), reference=np.array(baseline_input))
 
             input_attribution[i, :] = single_attribution
 
