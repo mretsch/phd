@@ -7,6 +7,7 @@ import keras.utils as kutils
 import keras.callbacks as kcallbacks
 import NeuralNet.backtracking as bcktrck
 import innvestigate as innv
+from NeuralNet.IntegratedGradients import *
 import xarray as xr
 import pandas as pd
 import seaborn as sns
@@ -18,15 +19,14 @@ home = expanduser("~")
 np.random.seed(5)
 
 def three_inputs_and_target():
-    randm = np.random.randint(1, 50, size=(125000, 2))
-
-    x_0 = randm[:, 0]
-    x_1 = randm[:, 1]
+    # randm = np.random.randint(1, 50, size=(125000, 2))
 
     # EOF analysis
     # First make the data deviations from the mean and standardise it
-    data      = randm - randm.mean(axis=0)
-    data_norm = data  / data .std(axis=0)
+    # data      = randm - randm.mean(axis=0)
+    # data_norm = data  / data .std(axis=0)
+    data_norm = np.random.standard_normal(size=(125000, 2))
+
     dimsize = data_norm.shape
 
     cov_matrix = np.cov(data_norm, rowvar=False)
@@ -57,8 +57,9 @@ def three_inputs_and_target():
     corr_2 = y * r + x * np.sqrt(1 - r**2)
 
     # other data has also nearly 0-correlation
-    other_data = np.random.randint(1, 50, size =(125000, 1))
-    other_data = (other_data - other_data.mean()) / other_data.std()
+    # other_data = np.random.randint(1, 50, size =(125000, 1))
+    # other_data = (other_data - other_data.mean()) / other_data.std()
+    other_data = np.random.standard_normal(125000)
 
     # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(72, 4))
     # ax.plot(y[:500])
@@ -140,8 +141,6 @@ def four_inputs_intercorrelated():
 i_1, i_2, i_3, y = three_inputs_and_target()
 # y, i_1, i_2, i_3, i_4 = four_inputs_intercorrelated()
 
-
-
 # Train MLP, y is the target, [corr_1, corr_2, other_data] is input
 target = y
 inputs = np.stack((i_1, i_2, i_3), axis=1)
@@ -154,7 +153,10 @@ if l_train_model:
     model.add(klayers.Dense(150, activation='relu'))
     model.add(klayers.Dense(1, activation='linear'))
     model.compile(optimizer='adam', loss='mean_squared_error')
-    model.fit(inputs, target, batch_size=10, epochs=15, validation_split=0.3)
+    filepath = home + '/Desktop/M/model-{epoch:02d}-{val_loss:.5f}.h5'
+    checkpoint = kcallbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=False)
+    callbacks_list = [checkpoint]
+    model.fit(inputs, target, batch_size=10, epochs=15, validation_split=0.3, callbacks=callbacks_list)
 
     predicted = np.empty_like(target)
     input_percentages = np.zeros_like(inputs)
@@ -175,44 +177,66 @@ if l_train_model:
     #     positive_positive_ratio[1, i] = ((l_input_positive[:, i] == False) & (input_percentages[:, i] < 0.)).sum() \
     #                                   /  (l_input_positive[:, i] == False).sum()
 else:
-    model = kmodels.load_model(home+'/Documents/Data/NN_Models/BasicUnderstanding/No_Functional_Connection/'+
-                                    'model.h5')
-    predicted = xr.open_dataarray(home+'/Documents/Data/NN_Models/BasicUnderstanding/No_Functional_Connection/'+
-                                          'predicted.nc').values
-    input_percentages = xr.open_dataarray(home+'/Documents/Data/NN_Models/BasicUnderstanding/No_Functional_Connection/'+
-                                          'input_percentages.nc').values
+    model = kmodels.load_model(home+'/Documents/Data/NN_Models/BasicUnderstanding/'+
+                                    'No_Functional_Connection_2layer150nodes/model.h5')
+    predicted = xr.open_dataarray(home+'/Documents/Data/NN_Models/BasicUnderstanding/'+
+                                       'No_Functional_Connection_2layer150nodes/predicted.nc').values
+    input_percentages = xr.open_dataarray(home+'/Documents/Data/NN_Models/BasicUnderstanding/'+
+                                               'No_Functional_Connection_2layer150nodes/input_percentages.nc').values
 
     # the _IB stands for 'ignore bias'. This seems to be the version presented in the Bach/Montavon-papers,
     # because it matches the results of my own implementation of their algorithm.
     lrp10 = innv.create_analyzer(name='lrp.alpha_1_beta_0_IB', model=model)
     lrp21 = innv.create_analyzer(name='lrp.alpha_2_beta_1_IB', model=model)
 
+    baseline_input = np.array([0., 0., 0.])
+    ig = integrated_gradients(model)
+
     bach10_input = np.zeros_like(inputs)
     bach21_input = np.zeros_like(inputs)
     bach32_input = np.zeros_like(inputs)
     lrp10_input  = np.zeros_like(inputs)
     lrp21_input  = np.zeros_like(inputs)
+    ig_input     = np.zeros_like(inputs)
     for i, iput in enumerate(inputs):
-        # bach10_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
-        # bach21_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=2, beta=1)[0]
-        # bach32_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=3, beta=2)[0]
-        lrp10_input[i, :] = lrp10.analyze(np.array([iput]))
-        # lrp21_input[i, :] = lrp21.analyze(np.array([iput]))
+        # try:
+        #     bach10_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=1, beta=0)[0]
+        #     bach21_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=2, beta=1)[0]
+        #     bach32_input[i, :] = bcktrck.mlp_backtracking_relevance(model=model, data_in=iput, alpha=3, beta=2)[0]
+        # except IndexError:
+        #     print(f'This is the index: {i}.')
+        # lrp10_input[i, :] = lrp10.analyze(np.array([iput]))
+        lrp21_input[i, :] = lrp21.analyze(np.array([iput]))
+        # ig_input[i, :] = ig.explain(np.array(iput), reference=np.array(baseline_input))
 
-    lrp_sum = lrp10_input.sum(axis=1)
+    lrp_sum = lrp21_input.sum(axis=1)
     sum_enlarge = np.broadcast_to(lrp_sum, (3, 125000))
-    lrp_percentages = lrp10_input / sum_enlarge.transpose()
+    lrp_percentages = lrp21_input / sum_enlarge.transpose()
+
+# fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
+# sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
+# # sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
+# ax.set_ylim(-150, 250)
+# ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
+# ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
+# # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
+# plt.title('LRP-p')
+# ax.set_xlabel('Input')
+# ax.set_ylabel('Contributing percentage [%]')
+# plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
 
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
-sns.boxplot(data=input_percentages, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
+sns.boxplot(data=lrp21_input, palette='Set2', fliersize=0., medianprops=dict(lw=1.5, color='black'))
 # sns.violinplot(data=input_percentages, palette='Set2', scale='width', inner='quartile')
-ax.set_ylim(-150, 250)
+ax.set_ylim(-4, 5)
 ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
 ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
 # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
-plt.title('Percentage-backtracking')
 ax.set_xlabel('Input')
-ax.set_ylabel('Contributing percentage [%]')
+plt.title('LRP-${\\alpha_2\\beta_1}$')
+ax.set_ylabel('Relevance [1]')
+# plt.title('Integrated-Gradients')
+# ax.set_ylabel('Contribution [1]')
 plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
 
 # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2*0.7, 5*0.7))
@@ -222,7 +246,7 @@ plt.savefig(home+'/Desktop/backtracking_example.pdf', bbox_inches='tight')
 # ax.axhline(y=0, color='lightgrey', lw=2.5, zorder=-100)
 # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$'])
 # # ax.set_xticklabels(['x$_1$', 'x$_2$', 'x$_3$', 'x$_4$'])
-# plt.title('Normalised LRP$_{\\alpha=3, \\beta=2}$')
+# plt.title('Normalised LRP$_{\\alpha=2, \\beta=1}$')
 # ax.set_xlabel('Input')
 # ax.set_ylabel('Contributing percentage [%]')
 # plt.savefig(home+'/Desktop/backtracking_example_lrp32.pdf', bbox_inches='tight')
