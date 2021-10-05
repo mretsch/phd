@@ -189,8 +189,7 @@ if __name__=='__main__':
                                                                  l_profiles_as_eof=l_profiles_as_eof,
                                                                  target='rome')
 
-
-    l_subselect_input = True
+    l_subselect_input = False
     if l_subselect_input:
         l1 = ((predictor['long_name']=='vertical velocity            ') &
               (predictor['number']==0))
@@ -207,7 +206,6 @@ if __name__=='__main__':
         l_all = l1 + l2 + l3 + l4 + l5 + l6
 
         predictor = predictor.isel(number=np.logical_not(l6))
-
 
     n_lev = len(predictor[height_dim])
 
@@ -276,7 +274,9 @@ if __name__=='__main__':
         # predicted = predicted[predicted.time.isin(predictor.time)]
 
         # 'baseline'-input which results in a prediction of 0.076. Needed for Integrated-Gradients method.
-        baseline_input = predictor.sel(time='2014-11-14T00')
+        # baseline_input = predictor.sel(time='2014-11-14T00')
+        # baseline_input = predictor.sel(time='2006-12-19T00')
+        baseline_input = xr.zeros_like(predictor.sel(time='2006-12-19T00'))
         ig = integrated_gradients(model)
 
         l_high_values = True
@@ -290,7 +290,7 @@ if __name__=='__main__':
         for i, model_input in enumerate  (predictor.sel(time=predicted.time)):
             single_attribution = bcktrck.mlp_backtracking_percentage(model, model_input)[0]
             # lrp                = bcktrck.mlp_backtracking_relevance(model, model_input, alpha=2, beta=1)[0]
-            # single_attribution = lrp / lrp.sum()
+            # single_attribution = lrp #/ lrp.sum()
             # single_attribution = ig.explain(np.array(model_input), reference=np.array(baseline_input))
 
             input_attribution[i, :] = single_attribution
@@ -329,8 +329,8 @@ if __name__=='__main__':
 
             if largescale_times == 'same_time':
                 # sort_index = np.unique(spread[:(n_lev)], return_index=True)[1][::-1]
-                # sort_index = np.unique(p50_high[:(n_lev)], return_index=True)[1][::-1]
-                sort_index = np.unique(abs(p50_high[:(n_lev)]), return_index=True)[1][::-1]
+                sort_index = np.unique(    p50_high[:(n_lev)] , return_index=True)[1][::-1]
+                # sort_index = np.unique(abs(p50_high[:(n_lev)]), return_index=True)[1][::-1]
 
             input_attribution = input_attribution[:, sort_index]
 
@@ -343,7 +343,7 @@ if __name__=='__main__':
                                     long_names=predictor['symbol'][sort_index],
                                     ls_times='same_time',
                                     n_lev_total=n_lev,
-                                    n_profile_vars=n_lev,#47,#5,#13,# 50, #30, #26, #9, #23, #
+                                    n_profile_vars=6,#47,#5,#13,# 50, #30, #26, #9, #23, #
                                     xlim=150,
                                     bg_color='mistyrose',
                                     l_violins=l_violins,

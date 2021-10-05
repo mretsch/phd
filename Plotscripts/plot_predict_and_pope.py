@@ -10,8 +10,8 @@ from NeuralNet.backtracking import high_correct_predictions
 
 start = timeit.default_timer()
 
-# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
-rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
+# rome = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
 # area   = xr.open_dataarray(home+'/Documents/Data/Analysis/No_Boundary/AllSeasons/o_area_km_max6h_avg_pm20minutes.nc')
 # timedelta = xr.open_dataarray(home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/timedelta_maxrome_largescale.nc')
 
@@ -108,29 +108,29 @@ colors = [sol['yellow'], sol['red'], sol['magenta'], sol['violet'], sol['cyan']]
 for i, ax in enumerate([axes]):
     ax.plot(rome             [test_index][plot_index], color='k', lw=7)
     ax.plot(predicted_list[0][test_index][plot_index], color=sol['blue'], lw=5)
-    ax.plot(predicted_list[1][test_index][plot_index], color=sol['yellow'], lw=5, alpha=0.7)
+    ax.plot(predicted_list[1][test_index][plot_index], color=sol['magenta'], lw=5, alpha=0.7)
     # ax.plot(omega            [plot_index]*10, color='g'  , lw=1.5)
     # ax.plot(area            [plot_index], color='pink'  , lw=1.5)
     # ax.plot(rome.where(rome.time.isin(special_time)), ls='', marker='D', color='r')
     # ax.vlines(val_index, ymin=ax.get_ylim()[0], ymax=ax.get_ylim()[1], colors='r')
 
 
-    # ax.legend(['TCA', 'T$_\mathrm{NN}$'])
-    ax.legend(['ROME', 'R$_\mathrm{NN}$', 'R$_\mathrm{MLR}$'])
+    ax.legend(['TCA', 'TCA$_\mathrm{NN}$', 'TCA$_\mathrm{MLR}$'], fontsize=27, loc=(0.66, 0.42))
+    # ax.legend(['ROME', 'ROME$_\mathrm{NN}$', 'ROME$_\mathrm{MLR}$'], fontsize=27, loc=(0.66, 0.42))
     # plt.title('reduced predictors with uv-wind. 90-percentile ROME with prediction within 30%.')
     # plt.title('reduced predictors with uv-wind. Input to NN normalised and given as standard-deviation.')
 
-    ax.set_ylim(0, None)
-    # ax.set_xlim(0, plot_length)
+    # ax.set_ylim(0, None)
+    ax.set_xlim(0, 200)
 
-    ax.yaxis.set_label_position("right")
-    # ax.set_ylabel('Total conv. area [km$^2$]', labelpad=15)
-    ax.set_ylabel('ROME [km$^2$]', labelpad=15)
+    ax.set_ylabel('TCA [km$^2$]', labelpad=15)
+    # ax.set_ylabel('ROME [km$^2$]', labelpad=15)
 
     ax.set_xlabel('Time [6h intervals]')
 
-    ax.tick_params(left=False, labelleft=False)
-    ax.tick_params(right=False, labelright=True)
+    # ax.yaxis.set_label_position("right")
+    # ax.tick_params(left=False, labelleft=False)
+    # ax.tick_params(right=False, labelright=True)
 
 # plt.savefig(home+'/Desktop/first1200.pdf', bbox_inches='tight', transparent=True)
 plt.savefig(home+'/Desktop/last1200.pdf', bbox_inches='tight', transparent=True)
@@ -150,7 +150,7 @@ if l_scatter_plot:
     plt.close()
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.scatter(rome[test_index],     predicted[test_index], marker='X', c=sol['blue'])
-    ax.scatter(rome[test_index], mlr_predicted[test_index], marker='X', c=sol['yellow'], alpha=0.6)
+    ax.scatter(rome[test_index], mlr_predicted[test_index], marker='X', c=sol['magenta'], alpha=0.6)
     # ax.scatter(rome,     predicted, marker='X', c=sol['blue'], alpha=0.7)
     # ax.scatter(rome, mlr_predicted, marker='X', c=sol['yellow'], alpha=0.4)
     ax.set_xlabel('ROME in test set [km$^2$]')
@@ -158,6 +158,10 @@ if l_scatter_plot:
     ax.set_aspect('equal')
     # ax.set_xticks([0, 200, 400, 600, 800])
     ax.legend(['R$_\mathrm{NN}$', 'R$_\mathrm{MLR}$'], fontsize=19, facecolor='lightgrey')
+    upper_limit = min(ax.get_xlim()[1], ax.get_ylim()[1])
+    ax.plot([0, upper_limit], [0, upper_limit], c='lightgrey')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.savefig(home+'/Desktop/scatter.pdf', bbox_inches='tight', transparent=True)
 
 

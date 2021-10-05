@@ -118,10 +118,16 @@ if __name__=='__main__':
 
     matrix = cm.to_dataframe()
     matrix.index.rename('ROME decile', inplace=True)
-    matrix.columns.rename('R$_\mathrm{NN}$ decile', inplace=True)
+    matrix.columns.rename('ROME$_\mathrm{NN}$ decile', inplace=True)
 
     plt.close()
     # sns.heatmap(matrix / (len(predicted)//10) , cmap='Greys', annot=matrix, fmt='d')
-    ax = sns.heatmap(matrix / (len(predicted)//10) , annot=matrix, fmt='d', cmap='gray_r')
-    ax.collections[0].colorbar.set_label("Percentage in decile [1]")
+    ax = sns.heatmap(matrix / (len(predicted)//10) , annot=matrix, fmt='d', cmap='gray_r', vmin=0.0, vmax=0.56)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=20)
+    cbar.set_label("Percentage in decile [1]", fontsize=23)
+    ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=20)
+    ax.set_xlabel(ax.get_xlabel(), fontsize=23)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=23)
     plt.savefig(home+'/Desktop/conf_matrix', dpi=400, bbox_inches='tight')

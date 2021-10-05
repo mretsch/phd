@@ -21,7 +21,7 @@ def histogram_1d(data, nbins=None, l_adjust_bins=False, l_xlog=False, x_label=''
 
     fig, ax = plt.subplots(figsize=(7*0.8, 5*0.8))
     linestyle = ['solid', 'dashed', 'dotted', (0, (1,1)), (0, (3,5,1,5)), (0, (3,1,1,1,1,1))]
-    color = [ col.sol['yellow'], col.sol['blue'], 'k',col.sol['green'], col.sol['red'], col.sol['magenta'], col.sol['cyan']]
+    color = [ col.sol['magenta'], col.sol['blue'], 'k',col.sol['green'], col.sol['red'], col.sol['magenta'], col.sol['cyan']]
     lw = [1., 2., 2., 2., 2., 2.]
 
     for i, var in enumerate(data):
@@ -329,21 +329,22 @@ if __name__ == '__main__':
         # var_gt0 = var.where(var != 0., drop=True)
 
         rome = xr.open_dataarray(
-            home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+            # home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/rom_km_max6h_avg_pm20minutes.nc')
+            home + '/Documents/Data/Analysis/No_Boundary/AllSeasons/totalarea_km_avg6h.nc')
         model_path = '/Desktop/'
         predicted = xr.open_dataarray(home + model_path + 'predicted.nc')
         mlr_predicted = xr.open_dataarray(home + model_path + 'mlr_predicted.nc')
 
-        fig_h_1d = histogram_1d([mlr_predicted, predicted, rome], l_xlog=True, l_adjust_bins=True,
+        fig_h_1d = histogram_1d([mlr_predicted, predicted, rome], l_xlog=True, l_adjust_bins=False,
                                 nbins=[
                                     np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2,
                                     np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2,
                                     np.linspace(start=m.sqrt(max(0, rome.min())), stop=m.sqrt(rome.max()), num=20) ** 2
                                 ],
                                 l_percentage=False,
-                                x_label='ROME [km$^2$]',
-                                y_label='d$\mathcal{P}$ / dlog(ROME) [km$^{-2}$]',
-                                legend_label=['R$_\mathrm{MLR}$', 'R$_\mathrm{NN}$', 'ROME'],
+                                x_label='TCA [km$^2$]',
+                                y_label='d$\mathcal{P}$ / dlog(TCA) [km$^{-2}$]',
+                                legend_label=['TCA$_\mathrm{MLR}$', 'TCA$_\mathrm{NN}$', 'TCA'],
                                 l_color=False)
 
         fig_h_1d.show()

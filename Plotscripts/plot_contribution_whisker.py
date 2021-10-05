@@ -90,8 +90,8 @@ def contribution_whisker(input_percentages, levels, long_names,
 
         ax.set_xlim(-xlim, xlim)
         ax.axvline(x=0, color='lightgray', lw=2.5, zorder=-100)
-        # ax.hlines([0, 1, 2, 3, 4, 5], xmin=-xlim, xmax=xlim,
-        #           color='gray', lw=2, zorder=-100)
+        ax.hlines([0, 1, 2, 3, 4, 5], xmin=-xlim, xmax=xlim,
+                  color='gray', lw=2, zorder=-100)
         # ax.set_xticks([-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150])
 
         label_list = []
