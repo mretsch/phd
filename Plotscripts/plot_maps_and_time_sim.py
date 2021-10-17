@@ -24,9 +24,10 @@ def make_map(projection=ccrs.PlateCarree()):
 
 
 start = timeit.default_timer()
-plt.rc('font'  , size=27)
+plt.rc('font'  , size=20)
 
 # rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_avg.nc')
 area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
 number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
 rome = number * area
@@ -34,16 +35,15 @@ rome = number * area
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_dailycycle.nc')\
 #     .sel(time='2020-01-31T03:00:00')
-# precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_avg_0201to301.nc') * 3600
+precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_timeavg.nc') * 3600
 # precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_20200210T0000_reggrid.nc')\
 #              .sel(time='20200210T19:45:00') * 3600
-# precip = xr.open_dataset(home+'/Documents/Data/Simulation/r2b10/pr_observations.HDF5', group='Grid')['precipitation']
 # precip = xr.open_dataset(home+
 #                          '/Documents/Data/Simulation/r2b10/3B-MO.MS.MRG.3IMERG.20200201-S000000-E235959.02.V06B.HDF5',
 #                          group='Grid')['precipitation'].sel(lat=slice(-20, 20)).transpose()
 
-# pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
-# pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
+pr_latavg = precip.coarsen(lat=4, boundary='trim').mean()
+pr_avg = pr_latavg.coarsen(lon=4, boundary='trim').mean()
 # rh_avg = rh.mean(dim='time')
 
 # rome = rome.where(rome.notnull(), other=0.)
@@ -73,10 +73,10 @@ if l_pick_region:
 
     allregions = xr.where(allregions != 0., 1., np.nan)
 
-l_plot_map = False
+l_plot_map = True
 if l_plot_map:
 
-    map_to_plot = rhlow_p90.sum(dim='time')
+    map_to_plot = precip#.mean(dim='time')
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
     longitude_offset = 180
@@ -90,15 +90,16 @@ if l_plot_map:
     ax.coastlines()
     # ax.axhline(y=0, color='r')
 
-    map_to_plot.plot(ax=ax, cmap= 'PuRd')#, vmin=0. , vmax=rome.mean(dim='time').max())#, vmin=-0.0002, vmax=0.0002)
-                     #'gist_earth_r''OrRd' cmap='PuOr' 'rainbow' 'cool'  'GnBu'
+    map_to_plot.plot(ax=ax, cmap='gist_earth_r', vmin=0., vmax=2.14,)#, vmax=rome.mean(dim='time').max())#, vmin=-0.0002
+                     #'OrRd''PuRd' cmap='PuOr' 'rainbow' 'cool'  'GnBu'
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
     # ax.collections[0].colorbar.set_label('Count ROME$_\mathrm{p90}$ & RH$_{500}$ < 40% [1]')
     # ax.collections[0].colorbar.set_label('Avg. ROME [km$^2$]')
-    # ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
+    ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
     # ax.collections[0].colorbar.set_label('900 hP div. [1/s]')
+    # ax.collections[0].colorbar.set_ticks([0, 0.5, 1, 1.5, 2])
     # ax.collections[0].colorbar.ax.ticklabel_format(scilimits=(0, 0))
 
     # ax.set_title('Count ROME_p90 below 40% RH$_{500}$')
@@ -117,10 +118,10 @@ if l_plot_map:
     ax.yaxis.set_major_formatter(LatitudeFormatter())
     # ax.grid()
 
-    plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
-    # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
+    # plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
-l_plot_time = True
+l_plot_time = False
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
