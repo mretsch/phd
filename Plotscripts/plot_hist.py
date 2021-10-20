@@ -134,8 +134,10 @@ def histogram_2d(x_series, y_series, nbins=None,
         #              np.linspace(start=-1.9, stop=1., num=nbins+1)]
         xlow, xupp = np.nanpercentile(x_series, q=1.), np.nanpercentile(x_series, q=99)
         ylow, yupp = np.nanpercentile(y_series, q=1.), np.nanpercentile(y_series, q=99)
-        bin_edges = [np.linspace(start=-10                       , stop=5                         , num=nbins + 1),
-                     np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
+        bin_edges = [np.linspace(start=-15                       , stop=5                         , num=nbins + 1),
+                     np.linspace(start=12.9                      , stop=94.9                      , num=nbins + 1)]
+        # bin_edges = [np.linspace(start=np.round(xlow, decimals=1), stop=np.round(xupp, decimals=1), num=nbins + 1),
+        #              np.linspace(start=np.round(ylow, decimals=1), stop=np.round(yupp, decimals=1), num=nbins + 1)]
     else:
         # bin_edges = [np.linspace(start=0., stop=m.sqrt(x_series.max()), num=18)**2,
         #              np.linspace(start=0., stop=       y_series.max(), num=40+1)]
@@ -154,7 +156,7 @@ def histogram_2d(x_series, y_series, nbins=None,
         H, xbinseries, ybinseries = FORTRAN.histogram_2d(xseries=x_series, yseries=y_series,
                                                          xedges=x_edges, yedges=y_edges,
                                                          l_density=False,
-                                                         l_cut_off=l_cut_off, cut_off=80000)#55)#2600)
+                                                         l_cut_off=l_cut_off, cut_off=4000)#55)#2600)
         xbinseries[xbinseries == -1.] = np.nan
         ybinseries[ybinseries == -1.] = np.nan
         # the cut-away part
@@ -212,7 +214,8 @@ def histogram_2d(x_series, y_series, nbins=None,
         # ax.tick_params(left=False, labelleft=False)
         # ax.tick_params(right=True, labelright=True)
 
-    plot = plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='rainbow')#'gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
+    plot = plt.pcolormesh(x_edges, y_edges, Hmasked, cmap='rainbow',
+                          vmin=0., vmax=9.642)#'gnuplot2')#'gist_ncar')#  # , cmap='tab20c')
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)
