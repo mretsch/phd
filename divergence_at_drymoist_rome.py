@@ -177,15 +177,14 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     plt.rc('font'  , size=20)
 
-    # rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
-
     area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
     number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
-    rome_highfreq = area * number
+    # rome_highfreq = area * number
+    rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
-    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_std.nc').\
+    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
         transpose('time', 'lon', 'lat')
 
     rome_thresh = np.nanpercentile(rome_highfreq, 90)
@@ -198,7 +197,7 @@ if __name__ == '__main__':
     single_timeslices = []
     # region = 'South of India'
     # region = 'Amazon Delta'
-    region = 'NW Australia'
+    region = 'Tropic'
     # region = 'Pacific Region 1'
     # region = 'Tropical coast'
     surfacetype = 'coast'
@@ -233,9 +232,9 @@ if __name__ == '__main__':
             relhum_at_maxtime.append( relhum_domain.sel(time=a_time, lat=lat, lon=lon) )
 
     assert len(relhum_at_maxtime) == len(single_timeslices)
-    moist_indices = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) > moist_thresh)]
+    moist_indices    = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) > moist_thresh)]
     moist_timeslices = [single_timeslices[j] for j in moist_indices]
-    dry_indices   = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) < dry_thresh)]
+    dry_indices      = np.arange(len(single_timeslices))[(np.array(relhum_at_maxtime) < dry_thresh)]
     dry_timeslices   = [single_timeslices[k] for k in   dry_indices]
 
     print('Timeslices done.')
@@ -292,7 +291,9 @@ if __name__ == '__main__':
     if l_plot_significance:
         ps = np.array([testresult.pvalue for testresult in pvalue_ttest])
         l_p_below_005 = ps < 0.05
-        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(5.e-6, repeats=l_p_below_005.sum()),
+        # plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(5.e-6, repeats=l_p_below_005.sum()),
+        #          ls='', marker='x', color='k')
+        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(-2.4e-5, repeats=l_p_below_005.sum()),
                  ls='', marker='x', color='k')
 
     # for i, series in enumerate(moist_timeslices):
@@ -304,14 +305,15 @@ if __name__ == '__main__':
     plt.axvline(x=0, color='lightgrey', zorder=0)
     plt.axhline(y=0, color='lightgrey', zorder=0)
     plt.legend([f'Moist ({len(moist_timeslices)} samples)', f'Dry ({len(dry_timeslices)} samples)'])
-    plt.title(region)
+    plt.title('Tropical '+surfacetype)
     # plt.ylim(-4e-5, 5.e-6)
-    plt.ylim(0., None)
+    # plt.ylim(0., 3.7e-4)
+    plt.ylim(-2.5e-5, 1.5e-5)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
-    plt.ylabel('Avg. std-dev of divergence [1/s]')
-    plt.xlabel('Time around high TCA [h]')
+    plt.ylabel('$\overline{\mu}$ of divergence [1/s]')
+    plt.xlabel('Time around high ROME [h]')
     plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
-    plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
+    plt.savefig(home+'/Desktop/div_composite_7.pdf', bbox_inches='tight')
     plt.show()
 
     stop = timeit.default_timer()
