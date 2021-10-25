@@ -14,13 +14,13 @@ ds_ps = xr.open_dataset(home+'/Desktop/hist.nc')
 
 area   = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
 number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
-rome   = area * number
-# rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+# rome   = area * number
+rome = xr.open_dataarray(home + '/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 rome_p90 = np.nanpercentile(rome, q=90)
 
-l_take_region = True
+l_take_region = False
 if l_take_region:
-    region = smallregion_in_tropics(rome, 'Tropic', 'coast', other_surface_fillvalue=np.nan)
+    region = smallregion_in_tropics(rome, 'Tropic', 'land', other_surface_fillvalue=np.nan)
     rome_copy = xr.full_like(rome, fill_value=np.nan)
     rome_copy.loc[{'lat': region['lat'], 'lon': region['lon']}] = region
     rome = rome_copy
@@ -63,19 +63,22 @@ ps_overlay = phase_space_stack.unstack('z')
 plt.rc('font'  , size=26)
 plt.rc('legend', fontsize=18)
 
-the_plot = ps_overlay.T.plot(cmap='OrRd',# 'rainbow',
+the_plot = ps_overlay.T.plot(cmap= 'OrRd',#'rainbow', #
                              vmin=ps_overlay.min(), vmax=ps_overlay.max())
+                             # vmin=412, vmax=600) # ROME over ICON coasts
+                             # vmin=2800, vmax=4220) # ROME over ICON coasts
                              # vmin=0.0028409857748265717, vmax=0.4935537724163929)
 
 plt.xticks((-15, -10, -5, 0, 5))
 # plt.xticks((-30, -20, -10, 0, ))
 
-plt.title('Tropical coast, high TCA')
+# plt.title('Tropical ocean, high TCA')
 plt.xlabel('$\omega_{515}$ [hPa/hour]')
 plt.ylabel('RH$_{515}$ [%]')
 
-# the_plot.colorbar.set_label('Prob. of ROME$_\mathrm{p90,trp}$ [1]')
-the_plot.colorbar.set_label('TCA > TCA$_\mathrm{p90,trp}$ [km$^2$]')
+the_plot.colorbar.set_label('ROME [km2]')
+# the_plot.colorbar.set_label('Prob. of TCA$_\mathrm{p90,trp}$ [1]')
+# the_plot.colorbar.set_label('TCA > TCA$_\mathrm{p90,trp}$ [km$^2$]')
 
 plt.savefig(home + '/Desktop/phase_space.pdf', transparent=True, bbox_inches='tight')
 plt.show()
