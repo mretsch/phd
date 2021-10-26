@@ -39,6 +39,9 @@ def smallregion_in_tropics(tropic_wide_field, region, surface_type, other_surfac
     if 'Pacific Region 3' in region:
         small_region = field.sel(lat=slice(14, 20), lon=slice(-145, -139))
 
+    if 'Africa' in region:
+        small_region = field.sel(lat=slice(-15, -10), lon=slice(20, 25))
+
     if 'Amazon Delta' in region:
         small_region = field.sel(lat=slice(-1, 5), lon=slice(-52, -44))
 

@@ -24,17 +24,17 @@ def make_map(projection=ccrs.PlateCarree()):
 
 
 start = timeit.default_timer()
-plt.rc('font'  , size=20)
+plt.rc('font'  , size=27)
 
-rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
-# precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_avg.nc')
-# area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
-# number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
+area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
+number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
 # rome = number * area
+rome = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 
 rh = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 # div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_dailycycle.nc')\
 #     .sel(time='2020-01-31T03:00:00')
+
 precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_timeavg.nc') * 3600
 # precip = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/pr_20200210T0000_reggrid.nc')\
 #              .sel(time='20200210T19:45:00') * 3600
@@ -64,19 +64,20 @@ if l_pick_region:
     pa3 = smallregion_in_tropics(rome_time_avg, 'Pacific Region 3', 'ocean', other_surface_fillvalue=0.)
     aus = smallregion_in_tropics(rome_time_avg, 'NW Australia'    , 'coast', other_surface_fillvalue=0.)
     ama = smallregion_in_tropics(rome_time_avg, 'Amazon Delta'    , 'all'  , other_surface_fillvalue=0.)
+    afr = smallregion_in_tropics(rome_time_avg, 'Africa'          , 'all'  , other_surface_fillvalue=0.)
     ind = smallregion_in_tropics(rome_time_avg, 'South of India'  , 'ocean', other_surface_fillvalue=0.)
 
     allregions = xr.zeros_like(rome_time_avg)
 
-    for region in [pa1, pa2, pa3, aus, ama, ind]:
+    for region in [pa1, pa2, pa3, aus, ama, afr, ind]:
         allregions.loc[{'lat': region['lat'], 'lon': region['lon']}] = region
 
     allregions = xr.where(allregions != 0., 1., np.nan)
 
-l_plot_map = True
+l_plot_map = False
 if l_plot_map:
 
-    map_to_plot = l_rome_p90.sum(dim='time')
+    map_to_plot = allregions #  l_rome_p90.sum(dim='time')
 
     # exploit that lons are now a view only of the lon-values, i.e. point into its memory
     longitude_offset = 180
@@ -95,7 +96,7 @@ if l_plot_map:
 
     # ax.set_extent((120, 140, -10, -20), crs=ccrs.PlateCarree())
 
-    ax.collections[0].colorbar.set_label('Count ROME < ROME$_\mathrm{p10,trp}$ [1]')
+    # ax.collections[0].colorbar.set_label('Count ROME < ROME$_\mathrm{p10,trp}$ [1]')
     # ax.collections[0].colorbar.set_label('Avg. ROME [km$^2$]')
     # ax.collections[0].colorbar.set_label('Precipitation [mm/hour]')
     # ax.collections[0].colorbar.set_label('900 hP div. [1/s]')
@@ -121,7 +122,7 @@ if l_plot_map:
     plt.savefig(home+'/Desktop/map.pdf', bbox_inches='tight', transparent=True)
     # plt.savefig(home+'/Desktop/map', dpi=200, bbox_inches='tight', transparent=True)
 
-l_plot_time = False
+l_plot_time = True
 if l_plot_time:
     fig, ax = plt.subplots(figsize=(48, 3))
 
@@ -131,9 +132,10 @@ if l_plot_time:
     rome_aus = smallregion_in_tropics(rome, 'NW Australia'    , 'coast', other_surface_fillvalue=np.nan)
     rome_ama = smallregion_in_tropics(rome, 'Amazon Delta'    , 'all'  , other_surface_fillvalue=np.nan)
     rome_ind = smallregion_in_tropics(rome, 'South of India'  , 'ocean', other_surface_fillvalue=np.nan)
+    rome_afr = smallregion_in_tropics(rome, 'Africa'          , 'all'  , other_surface_fillvalue=np.nan)
 
-    rome_domain = rome_pa3
-    title_text = 'Pacific Region 3'
+    rome_domain = rome_afr
+    title_text = 'Land, Zambia'
 
     rome_times = [
         # np.datetime64('2020-02-01T10:45'),  # Australia
@@ -186,7 +188,7 @@ if l_plot_time:
 
     p0, = rome_avg.plot(color='green', label='Avg. high ROME', lw=4, alpha=0.)
     ax.axhline(y=rome_p90, color='grey')
-    # ax.set_ylim(-50, 3735)
+    ax.set_ylim(-50, 3400)#2000, 9600)#
 
     relhum_cutout = rh.sel(lat=rome_domain['lat'], lon=rome_domain['lon'])
     relhum_domain = xr.where(rome_domain_high.notnull(), relhum_cutout, np.nan)
@@ -212,12 +214,12 @@ if l_plot_time:
 
     p1, = ax_1.plot(relhum_avg_all['time'], relhum_avg_all, color=sol['violet'], label='RH$_{500}$ in region', lw=8, alpha=0.5)
     # p2, = ax_2.plot(rome_avg_low['time']  , rome_avg_low  , color='grey'       , label='Avg. low ROME', lw=5)
-    p3, = ax_3.plot(rome_avg['time']      , rome_avg      , color='k'          , label='Avg. high TCA', lw=4)
-    p4, = ax_4.plot(relhum_avg['time']    , relhum_avg    , color=sol['cyan']  , label='RH$_{500}$ at high TCA', lw=4,)
+    p3, = ax_3.plot(rome_avg['time']      , rome_avg      , color='k'          , label='Avg. high ROME', lw=4)
+    p4, = ax_4.plot(relhum_avg['time']    , relhum_avg    , color=sol['cyan']  , label='RH$_{500}$ at high ROME', lw=4,)
 
-    # ax_2.set_ylim(-50, 3735)
+    ax_2.set_ylim(-50, 3400)#2000, 9600)#
     ax_2.set_axis_off()
-    # ax_3.set_ylim(-50, 3735)
+    ax_3.set_ylim(-50, 3400)#2000, 9600)#
     ax_3.set_axis_off()
     ax_4.set_axis_off()
 
@@ -228,9 +230,9 @@ if l_plot_time:
     #     tick.label1.set_visible(False)
     ax.tick_params(length=8)
     ax.set_title('')
-    ax.set_ylabel('TCA [km$^2$]')
+    ax.set_ylabel('ROME [km$^2$]')
     ax.set_xlabel('Time')
-    # ax.set_yticks([0, 1000, 2000, 3000])
+    ax.set_yticks([0, 1000, 2000, 3000])
 
     ax_1.set_ylim(-2, 102)
     ax_1.set_title(title_text) #, p90_domainpixel={round(rome_p90)}')
@@ -239,7 +241,7 @@ if l_plot_time:
 
     plt.xlim(pd.to_datetime('20200131'), pd.to_datetime('20200301'))
     plt.legend([p3, p4, p1], [p.get_label() for p in [p3, p4, p1]], loc='upper left')
-    plt.savefig(home+f'/Desktop/tca_pa3.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(home+f'/Desktop/timeseries.pdf', bbox_inches='tight', transparent=True)
     # plt.show()
 
 stop = timeit.default_timer()
