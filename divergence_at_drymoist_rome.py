@@ -182,19 +182,21 @@ if __name__ == '__main__':
 
     area = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_area_10mmhour.nc')
     number = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/o_number_10mmhour.nc')
-    # rome_highfreq = area * number
-    rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
+    rome_highfreq = area * number
+    # rome_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rome_10mmhour.nc')
 
     rh_highfreq = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/rh500.nc')
 
-    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
+    # div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/Divergence900/div900_avg.nc').\
+    #     transpose('time', 'lon', 'lat')
+    div = xr.open_dataarray(home+'/Documents/Data/Simulation/r2b10/omega500.nc'). \
         transpose('time', 'lon', 'lat')
 
     rome_thresh = np.nanpercentile(rome_highfreq, 90)
     dry_thresh = 40
     moist_thresh = 70
     n_hours = 12
-    hour_step = 3
+    hour_step = 0.25 #3
     fig, ax = plt.subplots(1, 1)
     relhum_at_maxtime = []
     single_timeslices = []
@@ -229,7 +231,8 @@ if __name__ == '__main__':
                                 lat=lat,
                                 lon=lon
                                 ).load()
-            divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
+            # divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e9).values.astype(int))
+            divselect.coords['timeshift'] = ('time', ((divselect['time'] - a_time) / 3600e7).values.astype(int) / 100.)
 
             single_timeslices.append(divselect)
             relhum_at_maxtime.append( relhum_domain.sel(time=a_time, lat=lat, lon=lon) )
@@ -255,18 +258,18 @@ if __name__ == '__main__':
         composite_std_dry = composite_based_on_timeshift(dry_timeslices, n_hours=n_hours, step=hour_step,
                                                            operation='std')
 
-    if (len(dry_timeslices) != 0) & (len(moist_timeslices) != 0):
-        pvalue_ttest = []
-        for shift in composite_avg_dry['timeshift']:
-            pvalue_ttest.append(stats.ttest_ind_from_stats(
-                mean1=composite_avg_dry.sel(timeshift=shift),
-                std1=composite_std_dry.sel(timeshift=shift),
-                nobs1=len(dry_timeslices),
-                mean2=composite_avg_moist.sel(timeshift=shift),
-                std2=composite_std_moist.sel(timeshift=shift),
-                nobs2=len(moist_timeslices),
-                equal_var=False
-            ))
+    # if False & (len(dry_timeslices) != 0) & (len(moist_timeslices) != 0):
+    #     pvalue_ttest = []
+    #     for shift in composite_avg_dry['timeshift']:
+    #         pvalue_ttest.append(stats.ttest_ind_from_stats(
+    #             mean1=composite_avg_dry.sel(timeshift=shift),
+    #             std1=composite_std_dry.sel(timeshift=shift),
+    #             nobs1=len(dry_timeslices),
+    #             mean2=composite_avg_moist.sel(timeshift=shift),
+    #             std2=composite_std_moist.sel(timeshift=shift),
+    #             nobs2=len(moist_timeslices),
+    #             equal_var=False
+    #         ))
 
     ##### PLOTS ######
 
@@ -290,14 +293,14 @@ if __name__ == '__main__':
                          color=sol['red'])
         plt.plot(composite_avg_dry['timeshift'], composite_avg_dry, label=region, lw=2.5, color=sol['red'])
 
-    l_plot_significance = True
-    if l_plot_significance:
-        ps = np.array([testresult.pvalue for testresult in pvalue_ttest])
-        l_p_below_005 = ps < 0.05
-        # plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(5.e-6, repeats=l_p_below_005.sum()),
-        #          ls='', marker='x', color='k')
-        plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(-2.4e-5, repeats=l_p_below_005.sum()),
-                 ls='', marker='x', color='k')
+    # l_plot_significance = False
+    # if l_plot_significance:
+    #     ps = np.array([testresult.pvalue for testresult in pvalue_ttest])
+    #     l_p_below_005 = ps < 0.05
+    #     # plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(5.e-6, repeats=l_p_below_005.sum()),
+    #     #          ls='', marker='x', color='k')
+    #     plt.plot(composite_avg_dry['timeshift'][l_p_below_005], np.repeat(-2.4e-5, repeats=l_p_below_005.sum()),
+    #              ls='', marker='x', color='k')
 
     # for i, series in enumerate(moist_timeslices):
     #     plt.plot(series['timeshift'], series, color=sol['blue'], lw=0.5, marker='o', alpha=0.2)
@@ -311,13 +314,22 @@ if __name__ == '__main__':
     plt.title('Tropical '+surfacetype)
     # plt.ylim(-4e-5, 5.e-6)
     # plt.ylim(0., 3.7e-4)
-    plt.ylim(-2.5e-5, 1.5e-5)
+    # plt.ylim(-2.5e-5, 1.5e-5)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
-    plt.ylabel('$\overline{\mu}$ of divergence [1/s]')
-    plt.xlabel('Time around high ROME [h]')
-    plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
-    plt.savefig(home+'/Desktop/div_composite_7.pdf', bbox_inches='tight')
+    # plt.ylabel('$\overline{\mu}$ of divergence [1/s]')
+    plt.ylabel('$\overline{\omega}$ [hPa/hour]')
+    plt.xlabel('Time around high TCA [h]')
+    # plt.xticks(ticks=np.arange(-n_hours, n_hours + hour_step, hour_step))
+    plt.xticks(ticks=np.arange(-12, 12 + 3, 3))
+    plt.savefig(home+'/Desktop/div_composite.pdf', bbox_inches='tight')
     plt.show()
+
+    xr.Dataset({
+        'comp_avg_moist': composite_avg_moist,
+        'comp_std_moist': composite_std_moist,
+        'comp_avg_dry': composite_avg_dry,
+        'comp_std_dry': composite_std_dry,
+    }).to_netcdf(home+f'/Desktop/comp_tca_{surfacetype}.nc')
 
     stop = timeit.default_timer()
     print(f'Time used: {stop - start}')
